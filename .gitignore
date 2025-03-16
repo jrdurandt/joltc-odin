@@ -1,3 +1,7 @@
 *.bin
 *.exe
 jolt-odin
+
+*.so
+*.dll
+*.dynlib

@@ -6,26 +6,13 @@ import "base:runtime"
 import "core:fmt"
 import "core:testing"
 
-USE_SHARED :: #config(JOLT_SHARED, true)
 
 when ODIN_OS == .Linux {
-	when USE_SHARED {
-		foreign import lib {"libjoltc.so", "system:stdc++", "system:pthread"}
-	} else {
-		foreign import lib {"joltc-zig/zig-out/lib/libjoltc.a", "system:stdc++", "system:pthread"}
-	}
+	foreign import lib {"libjoltc.so", "system:stdc++", "system:pthread"}
 } else when ODIN_OS == .Windows {
-	when USE_SHARED {
-		foreign import lib {"libjoltc.dll", "system:stdc++", "system:pthread"}
-	} else {
-		foreign import lib {"joltc-zig/zig-out/lib/libjoltc.lib", "system:stdc++", "system:pthread"}
-	}
+	foreign import lib {"libjoltc.dll", "system:stdc++", "system:pthread"}
 } else when ODIN_OS == .Darwin {
-	when USE_SHARED {
-		foreign import lib {"libjoltc.dynlib", "system:stdc++", "system:pthread"}
-	} else {
-		foreign import lib {"joltc-zig/zig-out/lib/libjoltc.a", "system:stdc++", "system:pthread"}
-	}
+	foreign import lib {"libjoltc.dynlib", "system:stdc++", "system:pthread"}
 }
 
 //-------------------------------------------------------------------------------------------------
