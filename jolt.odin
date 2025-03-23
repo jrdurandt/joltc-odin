@@ -10,7 +10,7 @@ import "core:testing"
 when ODIN_OS == .Linux {
 	foreign import lib {"libjoltc.so", "system:stdc++", "system:pthread"}
 } else when ODIN_OS == .Windows {
-	foreign import lib {"libjoltc.dll", "system:stdc++", "system:pthread"}
+	foreign import lib {"joltc.dll", "system:stdc++", "system:pthread"}
 } else when ODIN_OS == .Darwin {
 	foreign import lib {"libjoltc.dynlib", "system:stdc++", "system:pthread"}
 }
@@ -290,180 +290,94 @@ QueueJobsCallback :: #type proc "c" (
 //-------------------------------------------------------------------------------------------------
 // Opaque types
 //-------------------------------------------------------------------------------------------------
-JobSystem :: struct {
-}
+JobSystem :: struct {}
 
-BroadPhaseLayerInterface :: struct {
-}
-ObjectVsBroadPhaseLayerFilter :: struct {
-}
-ObjectLayerPairFilter :: struct {
-}
-BroadPhaseLayerFilter :: struct {
-}
-ObjectLayerFilter :: struct {
-}
-PhysicsSystem :: struct {
-}
-BodyFilter :: struct {
-}
-ShapeFilter :: struct {
-}
-PhysicsMaterial :: struct {
-}
-ShapeSettings :: struct {
-}
-ConvexShapeSettings :: struct {
-}
-SphereShapeSettings :: struct {
-}
-BoxShapeSettings :: struct {
-}
-PlaneShapeSettings :: struct {
-}
-TriangleShapeSettings :: struct {
-}
-CapsuleShapeSettings :: struct {
-}
-TaperedCapsuleShapeSettings :: struct {
-}
-CylinderShapeSettings :: struct {
-}
-TaperedCylinderShapeSettings :: struct {
-}
-ConvexHullShapeSettings :: struct {
-}
-CompoundShapeSettings :: struct {
-}
-StaticCompoundShapeSettings :: struct {
-}
-MutableCompoundShapeSettings :: struct {
-}
-MeshShapeSettings :: struct {
-}
-HeightFieldShapeSettings :: struct {
-}
-RotatedTranslatedShapeSettings :: struct {
-}
-ScaledShapeSettings :: struct {
-}
-OffsetCenterOfMassShapeSettings :: struct {
-}
-EmptyShapeSettings :: struct {
-}
-Shape :: struct {
-}
-ConvexShape :: struct {
-}
-SphereShape :: struct {
-}
-BoxShape :: struct {
-}
-PlaneShape :: struct {
-}
-CapsuleShape :: struct {
-}
-CylinderShape :: struct {
-}
-TaperedCylinderShape :: struct {
-}
-TriangleShape :: struct {
-}
-TaperedCapsuleShape :: struct {
-}
-ConvexHullShape :: struct {
-}
-CompoundShape :: struct {
-}
-StaticCompoundShape :: struct {
-}
-MutableCompoundShape :: struct {
-}
-MeshShape :: struct {
-}
-HeightFieldShape :: struct {
-}
-DecoratedShape :: struct {
-}
-RotatedTranslatedShape :: struct {
-}
-ScaledShape :: struct {
-}
-OffsetCenterOfMassShape :: struct {
-}
-EmptyShape :: struct {
-}
-BodyCreationSettings :: struct {
-}
-SoftBodyCreationSettings :: struct {
-}
-BodyInterface :: struct {
-}
-BodyLockInterface :: struct {
-}
-BroadPhaseQuery :: struct {
-}
-NarrowPhaseQuery :: struct {
-}
-MotionProperties :: struct {
-}
-Body :: struct {
-}
-Constraint :: struct {
-}
-TwoBodyConstraint :: struct {
-}
-FixedConstraint :: struct {
-}
-DistanceConstraint :: struct {
-}
-PointConstraint :: struct {
-}
-HingeConstraint :: struct {
-}
-SliderConstraint :: struct {
-}
-ConeConstraint :: struct {
-}
-SwingTwistConstraint :: struct {
-}
-SixDOFConstraint :: struct {
-}
-GearConstraint :: struct {
-}
-ContactListener :: struct {
-}
-ContactManifold :: struct {
-}
-ContactSettings :: struct {
-}
-BodyActivationListener :: struct {
-}
-BodyDrawFilter :: struct {
-}
-SharedMutex :: struct {
-}
-DebugRenderer :: struct {
-}
-BodyLockMultiRead :: struct {
-}
-BodyLockMultiWrite :: struct {
-}
-CharacterBase :: struct {
-}
-Character :: struct {
-}
-CharacterContactListener :: struct {
-}
-CharacterVirtual :: struct {
-}
-CharacterVsCharacterCollision :: struct {
-}
+BroadPhaseLayerInterface :: struct {}
+ObjectVsBroadPhaseLayerFilter :: struct {}
+ObjectLayerPairFilter :: struct {}
+BroadPhaseLayerFilter :: struct {}
+ObjectLayerFilter :: struct {}
+PhysicsSystem :: struct {}
+BodyFilter :: struct {}
+ShapeFilter :: struct {}
+PhysicsMaterial :: struct {}
+ShapeSettings :: struct {}
+ConvexShapeSettings :: struct {}
+SphereShapeSettings :: struct {}
+BoxShapeSettings :: struct {}
+PlaneShapeSettings :: struct {}
+TriangleShapeSettings :: struct {}
+CapsuleShapeSettings :: struct {}
+TaperedCapsuleShapeSettings :: struct {}
+CylinderShapeSettings :: struct {}
+TaperedCylinderShapeSettings :: struct {}
+ConvexHullShapeSettings :: struct {}
+CompoundShapeSettings :: struct {}
+StaticCompoundShapeSettings :: struct {}
+MutableCompoundShapeSettings :: struct {}
+MeshShapeSettings :: struct {}
+HeightFieldShapeSettings :: struct {}
+RotatedTranslatedShapeSettings :: struct {}
+ScaledShapeSettings :: struct {}
+OffsetCenterOfMassShapeSettings :: struct {}
+EmptyShapeSettings :: struct {}
+Shape :: struct {}
+ConvexShape :: struct {}
+SphereShape :: struct {}
+BoxShape :: struct {}
+PlaneShape :: struct {}
+CapsuleShape :: struct {}
+CylinderShape :: struct {}
+TaperedCylinderShape :: struct {}
+TriangleShape :: struct {}
+TaperedCapsuleShape :: struct {}
+ConvexHullShape :: struct {}
+CompoundShape :: struct {}
+StaticCompoundShape :: struct {}
+MutableCompoundShape :: struct {}
+MeshShape :: struct {}
+HeightFieldShape :: struct {}
+DecoratedShape :: struct {}
+RotatedTranslatedShape :: struct {}
+ScaledShape :: struct {}
+OffsetCenterOfMassShape :: struct {}
+EmptyShape :: struct {}
+BodyCreationSettings :: struct {}
+SoftBodyCreationSettings :: struct {}
+BodyInterface :: struct {}
+BodyLockInterface :: struct {}
+BroadPhaseQuery :: struct {}
+NarrowPhaseQuery :: struct {}
+MotionProperties :: struct {}
+Body :: struct {}
+Constraint :: struct {}
+TwoBodyConstraint :: struct {}
+FixedConstraint :: struct {}
+DistanceConstraint :: struct {}
+PointConstraint :: struct {}
+HingeConstraint :: struct {}
+SliderConstraint :: struct {}
+ConeConstraint :: struct {}
+SwingTwistConstraint :: struct {}
+SixDOFConstraint :: struct {}
+GearConstraint :: struct {}
+ContactListener :: struct {}
+ContactManifold :: struct {}
+ContactSettings :: struct {}
+BodyActivationListener :: struct {}
+BodyDrawFilter :: struct {}
+SharedMutex :: struct {}
+DebugRenderer :: struct {}
+BodyLockMultiRead :: struct {}
+BodyLockMultiWrite :: struct {}
+CharacterBase :: struct {}
+Character :: struct {}
+CharacterContactListener :: struct {}
+CharacterVirtual :: struct {}
+CharacterVsCharacterCollision :: struct {}
 
-VehicleTransmissionSettings :: struct {
-}
-VehicleTransmission :: struct {
-}
+VehicleTransmissionSettings :: struct {}
+VehicleTransmission :: struct {}
 
 //-------------------------------------------------------------------------------------------------
 // Structures
