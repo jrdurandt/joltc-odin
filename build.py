@@ -23,6 +23,6 @@ SYSTEM = platform.system()
 if SYSTEM == "Linux":
     shutil.copyfile("joltc-zig/zig-out/lib/libjoltc.so", "libjoltc.so")
 elif SYSTEM == "Window":
-    shutil.copyfile("joltc-zig/zig-out/lib/libjoltc.dll", "joltc.dll")
+    shutil.copyfile("joltc-zig/zig-out/lib/joltc.dll", "joltc.dll")
 elif SYSTEM == "Darwin":
     shutil.copyfile("joltc-zig/zig-out/lib/libjoltc.dynlib", "libjoltc.dynlib")
