@@ -14,3 +14,9 @@ Trying to get static libraries build with zig to work with odin to make this a e
 
 ## Issues
 Only tested on Linux (Pop!_OS 22.04). Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
+
+## TODO
+Currenty, the bindings are hand generated (with some help from ChatGPT to do the tedious work from converting C functions to Odin format). I want this to be simpler with auto-generated bindings. 
+Ideas: 
+  - See [jolt](https://gitlab.com/raygarner13/jolt) that uses extensive Python scripts to generate bindings
+  - Use the generated Zig buldings to translate into Odin.
