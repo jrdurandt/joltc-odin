@@ -1,7 +1,9 @@
 package samples
 
 import "core:fmt"
+import "core:log"
 import "core:math/rand"
+import "core:mem"
 import "core:strings"
 
 import jlt ".."
@@ -14,6 +16,11 @@ OBJECT_LAYER_NUM :: 2
 BROAD_PHASE_LAYER_NON_MOVING: jlt.BroadPhaseLayer = 0
 BROAD_PHASE_LAYER_MOVING: jlt.BroadPhaseLayer = 1
 BROAD_PHASE_LAYER_NUM :: 2
+
+Ball :: struct {
+	body_id:  jlt.BodyID,
+	selected: bool,
+}
 
 @(private)
 build_wall :: proc(
@@ -174,10 +181,11 @@ main :: proc() {
 	wall_w := build_wall(body_interface, {0.5, 2.5, 25.0}, {25, 2.5, 0})
 	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, wall_w)
 
-	balls: [dynamic]jlt.BodyID
+	// balls: [dynamic]jlt.BodyID
+	balls: map[jlt.BodyID]Ball
 	defer {
-		for ball in balls {
-			jlt.BodyInterface_RemoveAndDestroyBody(body_interface, ball)
+		for _, v in balls {
+			jlt.BodyInterface_RemoveAndDestroyBody(body_interface, v.body_id)
 		}
 		delete(balls)
 	}
@@ -186,15 +194,15 @@ main :: proc() {
 
 	jlt.PhysicsSystem_OptimizeBroadPhase(physics_system)
 
+	removed_balls: [dynamic]jlt.BodyID
+	defer delete(removed_balls)
 	for !rl.WindowShouldClose() {
 		delta_time := rl.GetFrameTime()
 		jlt.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
 
-		if rl.IsMouseButtonDown(.LEFT) {
+		if rl.IsMouseButtonDown(.RIGHT) {
 			rl.UpdateCamera(&camera, .FREE)
-		}
-
-		if rl.IsMouseButtonPressed(.RIGHT) {
+		} else if rl.IsKeyPressed(.SPACE) {
 			is_spawning = !is_spawning
 		}
 
@@ -220,7 +228,9 @@ main :: proc() {
 				.Activate,
 			)
 
-			append(&balls, ball_id)
+			balls[ball_id] = Ball {
+				body_id = ball_id,
+			}
 		}
 
 		rl.BeginDrawing()
@@ -243,7 +253,9 @@ main :: proc() {
 			rl.DrawCubeWiresV({25, 2.5, 0}, {1, 5, 50}, rl.DARKBLUE)
 
 			//Draw balls
-			ball_loop: for ball_id, index in balls {
+			ball_loop: for key, ball in balls {
+				ball_id := ball.body_id
+
 				position: [3]f32
 				rotation: quaternion128
 
@@ -252,8 +264,7 @@ main :: proc() {
 
 				//Kill plane
 				if position.y <= -50 {
-					jlt.BodyInterface_RemoveAndDestroyBody(body_interface, ball_id)
-					unordered_remove(&balls, index)
+					append(&removed_balls, key)
 					continue ball_loop
 				}
 
@@ -265,14 +276,18 @@ main :: proc() {
 				rl.DrawModelWires(sphere, position, 1, rl.BLACK)
 			}
 
-
+			for ball_id in removed_balls {
+				jlt.BodyInterface_RemoveAndDestroyBody(body_interface, ball_id)
+				delete_key(&balls, ball_id)
+			}
+			clear(&removed_balls)
 		}
 		rl.EndMode3D()
 		rl.DrawFPS(0, 0)
 
 		rl.DrawText(
 			fmt.ctprintf(
-				"Press right mouse to %v spawning balls.\nBalls: %d",
+				"Hold RIGHT mouse button and use WASD for camera control.\nPress space to %v spawning balls.\nBalls: %d",
 				is_spawning ? "stop" : "start",
 				len(balls),
 			),
