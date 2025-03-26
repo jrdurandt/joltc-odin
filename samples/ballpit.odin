@@ -46,7 +46,12 @@ build_wall :: proc(
 }
 
 main :: proc() {
+	context.logger = log.create_console_logger(.Info)
+	defer log.destroy_console_logger(context.logger)
+
 	when ODIN_DEBUG {
+		context.logger.lowest_level = .Debug
+
 		track_alloc: mem.Tracking_Allocator
 		mem.tracking_allocator_init(&track_alloc, context.allocator)
 		defer mem.tracking_allocator_destroy(&track_alloc)
@@ -66,6 +71,7 @@ main :: proc() {
 			}
 		}
 	}
+	log.debug("Debug enabled")
 
 	SCREEN_WIDTH :: 800
 	SCREEN_HEIGHT :: 600
@@ -144,6 +150,8 @@ main :: proc() {
 
 	body_interface := jlt.PhysicsSystem_GetBodyInterface(physics_system)
 
+	narrow_phase_query := jlt.PhysicsSystem_GetNarrowPhaseQuery(physics_system)
+
 	//Setup static objects (floor and walls)
 	floor_id: jlt.BodyID
 	{
@@ -196,14 +204,38 @@ main :: proc() {
 
 	removed_balls: [dynamic]jlt.BodyID
 	defer delete(removed_balls)
+
+	ray: rl.Ray
 	for !rl.WindowShouldClose() {
 		delta_time := rl.GetFrameTime()
-		jlt.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
+		err := jlt.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
+		assert(err == .None)
 
 		if rl.IsMouseButtonDown(.RIGHT) {
 			rl.UpdateCamera(&camera, .FREE)
 		} else if rl.IsKeyPressed(.SPACE) {
 			is_spawning = !is_spawning
+		}
+
+		//Testing ray cast
+		if rl.IsMouseButtonPressed(.LEFT) {
+			ray = rl.GetScreenToWorldRay(rl.GetMousePosition(), camera)
+			direction := ray.direction * 100
+			result: jlt.RayCastResult
+			if (jlt.NarrowPhaseQuery_CastRay(
+					   narrow_phase_query,
+					   &ray.position,
+					   &direction,
+					   &result,
+					   nil,
+					   nil,
+					   nil,
+				   )) {
+				ball, found := &balls[result.bodyID]
+				if found {
+					ball.selected = !ball.selected
+				}
+			}
 		}
 
 		if is_spawning {
@@ -271,9 +303,10 @@ main :: proc() {
 				sphere.transform = rl.QuaternionToMatrix(rotation)
 
 				is_active := jlt.BodyInterface_IsActive(body_interface, ball_id)
+				is_selected := ball.selected
 
 				rl.DrawModel(sphere, position, 1, is_active ? rl.RED : rl.GRAY)
-				rl.DrawModelWires(sphere, position, 1, rl.BLACK)
+				rl.DrawModelWires(sphere, position, 1, is_selected ? rl.WHITE : rl.BLACK)
 			}
 
 			for ball_id in removed_balls {
@@ -287,7 +320,7 @@ main :: proc() {
 
 		rl.DrawText(
 			fmt.ctprintf(
-				"Hold RIGHT mouse button and use WASD for camera control.\nPress space to %v spawning balls.\nBalls: %d",
+				"Hold RIGHT mouse button and use WASD for camera control.\nLEFT click to select balls.\nPress space to %v spawning balls.\nBalls: %d",
 				is_spawning ? "stop" : "start",
 				len(balls),
 			),
