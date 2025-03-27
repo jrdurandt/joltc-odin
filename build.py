@@ -10,7 +10,7 @@ def execute(cmd):
 
 print("Update git submodules")
 execute("git submodule init")
-execute("git submodule update")
+execute("git submodule update --remote")
 
 print("Build joltc-zig on native target")
 root = os.getcwd()
