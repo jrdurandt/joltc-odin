@@ -1,0 +1,39 @@
+version: 0
+platforms:
+  - Linux x86_64
+  - Windows x86_64
+  - Macos x86_64
+from:
+  language: c
+  headers: joltc-zig/zig-out/include/joltc.h
+  shared.linux: joltc-zig/zig-out/lib/linux/libjoltc.so
+  shared.windows: joltc-zig/zig-out/lib/windows/joltc.lib
+  shared.macos.x86_64: joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib
+  ignore:
+    constants:
+      - JOLT_C_H_
+      - _JPH_EXTERN
+      - JPH_CAPI
+  overwrite:
+    types:
+      JPH_Vec3: "#Float32 #Attr Arr 3 #AttrEnd"
+      JPH_Vec4: "#Float32 #Attr Arr 4 #AttrEnd"
+      JPH_Quat: "#Extern quaternion128"
+      JPH_Matrix4x4: "#Float32 #Attr Arr 4 Arr 4 #AttrEnd"
+    constants:
+      JPH_DEFAULT_COLLISION_TOLERANCE: "0.0001 #Untyped"
+      JPH_DEFAULT_PENETRATION_TOLERANCE: "0.0001 #Untyped"
+      JPH_DEFAULT_CONVEX_RADIUS: "0.05 #Untyped"
+      JPH_CAPSULE_PROJECTION_SLOP: "0.02 #Untyped"
+      JPH_MAX_PHYSICS_JOBS: "2048 #Untyped"
+      JPH_MAX_PHYSICS_BARRIERS: "2048 #Untyped"
+to:
+  language: odin
+  package: jolt
+  out: jolt.odin
+  trim_prefix:
+    functions: JPH_
+    types: JPH_
+    constants: JPH_
+  no_build_tag: yes
+  use_when_else: yes

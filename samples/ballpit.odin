@@ -31,18 +31,22 @@ build_wall :: proc(
 	size := size
 	position := position
 
-	wall_shape := jlt.BoxShape_Create(&size)
+	wall_shape := jlt.BoxShape_Create(&size, jlt.DEFAULT_CONVEX_RADIUS)
 
 	floor_settings := jlt.BodyCreationSettings_Create3(
 		cast(^jlt.Shape)wall_shape,
 		&position,
 		nil,
-		.Static,
+		.MotionType_Static,
 		OBJECT_LAYER_NON_MOVING,
 	)
 	defer jlt.BodyCreationSettings_Destroy(floor_settings)
 
-	return jlt.BodyInterface_CreateAndAddBody(body_interface, floor_settings, .DontActivate)
+	return jlt.BodyInterface_CreateAndAddBody(
+		body_interface,
+		floor_settings,
+		.Activation_DontActivate,
+	)
 }
 
 main :: proc() {
@@ -97,7 +101,7 @@ main :: proc() {
 	//Setup physics
 	ok := jlt.Init()
 	defer jlt.Shutdown()
-	assert(ok, "Failed to init JoltPhysics")
+	assert(ok == true, "Failed to init JoltPhysics")
 
 	job_system := jlt.JobSystemThreadPool_Create(nil)
 	defer jlt.JobSystem_Destroy(job_system)
@@ -155,13 +159,13 @@ main :: proc() {
 	//Setup static objects (floor and walls)
 	floor_id: jlt.BodyID
 	{
-		floor_shape := jlt.BoxShape_Create(&{25, 0.5, 25})
+		floor_shape := jlt.BoxShape_Create(&{25, 0.5, 25}, jlt.DEFAULT_CONVEX_RADIUS)
 
 		floor_settings := jlt.BodyCreationSettings_Create3(
 			cast(^jlt.Shape)floor_shape,
 			&{0, 0, 0},
 			nil,
-			.Static,
+			.MotionType_Static,
 			OBJECT_LAYER_NON_MOVING,
 		)
 		defer jlt.BodyCreationSettings_Destroy(floor_settings)
@@ -172,7 +176,7 @@ main :: proc() {
 		floor_id = jlt.BodyInterface_CreateAndAddBody(
 			body_interface,
 			floor_settings,
-			.DontActivate,
+			.Activation_DontActivate,
 		)
 	}
 	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
@@ -209,7 +213,7 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		delta_time := rl.GetFrameTime()
 		err := jlt.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
-		assert(err == .None)
+		assert(err == .PhysicsUpdateError_None)
 
 		if rl.IsMouseButtonDown(.RIGHT) {
 			rl.UpdateCamera(&camera, .FREE)
@@ -249,7 +253,7 @@ main :: proc() {
 				cast(^jlt.Shape)sphere_shape,
 				&ball_pos,
 				nil,
-				.Dynamic,
+				.MotionType_Dynamic,
 				OBJECT_LAYER_MOVING,
 			)
 			defer jlt.BodyCreationSettings_Destroy(sphere_settings)
@@ -257,7 +261,7 @@ main :: proc() {
 			ball_id := jlt.BodyInterface_CreateAndAddBody(
 				body_interface,
 				sphere_settings,
-				.Activate,
+				.Activation_Activate,
 			)
 
 			balls[ball_id] = Ball {

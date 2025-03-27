@@ -1,22 +1,41 @@
 # jolt-odin
 
+> !WIP: Many breaking changes may be expected! I am constantly learning about Odin, Zig (used for building) and JoltPhysics and trying to improve best I can. Hope these bindings will be useful to others.
+
 [Odin](https://odin-lang.org/:) binding for [Jolt Physics](https://github.com/jrouwe/JoltPhysics) using [JoltC](https://github.com/amerkoleci/joltc)
 
-joltc build with zig
+Build with zig
 
-## Samples
-`odin run samples ballpit.odin`
+Binding generated with [runic](https://github.com/Samudevv/runic)
 
 ## Usage
-After building, copy the shared library from `joltc-zig/zig-out/lib` (`libjoltc.so` linux/macos, `joltc.dll`) to the root path of your project (next the the executable).
+Requires:
+- git
+- python
+- zig (0.14.0)
+- odin (duh 🙃)
 
-Trying to get static libraries build with zig to work with odin to make this a easier process...
+`python build.py` Will download git dependencies, run zig build to build for your current platform and copy the resultant shared lib to the root this application.
+
+To use within your game, make sure it points to `jolt.odin` and the shared library is linked to your executable (put it in the same directory as your exe to make it simple). You might need to adjust the paths in `jolt-odin` to the shared library.
+
+## Test
+Run tests with: `odin test .`
+
+## Sample
+Run sample with `odin run samples -debug`
+
+Samples is a simple application using raylib to render.
+- Hold down left mouse button and use WASD to control the camera.
+- Press space to toggle spawning balls.
+- Left click on a ball to select/unselect it (demostrates raycasting)
+
+This is a bit of a stress test as doing dynamic collisions of thousands of object is difficult. I get to around 3000+ balls before the pit overflows with a stable 60fps.
 
 ## Issues
-Only tested on Linux (Pop!_OS 22.04). Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
+Only tested on Linux (Pop!_OS 22.04).
+Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
+Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too 😉
 
-## TODO
-Currenty, the bindings are hand generated (with some help from ChatGPT to do the tedious work from converting C functions to Odin format). I want this to be simpler with auto-generated bindings. 
-Ideas: 
-  - See [jolt](https://gitlab.com/raygarner13/jolt) that uses extensive Python scripts to generate bindings
-  - Use the generated Zig buldings to translate into Odin.
+## Manual bindings
+For the old manual bindings, please see branch `backups/manual-bind`
