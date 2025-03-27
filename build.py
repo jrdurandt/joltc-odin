@@ -27,6 +27,6 @@ elif SYSTEM == "Window":
 elif SYSTEM == "Darwin":
     ARCH = platform.architecture()
     if ARCH == "x86_64":
-        shutil.copyfile("joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dynlib", "libjoltc.dynlib")
+        shutil.copyfile("joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib", "libjoltc.dynlib")
     elif ARCH == "aarch64":
-        shutil.copyfile("joltc-zig/zig-out/lib/macos_aarch64/libjoltc.dynlib", "libjoltc.dynlib")
+        shutil.copyfile("joltc-zig/zig-out/lib/macos_aarch64/libjoltc.dylib", "libjoltc.dynlib")

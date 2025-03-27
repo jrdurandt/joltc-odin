@@ -1,547 +1,210 @@
 package jolt
 
-import c "core:c"
-
-import "base:runtime"
-import "core:fmt"
-import "core:testing"
-
-
-when ODIN_OS == .Linux {
-	foreign import lib {"libjoltc.so", "system:stdc++", "system:pthread"}
-} else when ODIN_OS == .Windows {
-	foreign import lib {"joltc.dll", "system:stdc++", "system:pthread"}
-} else when ODIN_OS == .Darwin {
-	foreign import lib {"libjoltc.dynlib", "system:stdc++", "system:pthread"}
-}
-
-//-------------------------------------------------------------------------------------------------
-// Constants
-//-------------------------------------------------------------------------------------------------
-DEFAULT_COLLISION_TOLERANCE :: 1.0e-4
-DEFAULT_PENETRATION_TOLERANCE :: 1.0e-4
-DEFAULT_CONVEX_RADIUS :: 0.05
-CAPSULE_PROJECTION_SLOP :: 0.02
+DEFAULT_COLLISION_TOLERANCE :: 0.0001000000000000
+DEFAULT_PENETRATION_TOLERANCE :: 0.0001000000000000
+DEFAULT_CONVEX_RADIUS :: 0.0500000000000000
+CAPSULE_PROJECTION_SLOP :: 0.0200000000000000
 MAX_PHYSICS_JOBS :: 2048
 MAX_PHYSICS_BARRIERS :: 2048
 
-BodyID :: c.uint32_t
-SubShapeID :: c.uint32_t
-ObjectLayer :: c.uint16_t
-BroadPhaseLayer :: c.uint8_t
-CharacterID :: c.uint32_t
-
-//-------------------------------------------------------------------------------------------------
-// Types
-//-------------------------------------------------------------------------------------------------
-Vec3 :: [3]c.float
-Vec4 :: [4]c.float
+BodyID :: u32
+SubShapeID :: u32
+ObjectLayer :: u16
+BroadPhaseLayer :: u8
+CollisionGroupID :: u32
+CollisionSubGroupID :: u32
+CharacterID :: u32
+Vec3 :: [3]f32
+Vec4 :: [4]f32
 Quat :: quaternion128
-Matrix4x4 :: matrix[4, 4]c.float
-
-USE_DOUBLE_PRECISION :: #config(USE_DOUBLE_PRECISION, false)
-
-when USE_DOUBLE_PRECISION {
-	RVec3 :: [3]c.double
-	RMatrix4x4 :: matrix[4, 4]c.double
-} else {
-	RVec3 :: Vec3
-	RMatrix4x4 :: Matrix4x4
-}
-
-Color :: c.uint32_t
-
-//-------------------------------------------------------------------------------------------------
-// Enums
-//-------------------------------------------------------------------------------------------------
-PhysicsUpdateError :: enum (c.uint32_t) {
-	None                   = 0,
-	ManifoldCacheFull      = 1 << 0,
-	BodyPairCacheFull      = 1 << 1,
-	ContactConstraintsFull = 1 << 2,
-}
-
-BodyType :: enum (c.uint32_t) {
-	Rigid = 0,
-	Soft  = 1,
-}
-
-MotionType :: enum (c.uint32_t) {
-	Static    = 0,
-	Kinematic = 1,
-	Dynamic   = 2,
-}
-
-Activation :: enum (c.uint32_t) {
-	Activate     = 0,
-	DontActivate = 1,
-}
-
-ValidateResult :: enum (c.uint32_t) {
-	AcceptAllContactsForThisBodyPair = 0,
-	AcceptContact                    = 1,
-	RejectContact                    = 2,
-	RejectAllContactsForThisBodyPair = 3,
-}
-
-ShapeType :: enum (c.uint32_t) {
-	Convex      = 0,
-	Compound    = 1,
-	Decorated   = 2,
-	Mesh        = 3,
-	HeightField = 4,
-	SoftBody    = 5,
-	User1       = 6,
-	User2       = 7,
-	User3       = 8,
-	User4       = 9,
-}
-
-ShapeSubType :: enum (c.uint32_t) {
-	Sphere             = 0,
-	Box                = 1,
-	Triangle           = 2,
-	Capsule            = 3,
-	TaperedCapsule     = 4,
-	Cylinder           = 5,
-	ConvexHull         = 6,
-	StaticCompound     = 7,
-	MutableCompound    = 8,
-	RotatedTranslated  = 9,
-	Scaled             = 10,
-	OffsetCenterOfMass = 11,
-	Mesh               = 12,
-	HeightField        = 13,
-	SoftBody           = 14,
-}
-
-ConstraintType :: enum (c.uint32_t) {
-	Constraint        = 0,
-	TwoBodyConstraint = 1,
-}
-
-ConstraintSubType :: enum (c.uint32_t) {
-	Fixed         = 0,
-	Point         = 1,
-	Hinge         = 2,
-	Slider        = 3,
-	Distance      = 4,
-	Cone          = 5,
-	SwingTwist    = 6,
-	SixDOF        = 7,
-	Path          = 8,
-	Vehicle       = 9,
-	RackAndPinion = 10,
-	Gear          = 11,
-	Pulley        = 12,
-	User1         = 13,
-	User2         = 14,
-	User3         = 15,
-	User4         = 16,
-}
-
-ConstraintSpace :: enum (c.uint32_t) {
-	LocalToBodyCOM = 0,
-	WorldSpace     = 1,
-}
-
-MotionQuality :: enum (c.uint32_t) {
-	Discrete   = 0,
-	LinearCast = 1,
-}
-
-OverrideMassProperties :: enum (c.uint32_t) {
-	CalculateMassAndInertia = 0,
-	CalculateInertia        = 1,
-	MassAndInertiaProvided  = 2,
-}
-
-AllowedDOFs :: enum (c.uint32_t) {
-	All          = 0b111111,
-	TranslationX = 0b000001,
-	TranslationY = 0b000010,
-	TranslationZ = 0b000100,
-	RotationX    = 0b001000,
-	RotationY    = 0b010000,
-	RotationZ    = 0b100000,
-	Plane2D      = TranslationX | TranslationY | RotationZ,
-}
-
-GroundState :: enum (c.uint32_t) {
-	OnGround      = 0,
-	OnSteepGround = 1,
-	NotSupported  = 2,
-	InAir         = 3,
-}
-
-BackFaceMode :: enum (c.uint32_t) {
-	IgnoreBackFaces      = 0,
-	CollideWithBackFaces = 1,
-}
-
-ActiveEdgeMode :: enum (c.uint32_t) {
-	CollideOnlyWithActive = 0,
-	CollideWithAll        = 1,
-}
-
-CollectFacesMode :: enum (c.uint32_t) {
-	CollectFaces = 0,
-	NoFaces      = 1,
-}
-
-MotorState :: enum (c.uint32_t) {
-	Off      = 0,
-	Velocity = 1,
-	Position = 2,
-}
-
-CollisionCollectorType :: enum (c.uint32_t) {
-	AllHit       = 0,
-	AllHitSorted = 1,
-	ClosestHit   = 2,
-	AnyHit       = 3,
-}
-
-SwingType :: enum (c.uint32_t) {
-	Cone    = 0,
-	Pyramid = 1,
-}
-
-SixDOFConstraintAxis :: enum (c.uint32_t) {
-	TranslationX,
-	TranslationY,
-	TranslationZ,
-	RotationX,
-	RotationY,
-	RotationZ,
-}
-SIX_DOF_CONSTRAINT_AXIS_NUM :: 6
-SIX_DOF_CONSTRAINT_AXIS_NUM_TRANSLATION :: 3
-
-SpringMode :: enum (c.uint32_t) {
-	FrequencyAndDamping = 0,
-	StiffnessAndDamping = 1,
-}
-
-SoftBodyConstraintColor :: enum (c.uint32_t) {
-	ConstraintType  = 0,
-	ConstraintGroup = 1,
-	ConstraintOrder = 2,
-}
-
-BodyManagerShapeColor :: enum (c.uint32_t) {
-	InstanceColor   = 0,
-	ShapeTypeColor  = 1,
-	MotionTypeColor = 2,
-	SleepColor      = 3,
-	IslandColor     = 4,
-	MaterialColor   = 5,
-}
-
-DebugRendererCastShadow :: enum (c.uint32_t) {
-	On  = 0,
-	Off = 1,
-}
-
-DebugRendererDrawMode :: enum (c.uint32_t) {
-	Solid     = 0,
-	Wireframe = 1,
-}
-
-TransmissionMode :: enum (c.uint8_t) {
-	Auto,
-	Manual,
-}
-
-//-------------------------------------------------------------------------------------------------
-// Functions
-//-------------------------------------------------------------------------------------------------
-CastRayResultCallback :: #type proc "c" (ctx: rawptr, result: ^RayCastResult)
-RayCastBodyResultCallback :: #type proc "c" (ctx: rawptr, result: ^BroadPhaseCastResult)
-CollideShapeBodyResultCallback :: #type proc "c" (ctx: rawptr, result: BodyID)
-CollidePointResultCallback :: #type proc "c" (ctx: rawptr, result: ^CollidePointResult)
-CollideShapeResultCallback :: #type proc "c" (ctx: rawptr, result: ^CollideShapeResult)
-CastShapeResultCallback :: #type proc "c" (ctx: rawptr, result: ^ShapeCastResult)
-
-CastRayCollectorCallback :: #type proc(ctx: rawptr, result: ^RayCastResult) -> c.float
-RayCastBodyCollectorCallback :: #type proc(ctx: rawptr, result: ^BroadPhaseCastResult) -> c.float
-CollideShapeBodyCollectorCallback :: #type proc(ctx: rawptr, result: BodyID) -> c.float
-CollidePointCollectorCallback :: #type proc(ctx: rawptr, result: ^CollidePointResult) -> c.float
-CollideShapeCollectorCallback :: #type proc(ctx: rawptr, result: ^CollideShapeResult) -> c.float
-CastShapeCollectorCallback :: #type proc(ctx: rawptr, result: ^ShapeCastResult) -> c.float
-
-TraceFunc :: #type proc "c" (mssage: cstring)
-AssertFailureFunc :: #type proc "c" (
-	expression: cstring,
-	mssage: cstring,
-	file: cstring,
-	line: c.uint32_t,
-) -> c.bool
-
-JobFunction :: #type proc "c" (arg: rawptr)
-QueueJobCallback :: #type proc "c" (ctx: rawptr, job: JobFunction, arg: rawptr)
-QueueJobsCallback :: #type proc "c" (
-	ctx: rawptr,
-	job: JobFunction,
-	args: [^]rawptr,
-	count: c.uint32_t,
-)
-
-//-------------------------------------------------------------------------------------------------
-// Opaque types
-//-------------------------------------------------------------------------------------------------
-JobSystem :: struct {}
-
-BroadPhaseLayerInterface :: struct {}
-ObjectVsBroadPhaseLayerFilter :: struct {}
-ObjectLayerPairFilter :: struct {}
-BroadPhaseLayerFilter :: struct {}
-ObjectLayerFilter :: struct {}
-PhysicsSystem :: struct {}
-BodyFilter :: struct {}
-ShapeFilter :: struct {}
-PhysicsMaterial :: struct {}
-ShapeSettings :: struct {}
-ConvexShapeSettings :: struct {}
-SphereShapeSettings :: struct {}
-BoxShapeSettings :: struct {}
-PlaneShapeSettings :: struct {}
-TriangleShapeSettings :: struct {}
-CapsuleShapeSettings :: struct {}
-TaperedCapsuleShapeSettings :: struct {}
-CylinderShapeSettings :: struct {}
-TaperedCylinderShapeSettings :: struct {}
-ConvexHullShapeSettings :: struct {}
-CompoundShapeSettings :: struct {}
-StaticCompoundShapeSettings :: struct {}
-MutableCompoundShapeSettings :: struct {}
-MeshShapeSettings :: struct {}
-HeightFieldShapeSettings :: struct {}
-RotatedTranslatedShapeSettings :: struct {}
-ScaledShapeSettings :: struct {}
-OffsetCenterOfMassShapeSettings :: struct {}
-EmptyShapeSettings :: struct {}
-Shape :: struct {}
-ConvexShape :: struct {}
-SphereShape :: struct {}
-BoxShape :: struct {}
-PlaneShape :: struct {}
-CapsuleShape :: struct {}
-CylinderShape :: struct {}
-TaperedCylinderShape :: struct {}
-TriangleShape :: struct {}
-TaperedCapsuleShape :: struct {}
-ConvexHullShape :: struct {}
-CompoundShape :: struct {}
-StaticCompoundShape :: struct {}
-MutableCompoundShape :: struct {}
-MeshShape :: struct {}
-HeightFieldShape :: struct {}
-DecoratedShape :: struct {}
-RotatedTranslatedShape :: struct {}
-ScaledShape :: struct {}
-OffsetCenterOfMassShape :: struct {}
-EmptyShape :: struct {}
-BodyCreationSettings :: struct {}
-SoftBodyCreationSettings :: struct {}
-BodyInterface :: struct {}
-BodyLockInterface :: struct {}
-BroadPhaseQuery :: struct {}
-NarrowPhaseQuery :: struct {}
-MotionProperties :: struct {}
-Body :: struct {}
-Constraint :: struct {}
-TwoBodyConstraint :: struct {}
-FixedConstraint :: struct {}
-DistanceConstraint :: struct {}
-PointConstraint :: struct {}
-HingeConstraint :: struct {}
-SliderConstraint :: struct {}
-ConeConstraint :: struct {}
-SwingTwistConstraint :: struct {}
-SixDOFConstraint :: struct {}
-GearConstraint :: struct {}
-ContactListener :: struct {}
-ContactManifold :: struct {}
-ContactSettings :: struct {}
-BodyActivationListener :: struct {}
-BodyDrawFilter :: struct {}
-SharedMutex :: struct {}
-DebugRenderer :: struct {}
-BodyLockMultiRead :: struct {}
-BodyLockMultiWrite :: struct {}
-CharacterBase :: struct {}
-Character :: struct {}
-CharacterContactListener :: struct {}
-CharacterVirtual :: struct {}
-CharacterVsCharacterCollision :: struct {}
-
-VehicleTransmissionSettings :: struct {}
-VehicleTransmission :: struct {}
-
-//-------------------------------------------------------------------------------------------------
-// Structures
-//-------------------------------------------------------------------------------------------------
 Plane :: struct {
 	normal:   Vec3,
-	distance: c.float,
+	distance: f32,
 }
-
+Matrix4x4 :: [4][4]f32
+RVec3 :: Vec3
+RMatrix4x4 :: Matrix4x4
+Color :: u32
 AABox :: struct {
 	min: Vec3,
 	max: Vec3,
 }
-
 Triangle :: struct {
 	v1:            Vec3,
 	v2:            Vec3,
 	v3:            Vec3,
-	materialIndex: c.uint32_t,
+	materialIndex: u32,
 }
-
 IndexedTriangleNoMaterial :: struct {
-	i1: c.uint32_t,
-	i2: c.uint32_t,
-	i3: c.uint32_t,
+	i1: u32,
+	i2: u32,
+	i3: u32,
 }
-
 IndexedTriangle :: struct {
-	i1:            c.uint32_t,
-	i2:            c.uint32_t,
-	i3:            c.uint32_t,
-	materialIndex: c.uint32_t,
-	userData:      c.uint32_t,
+	i1:            u32,
+	i2:            u32,
+	i3:            u32,
+	materialIndex: u32,
+	userData:      u32,
 }
-
 MassProperties :: struct {
-	mass:    c.float,
+	mass:    f32,
 	inertia: Matrix4x4,
 }
-
 CollideSettingsBase :: struct {
 	activeEdgeMode:              ActiveEdgeMode,
 	collectFacesMode:            CollectFacesMode,
-	collisionTolerance:          c.float,
-	penetrationTolerance:        c.float,
+	collisionTolerance:          f32,
+	penetrationTolerance:        f32,
 	activeEdgeMovementDirection: Vec3,
 }
-
 CollideShapeSettings :: struct {
 	base:                  CollideSettingsBase,
-	maxSeparationDistance: c.float,
+	maxSeparationDistance: f32,
 	backFaceMode:          BackFaceMode,
 }
-
 ShapeCastSettings :: struct {
 	base:                            CollideSettingsBase,
 	backFaceModeTriangles:           BackFaceMode,
 	backFaceModeConvex:              BackFaceMode,
-	useShrunkenShapeAndConvexRadius: c.bool,
-	returnDeepestPoint:              c.bool,
+	useShrunkenShapeAndConvexRadius: b8,
+	returnDeepestPoint:              b8,
 }
-
 RayCastSettings :: struct {
 	backFaceModeTriangles: BackFaceMode,
 	backFaceModeConvex:    BackFaceMode,
-	treatConvexAsSolid:    c.bool,
+	treatConvexAsSolid:    b8,
 }
-
 SpringSettings :: struct {
 	mode:                 SpringMode,
-	frequencyOrStiffness: c.float,
-	damping:              c.float,
+	frequencyOrStiffness: f32,
+	damping:              f32,
 }
-
 MotorSettings :: struct {
 	springSettings: SpringSettings,
-	minForceLimit:  c.float,
-	maxForceLimit:  c.float,
-	minTorqueLimit: c.float,
-	maxTorqueLimit: c.float,
+	minForceLimit:  f32,
+	maxForceLimit:  f32,
+	minTorqueLimit: f32,
+	maxTorqueLimit: f32,
 }
-
 SubShapeIDPair :: struct {
 	Body1ID:     BodyID,
 	subShapeID1: SubShapeID,
 	Body2ID:     BodyID,
 	subShapeID2: SubShapeID,
 }
-
 BroadPhaseCastResult :: struct {
 	bodyID:   BodyID,
-	fraction: c.float,
+	fraction: f32,
 }
-
 RayCastResult :: struct {
 	bodyID:      BodyID,
-	fraction:    c.float,
+	fraction:    f32,
 	subShapeID2: SubShapeID,
 }
-
 CollidePointResult :: struct {
 	bodyID:      BodyID,
 	subShapeID2: SubShapeID,
 }
-
 CollideShapeResult :: struct {
 	contactPointOn1:  Vec3,
 	contactPointOn2:  Vec3,
 	penetrationAxis:  Vec3,
-	penetrationDepth: c.float,
+	penetrationDepth: f32,
 	subShapeID1:      SubShapeID,
 	subShapeID2:      SubShapeID,
 	bodyID2:          BodyID,
+	shape1FaceCount:  u32,
+	shape1Faces:      [^]Vec3,
+	shape2FaceCount:  u32,
+	shape2Faces:      [^]Vec3,
 }
-
 ShapeCastResult :: struct {
 	contactPointOn1:  Vec3,
 	contactPointOn2:  Vec3,
 	penetrationAxis:  Vec3,
-	penetrationDepth: c.float,
+	penetrationDepth: f32,
 	subShapeID1:      SubShapeID,
 	subShapeID2:      SubShapeID,
 	bodyID2:          BodyID,
-	fraction:         c.float,
-	isBackFaceHit:    c.bool,
+	fraction:         f32,
+	isBackFaceHit:    b8,
 }
-
 DrawSettings :: struct {
-	drawGetSupportFunction:        c.bool,
-	drawSupportDirection:          c.bool,
-	drawGetSupportingFace:         c.bool,
-	drawShape:                     c.bool,
-	drawShapeWireframe:            c.bool,
-	drawShapeColor:                BodyManagerShapeColor,
-	drawBoundingBox:               c.bool,
-	drawCenterOfMassTransform:     c.bool,
-	drawWorldTransform:            c.bool,
-	drawVelocity:                  c.bool,
-	drawMassAndInertia:            c.bool,
-	drawSleepStats:                c.bool,
-	drawSoftBodyVertices:          c.bool,
-	drawSoftBodyVertexVelocities:  c.bool,
-	drawSoftBodyEdgeConstraints:   c.bool,
-	drawSoftBodyBendConstraints:   c.bool,
-	drawSoftBodyVolumeConstraints: c.bool,
-	drawSoftBodySkinConstraints:   c.bool,
-	drawSoftBodyLRAConstraints:    c.bool,
-	drawSoftBodyPredictedBounds:   c.bool,
+	drawGetSupportFunction:        b8,
+	drawSupportDirection:          b8,
+	drawGetSupportingFace:         b8,
+	drawShape:                     b8,
+	drawShapeWireframe:            b8,
+	drawShapeColor:                BodyManager_ShapeColor,
+	drawBoundingBox:               b8,
+	drawCenterOfMassTransform:     b8,
+	drawWorldTransform:            b8,
+	drawVelocity:                  b8,
+	drawMassAndInertia:            b8,
+	drawSleepStats:                b8,
+	drawSoftBodyVertices:          b8,
+	drawSoftBodyVertexVelocities:  b8,
+	drawSoftBodyEdgeConstraints:   b8,
+	drawSoftBodyBendConstraints:   b8,
+	drawSoftBodyVolumeConstraints: b8,
+	drawSoftBodySkinConstraints:   b8,
+	drawSoftBodyLRAConstraints:    b8,
+	drawSoftBodyPredictedBounds:   b8,
 	drawSoftBodyConstraintColor:   SoftBodyConstraintColor,
 }
-
-ConstraintSettings :: struct {
-	enabled:                  c.bool,
-	constraintPriority:       c.uint32_t,
-	numVelocityStepsOverride: c.uint32_t,
-	numPositionStepsOverride: c.uint32_t,
-	drawConstraintSize:       c.float,
-	userData:                 c.uint64_t,
+SupportingFace :: struct {
+	count:    u32,
+	vertices: [32]Vec3,
 }
-
+CastRayResultCallback :: #type proc "c" (context_p: rawptr, result: ^RayCastResult)
+RayCastBodyResultCallback :: #type proc "c" (context_p: rawptr, result: ^BroadPhaseCastResult)
+CollideShapeBodyResultCallback :: #type proc "c" (context_p: rawptr, result: BodyID)
+CollidePointResultCallback :: #type proc "c" (context_p: rawptr, result: ^CollidePointResult)
+CollideShapeResultCallback :: #type proc "c" (context_p: rawptr, result: ^CollideShapeResult)
+CastShapeResultCallback :: #type proc "c" (context_p: rawptr, result: ^ShapeCastResult)
+CastRayCollectorCallback :: #type proc "c" (context_p: rawptr, result: ^RayCastResult) -> f32
+RayCastBodyCollectorCallback :: #type proc "c" (
+	context_p: rawptr,
+	result: ^BroadPhaseCastResult,
+) -> f32
+CollideShapeBodyCollectorCallback :: #type proc "c" (context_p: rawptr, result: BodyID) -> f32
+CollidePointCollectorCallback :: #type proc "c" (
+	context_p: rawptr,
+	result: ^CollidePointResult,
+) -> f32
+CollideShapeCollectorCallback :: #type proc "c" (
+	context_p: rawptr,
+	result: ^CollideShapeResult,
+) -> f32
+CastShapeCollectorCallback :: #type proc "c" (context_p: rawptr, result: ^ShapeCastResult) -> f32
+CollisionEstimationResultImpulse :: struct {
+	contactImpulse:   f32,
+	frictionImpulse1: f32,
+	frictionImpulse2: f32,
+}
+CollisionEstimationResult :: struct {
+	linearVelocity1:  Vec3,
+	angularVelocity1: Vec3,
+	linearVelocity2:  Vec3,
+	angularVelocity2: Vec3,
+	tangent1:         Vec3,
+	tangent2:         Vec3,
+	impulseCount:     u32,
+	impulses:         [^]CollisionEstimationResultImpulse,
+}
+ConstraintSettings :: struct {
+	enabled:                  b8,
+	constraintPriority:       u32,
+	numVelocityStepsOverride: u32,
+	numPositionStepsOverride: u32,
+	drawConstraintSize:       f32,
+	userData:                 u64,
+}
 FixedConstraintSettings :: struct {
 	base:            ConstraintSettings,
 	space:           ConstraintSpace,
-	autoDetectPoint: c.bool,
+	autoDetectPoint: b8,
 	point1:          RVec3,
 	axisX1:          Vec3,
 	axisY1:          Vec3,
@@ -549,24 +212,21 @@ FixedConstraintSettings :: struct {
 	axisX2:          Vec3,
 	axisY2:          Vec3,
 }
-
 DistanceConstraintSettings :: struct {
 	base:                 ConstraintSettings,
 	space:                ConstraintSpace,
 	point1:               RVec3,
 	point2:               RVec3,
-	minDistance:          c.float,
-	maxDistance:          c.float,
+	minDistance:          f32,
+	maxDistance:          f32,
 	limitsSpringSettings: SpringSettings,
 }
-
 PointConstraintSettings :: struct {
 	base:   ConstraintSettings,
 	space:  ConstraintSpace,
 	point1: RVec3,
 	point2: RVec3,
 }
-
 HingeConstraintSettings :: struct {
 	base:                 ConstraintSettings,
 	space:                ConstraintSpace,
@@ -576,30 +236,28 @@ HingeConstraintSettings :: struct {
 	point2:               RVec3,
 	hingeAxis2:           Vec3,
 	normalAxis2:          Vec3,
-	limitsMin:            c.float,
-	limitsMax:            c.float,
+	limitsMin:            f32,
+	limitsMax:            f32,
 	limitsSpringSettings: SpringSettings,
-	maxFrictionTorque:    c.float,
+	maxFrictionTorque:    f32,
 	motorSettings:        MotorSettings,
 }
-
 SliderConstraintSettings :: struct {
 	base:                 ConstraintSettings,
 	space:                ConstraintSpace,
-	autoDetectPoint:      c.bool,
+	autoDetectPoint:      b8,
 	point1:               RVec3,
 	sliderAxis1:          Vec3,
 	normalAxis1:          Vec3,
 	point2:               RVec3,
 	sliderAxis2:          Vec3,
 	normalAxis2:          Vec3,
-	limitsMin:            c.float,
-	limitsMax:            c.float,
+	limitsMin:            f32,
+	limitsMax:            f32,
 	limitsSpringSettings: SpringSettings,
-	maxFrictionForce:     c.float,
+	maxFrictionForce:     f32,
 	motorSettings:        MotorSettings,
 }
-
 ConeConstraintSettings :: struct {
 	base:          ConstraintSettings,
 	space:         ConstraintSpace,
@@ -607,9 +265,8 @@ ConeConstraintSettings :: struct {
 	twistAxis1:    Vec3,
 	point2:        RVec3,
 	twistAxis2:    Vec3,
-	halfConeAngle: c.float,
+	halfConeAngle: f32,
 }
-
 SwingTwistConstraintSettings :: struct {
 	base:                ConstraintSettings,
 	space:               ConstraintSpace,
@@ -620,15 +277,14 @@ SwingTwistConstraintSettings :: struct {
 	twistAxis2:          Vec3,
 	planeAxis2:          Vec3,
 	swingType:           SwingType,
-	normalHalfConeAngle: c.float,
-	planeHalfConeAngle:  c.float,
-	twistMinAngle:       c.float,
-	twistMaxAngle:       c.float,
-	maxFrictionTorque:   c.float,
+	normalHalfConeAngle: f32,
+	planeHalfConeAngle:  f32,
+	twistMinAngle:       f32,
+	twistMaxAngle:       f32,
+	maxFrictionTorque:   f32,
 	swingMotorSettings:  MotorSettings,
 	twistMotorSettings:  MotorSettings,
 }
-
 SixDOFConstraintSettings :: struct {
 	base:                 ConstraintSettings,
 	space:                ConstraintSpace,
@@ -638,1595 +294,3492 @@ SixDOFConstraintSettings :: struct {
 	position2:            RVec3,
 	axisX2:               Vec3,
 	axisY2:               Vec3,
-	maxFriction:          [SIX_DOF_CONSTRAINT_AXIS_NUM]c.float,
+	maxFriction:          [6]f32,
 	swingType:            SwingType,
-	limitMin:             [SIX_DOF_CONSTRAINT_AXIS_NUM]c.float,
-	limitMax:             [SIX_DOF_CONSTRAINT_AXIS_NUM]c.float,
-	limitsSpringSettings: [SIX_DOF_CONSTRAINT_AXIS_NUM_TRANSLATION]SpringSettings,
-	motorSettings:        [SIX_DOF_CONSTRAINT_AXIS_NUM]MotorSettings,
+	limitMin:             [6]f32,
+	limitMax:             [6]f32,
+	limitsSpringSettings: [3]SpringSettings,
+	motorSettings:        [6]MotorSettings,
 }
-
 GearConstraintSettings :: struct {
 	base:       ConstraintSettings,
 	space:      ConstraintSpace,
 	hingeAxis1: Vec3,
 	hingeAxis2: Vec3,
-	ratio:      c.float,
+	ratio:      f32,
 }
-
+BodyLockInterface :: struct #packed {}
+SharedMutex :: struct #packed {}
+Body :: struct #packed {}
 BodyLockRead :: struct {
 	lockInterface: ^BodyLockInterface,
 	mutex:         ^SharedMutex,
 	body:          ^Body,
 }
-
 BodyLockWrite :: struct {
 	lockInterface: ^BodyLockInterface,
 	mutex:         ^SharedMutex,
 	body:          ^Body,
 }
-
 ExtendedUpdateSettings :: struct {
 	stickToFloorStepDown:             Vec3,
 	walkStairsStepUp:                 Vec3,
-	walkStairsMinStepForward:         c.float,
-	walkStairsStepForwardTest:        c.float,
-	walkStairsCosAngleForwardContact: c.float,
+	walkStairsMinStepForward:         f32,
+	walkStairsStepForwardTest:        f32,
+	walkStairsCosAngleForwardContact: f32,
 	walkStairsStepDownExtra:          Vec3,
 }
-
+Shape :: struct #packed {}
 CharacterBaseSettings :: struct {
 	up:                          Vec3,
 	supportingVolume:            Plane,
-	maxSlopeAngle:               c.float,
-	enhancedInternalEdgeRemoval: c.bool,
+	maxSlopeAngle:               f32,
+	enhancedInternalEdgeRemoval: b8,
 	shape:                       ^Shape,
 }
-
 CharacterSettings :: struct {
-	using base:    CharacterBaseSettings,
+	base:          CharacterBaseSettings,
 	layer:         ObjectLayer,
-	mass:          c.float,
-	friction:      c.float,
-	gravityFactor: c.float,
+	mass:          f32,
+	friction:      f32,
+	gravityFactor: f32,
 	allowedDOFs:   AllowedDOFs,
 }
-
 CharacterVirtualSettings :: struct {
-	using base:                CharacterBaseSettings,
+	base:                      CharacterBaseSettings,
 	ID:                        CharacterID,
-	mass:                      c.float,
-	maxStrength:               c.float,
+	mass:                      f32,
+	maxStrength:               f32,
 	shapeOffset:               Vec3,
 	backFaceMode:              BackFaceMode,
-	predictiveContactDistance: c.float,
+	predictiveContactDistance: f32,
 	maxCollisionIterations:    u32,
 	maxConstraintIterations:   u32,
-	minTimeRemaining:          c.float,
-	collisionTolerance:        c.float,
-	characterPadding:          c.float,
+	minTimeRemaining:          f32,
+	collisionTolerance:        f32,
+	characterPadding:          f32,
 	maxNumHits:                u32,
-	hitReductionCosMaxAngle:   c.float,
-	penetrationRecoverySpeed:  c.float,
+	hitReductionCosMaxAngle:   f32,
+	penetrationRecoverySpeed:  f32,
 	innerBodyShape:            ^Shape,
+	innerBodyIDOverride:       BodyID,
 	innerBodyLayer:            ObjectLayer,
 }
-
 CharacterContactSettings :: struct {
-	canPushCharacter:   c.bool,
-	canReceiveImpulses: c.bool,
+	canPushCharacter:   b8,
+	canReceiveImpulses: b8,
 }
-
+CharacterVirtual :: struct #packed {}
+PhysicsMaterial :: struct #packed {}
+CharacterVirtualContact :: struct {
+	hash:             u64,
+	bodyB:            BodyID,
+	characterIDB:     CharacterID,
+	subShapeIDB:      SubShapeID,
+	position:         RVec3,
+	linearVelocity:   Vec3,
+	contactNormal:    Vec3,
+	surfaceNormal:    Vec3,
+	distance:         f32,
+	fraction:         f32,
+	motionTypeB:      MotionType,
+	isSensorB:        b8,
+	characterB:       ^CharacterVirtual,
+	userData:         u64,
+	material:         ^PhysicsMaterial,
+	hadCollision:     b8,
+	wasDiscarded:     b8,
+	canPushCharacter: b8,
+}
+TraceFunc :: #type proc "c" (mssage: cstring)
+AssertFailureFunc :: #type proc "c" (
+	expression: cstring,
+	mssage: cstring,
+	file: cstring,
+	line: u32,
+) -> b8
+JobFunction :: #type proc "c" (arg: rawptr)
+QueueJobCallback :: #type proc "c" (context_p: rawptr, job: ^JobFunction, arg: rawptr)
+QueueJobsCallback :: #type proc "c" (
+	context_p: rawptr,
+	job: ^JobFunction,
+	args: [^]rawptr,
+	count: u32,
+)
+JobSystemThreadPoolConfig :: struct {
+	maxJobs:     u32,
+	maxBarriers: u32,
+	numThreads:  i32,
+}
+JobSystemConfig :: struct {
+	context_m:      rawptr,
+	queueJob:       ^QueueJobCallback,
+	queueJobs:      [^]QueueJobsCallback,
+	maxConcurrency: u32,
+	maxBarriers:    u32,
+}
+BroadPhaseLayerInterface :: struct #packed {}
+ObjectLayerPairFilter :: struct #packed {}
+ObjectVsBroadPhaseLayerFilter :: struct #packed {}
 PhysicsSystemSettings :: struct {
-	maxBodies:                     c.uint32_t, //10240
-	numBodyMutexes:                c.uint32_t, //0
-	maxBodyPairs:                  c.uint32_t, //65536
-	maxContactConstraints:         c.uint32_t, //10240
-	_padding:                      c.uint32_t,
+	maxBodies:                     u32,
+	numBodyMutexes:                u32,
+	maxBodyPairs:                  u32,
+	maxContactConstraints:         u32,
+	_padding:                      u32,
 	broadPhaseLayerInterface:      ^BroadPhaseLayerInterface,
 	objectLayerPairFilter:         ^ObjectLayerPairFilter,
 	objectVsBroadPhaseLayerFilter: ^ObjectVsBroadPhaseLayerFilter,
 }
-
 PhysicsSettings :: struct {
-	maxInFlightBodyPairs:                 c.int,
-	stepListenersBatchSize:               c.int,
-	stepListenerBatchesPerJob:            c.int,
-	baumgarte:                            c.float,
-	speculativeContactDistance:           c.float,
-	penetrationSlop:                      c.float,
-	linearCastThreshold:                  c.float,
-	linearCastMaxPenetration:             c.float,
-	manifoldToleranceSq:                  c.float,
-	maxPenetrationDistance:               c.float,
-	bodyPairCacheMaxDeltaPositionSq:      c.float,
-	bodyPairCacheCosMaxDeltaRotationDiv2: c.float,
-	contactNormalCosMaxDeltaRotation:     c.float,
-	contactPointPreserveLambdaMaxDistSq:  c.float,
-	numVelocitySteps:                     c.uint32_t,
-	numPositionSteps:                     c.uint32_t,
-	minVelocityForRestitution:            c.float,
-	timeBeforeSleep:                      c.float,
-	pointVelocitySleepThreshold:          c.float,
-	deterministicSimulation:              c.bool,
-	constraintWarmStart:                  c.bool,
-	useBodyPairContactCache:              c.bool,
-	useManifoldReduction:                 c.bool,
-	useLargeIslandSplitter:               c.bool,
-	allowSleeping:                        c.bool,
-	checkActiveEdges:                     c.bool,
+	maxInFlightBodyPairs:                 i32,
+	stepListenersBatchSize:               i32,
+	stepListenerBatchesPerJob:            i32,
+	baumgarte:                            f32,
+	speculativeContactDistance:           f32,
+	penetrationSlop:                      f32,
+	linearCastThreshold:                  f32,
+	linearCastMaxPenetration:             f32,
+	manifoldTolerance:                    f32,
+	maxPenetrationDistance:               f32,
+	bodyPairCacheMaxDeltaPositionSq:      f32,
+	bodyPairCacheCosMaxDeltaRotationDiv2: f32,
+	contactNormalCosMaxDeltaRotation:     f32,
+	contactPointPreserveLambdaMaxDistSq:  f32,
+	numVelocitySteps:                     u32,
+	numPositionSteps:                     u32,
+	minVelocityForRestitution:            f32,
+	timeBeforeSleep:                      f32,
+	pointVelocitySleepThreshold:          f32,
+	deterministicSimulation:              b8,
+	constraintWarmStart:                  b8,
+	useBodyPairContactCache:              b8,
+	useManifoldReduction:                 b8,
+	useLargeIslandSplitter:               b8,
+	allowSleeping:                        b8,
+	checkActiveEdges:                     b8,
 }
-
-
-JobSystemThreadPoolConfig :: struct {
-	maxJobs:     c.uint32_t,
-	maxBarriers: c.uint32_t,
-	numThreads:  c.int32_t,
-}
-
-JobSystemConfig :: struct {
-	ctx:            rawptr,
-	queueJob:       QueueJobCallback,
-	queueJobs:      QueueJobsCallback,
-	maxConcurrency: c.uint32_t,
-	maxBarriers:    c.uint32_t,
-}
-
-
-//---------------------------------------------------------------------------------------------------------------------
-// Procs
-//---------------------------------------------------------------------------------------------------------------------
+ShouldCollide_func_ptr_anon_0 :: #type proc "c" (userData: rawptr, layer: BroadPhaseLayer) -> b8
 BroadPhaseLayerFilter_Procs :: struct {
-	ShouldCollide: proc "c" (useData: rawptr, layer: BroadPhaseLayer) -> c.bool,
+	ShouldCollide: ShouldCollide_func_ptr_anon_0,
 }
-
+ShouldCollide_func_ptr_anon_1 :: #type proc "c" (userData: rawptr, layer: ObjectLayer) -> b8
 ObjectLayerFilter_Procs :: struct {
-	ShouldCollide: proc "c" (userData: rawptr, layer: ObjectLayer) -> c.bool,
+	ShouldCollide: ShouldCollide_func_ptr_anon_1,
 }
-
+ShouldCollide_func_ptr_anon_2 :: #type proc "c" (userData: rawptr, bodyID: BodyID) -> b8
+ShouldCollideLocked_func_ptr_anon_3 :: #type proc "c" (userData: rawptr, bodyID: ^Body) -> b8
 BodyFilter_Procs :: struct {
-	ShouldCollide:       proc "c" (userData: rawptr, bodyId: BodyID) -> c.bool,
-	ShouldCollideLocked: proc "c" (userData: rawptr, bodyId: ^BodyID) -> c.bool,
+	ShouldCollide:       ShouldCollide_func_ptr_anon_2,
+	ShouldCollideLocked: ShouldCollideLocked_func_ptr_anon_3,
 }
-
+ShouldCollide_func_ptr_anon_4 :: #type proc "c" (
+	userData: rawptr,
+	shape2: ^Shape,
+	subShapeIDOfShape2: ^SubShapeID,
+) -> b8
+ShouldCollide2_func_ptr_anon_5 :: #type proc "c" (
+	userData: rawptr,
+	shape1: ^Shape,
+	subShapeIDOfShape1: ^SubShapeID,
+	shape2: ^Shape,
+	subShapeIDOfShape2: ^SubShapeID,
+) -> b8
 ShapeFilter_Procs :: struct {
-	ShouldCollide:  proc "c" (
-		userData: rawptr,
-		shape2: ^Shape,
-		subShapeIDOfShape2: ^SubShapeID,
-	) -> c.bool,
-	ShouldCollide2: proc "c" (
-		userData: rawptr,
-		shape1: ^Shape,
-		subShapeIDOfShape1: ^SubShapeID,
-		shape2: ^Shape,
-		subShapeIDOfShape2: ^SubShapeID,
-	) -> c.bool,
+	ShouldCollide:  ShouldCollide_func_ptr_anon_4,
+	ShouldCollide2: ShouldCollide2_func_ptr_anon_5,
 }
-
+ShouldCollide_func_ptr_anon_6 :: #type proc "c" (
+	userData: rawptr,
+	body1: ^Body,
+	shape1: ^Shape,
+	subShapeIDOfShape1: ^SubShapeID,
+	body2: ^Body,
+	shape2: ^Shape,
+	subShapeIDOfShape2: ^SubShapeID,
+) -> b8
+SimShapeFilter_Procs :: struct {
+	ShouldCollide: ShouldCollide_func_ptr_anon_6,
+}
+OnContactValidate_func_ptr_anon_7 :: #type proc "c" (
+	userData: rawptr,
+	body1: ^Body,
+	body2: ^Body,
+	baseOffset: ^RVec3,
+	collisionResult: ^CollideShapeResult,
+) -> ValidateResult
+ContactManifold :: struct #packed {}
+ContactSettings :: struct #packed {}
+OnContactAdded_func_ptr_anon_8 :: #type proc "c" (
+	userData: rawptr,
+	body1: ^Body,
+	body2: ^Body,
+	manifold: ^ContactManifold,
+	settings: [^]ContactSettings,
+)
+OnContactPersisted_func_ptr_anon_9 :: #type proc "c" (
+	userData: rawptr,
+	body1: ^Body,
+	body2: ^Body,
+	manifold: ^ContactManifold,
+	settings: [^]ContactSettings,
+)
+OnContactRemoved_func_ptr_anon_10 :: #type proc "c" (
+	userData: rawptr,
+	subShapePair: ^SubShapeIDPair,
+)
 ContactListener_Procs :: struct {
-	OnContactValidate:  proc "c" (
-		userData: rawptr,
-		body1: ^Body,
-		body2: ^Body,
-		baseOffset: ^RVec3,
-		collisionResult: ^CollideShapeResult,
-	) -> ValidateResult,
-	OnContactAdded:     proc "c" (
-		userData: rawptr,
-		body1: ^Body,
-		body2: ^Body,
-		manifold: ^ContactManifold,
-		settings: ^ContactSettings,
-	),
-	OnContactPersisted: proc "c" (
-		userData: rawptr,
-		body1: ^Body,
-		body2: ^Body,
-		manifold: ^ContactManifold,
-		settings: ^ContactSettings,
-	),
-	OnContactRemoved:   proc "c" (userData: rawptr, subShapePair: ^SubShapeIDPair),
+	OnContactValidate:  OnContactValidate_func_ptr_anon_7,
+	OnContactAdded:     OnContactAdded_func_ptr_anon_8,
+	OnContactPersisted: OnContactPersisted_func_ptr_anon_9,
+	OnContactRemoved:   OnContactRemoved_func_ptr_anon_10,
 }
-
+OnBodyActivated_func_ptr_anon_11 :: #type proc "c" (
+	userData: rawptr,
+	bodyID: BodyID,
+	bodyUserData: u64,
+)
+OnBodyDeactivated_func_ptr_anon_12 :: #type proc "c" (
+	userData: rawptr,
+	bodyID: BodyID,
+	bodyUserData: u64,
+)
 BodyActivationListener_Procs :: struct {
-	OnBodyActivated:   proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: c.uint64_t),
-	OnBodyDeactivated: proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: c.uint64_t),
+	OnBodyActivated:   OnBodyActivated_func_ptr_anon_11,
+	OnBodyDeactivated: OnBodyDeactivated_func_ptr_anon_12,
 }
-
+ShouldDraw_func_ptr_anon_13 :: #type proc "c" (userData: rawptr, body: ^Body) -> b8
 BodyDrawFilter_Procs :: struct {
-	ShouldDraw: proc "c" (userData: rawptr, body: ^Body) -> c.bool,
+	ShouldDraw: ShouldDraw_func_ptr_anon_13,
 }
-
+OnAdjustBodyVelocity_func_ptr_anon_14 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	body2: ^Body,
+	ioLinearVelocity: ^Vec3,
+	ioAngularVelocity: ^Vec3,
+)
+OnContactValidate_func_ptr_anon_15 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	bodyID2: BodyID,
+	subShapeID2: SubShapeID,
+) -> b8
+OnCharacterContactValidate_func_ptr_anon_16 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	otherCharacter: ^CharacterVirtual,
+	subShapeID2: SubShapeID,
+) -> b8
+OnContactAdded_func_ptr_anon_17 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	bodyID2: BodyID,
+	subShapeID2: SubShapeID,
+	contactPosition: ^RVec3,
+	contactNormal: ^Vec3,
+	ioSettings: [^]CharacterContactSettings,
+)
+OnContactPersisted_func_ptr_anon_18 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	bodyID2: BodyID,
+	subShapeID2: SubShapeID,
+	contactPosition: ^RVec3,
+	contactNormal: ^Vec3,
+	ioSettings: [^]CharacterContactSettings,
+)
+OnContactRemoved_func_ptr_anon_19 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	bodyID2: BodyID,
+	subShapeID2: SubShapeID,
+)
+OnCharacterContactAdded_func_ptr_anon_20 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	otherCharacter: ^CharacterVirtual,
+	subShapeID2: SubShapeID,
+	contactPosition: ^RVec3,
+	contactNormal: ^Vec3,
+	ioSettings: [^]CharacterContactSettings,
+)
+OnCharacterContactPersisted_func_ptr_anon_21 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	otherCharacter: ^CharacterVirtual,
+	subShapeID2: SubShapeID,
+	contactPosition: ^RVec3,
+	contactNormal: ^Vec3,
+	ioSettings: [^]CharacterContactSettings,
+)
+OnCharacterContactRemoved_func_ptr_anon_22 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	otherCharacterID: CharacterID,
+	subShapeID2: SubShapeID,
+)
+OnContactSolve_func_ptr_anon_23 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	bodyID2: BodyID,
+	subShapeID2: SubShapeID,
+	contactPosition: ^RVec3,
+	contactNormal: ^Vec3,
+	contactVelocity: ^Vec3,
+	contactMaterial: ^PhysicsMaterial,
+	characterVelocity: ^Vec3,
+	newCharacterVelocity: ^Vec3,
+)
+OnCharacterContactSolve_func_ptr_anon_24 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	otherCharacter: ^CharacterVirtual,
+	subShapeID2: SubShapeID,
+	contactPosition: ^RVec3,
+	contactNormal: ^Vec3,
+	contactVelocity: ^Vec3,
+	contactMaterial: ^PhysicsMaterial,
+	characterVelocity: ^Vec3,
+	newCharacterVelocity: ^Vec3,
+)
 CharacterContactListener_Procs :: struct {
-	OnAdjustBodyVelocity:        proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		body2: ^Body,
-		ioLinearVelocity: ^Vec3,
-		ioAngularVelocity: ^Vec3,
-	),
-	OnContactValidate:           proc "c" (
-		userData: rawptr,
-		character: ^Character,
-		bodyID2: BodyID,
-		subShapeID2: SubShapeID,
-	) -> c.bool,
-	OnCharacterContactValidate:  proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		otherCharacter: ^CharacterVirtual,
-		subShapeID2: SubShapeID,
-	) -> c.bool,
-	OnContactAdded:              proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		bodyID2: BodyID,
-		subShapeID2: SubShapeID,
-		contactPosition: ^RVec3,
-		contactNormal: ^Vec3,
-		ioSettings: ^CharacterContactSettings,
-	),
-	OnContactPersisted:          proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		bodyID2: BodyID,
-		subShapeID2: SubShapeID,
-		contactPosition: ^RVec3,
-		contactNormal: ^Vec3,
-		ioSettings: ^CharacterContactSettings,
-	),
-	OnContactRemoved:            proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		bodyID2: BodyID,
-		subShapeID2: SubShapeID,
-	),
-	OnCharacterContactAdded:     proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		otherCharacter: ^CharacterVirtual,
-		subShapeID2: SubShapeID,
-		contactPosition: ^RVec3,
-		contactNormal: ^Vec3,
-		ioSettings: ^CharacterContactSettings,
-	),
-	OnCharacterContactPersisted: proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		otherCharacter: ^CharacterVirtual,
-		subShapeID2: SubShapeID,
-		contactPosition: ^RVec3,
-		contactNormal: ^Vec3,
-		ioSettings: ^CharacterContactSettings,
-	),
-	OnCharacterContactRemoved:   proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		otherCharacterID: CharacterID,
-		subShapeID: SubShapeID,
-	),
-	OnContactSolve:              proc "c" (
-		userData: rawptr,
-		bodyID2: BodyID,
-		subShapeID2: SubShapeID,
-		contactPosition: ^RVec3,
-		contactNormal: ^Vec3,
-		contactVelocity: ^Vec3,
-		contactMaterial: ^PhysicsMaterial,
-		characterVelocity: ^Vec3,
-		newCharacterVelocity: ^Vec3,
-	),
-	OnCharacterContactSolve:     proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		otherCharacter: ^CharacterVirtual,
-		subShapeID2: SubShapeID,
-		contactPosition: ^RVec3,
-		contactNormal: ^Vec3,
-		contactVelocity: ^Vec3,
-		contactMaterial: ^PhysicsMaterial,
-		characterVelocity: ^Vec3,
-		newCharacterVelocity: ^Vec3,
-	),
+	OnAdjustBodyVelocity:        OnAdjustBodyVelocity_func_ptr_anon_14,
+	OnContactValidate:           OnContactValidate_func_ptr_anon_15,
+	OnCharacterContactValidate:  OnCharacterContactValidate_func_ptr_anon_16,
+	OnContactAdded:              OnContactAdded_func_ptr_anon_17,
+	OnContactPersisted:          OnContactPersisted_func_ptr_anon_18,
+	OnContactRemoved:            OnContactRemoved_func_ptr_anon_19,
+	OnCharacterContactAdded:     OnCharacterContactAdded_func_ptr_anon_20,
+	OnCharacterContactPersisted: OnCharacterContactPersisted_func_ptr_anon_21,
+	OnCharacterContactRemoved:   OnCharacterContactRemoved_func_ptr_anon_22,
+	OnContactSolve:              OnContactSolve_func_ptr_anon_23,
+	OnCharacterContactSolve:     OnCharacterContactSolve_func_ptr_anon_24,
 }
-
+CollideCharacter_func_ptr_anon_25 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	centerOfMassTransform: ^RMatrix4x4,
+	collideShapeSettings: [^]CollideShapeSettings,
+	baseOffset: ^RVec3,
+)
+CastCharacter_func_ptr_anon_26 :: #type proc "c" (
+	userData: rawptr,
+	character: ^CharacterVirtual,
+	centerOfMassTransform: ^RMatrix4x4,
+	direction: ^Vec3,
+	shapeCastSettings: [^]ShapeCastSettings,
+	baseOffset: ^RVec3,
+)
 CharacterVsCharacterCollision_Procs :: struct {
-	CollideCharacter: proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		centerOfMassTransform: ^RMatrix4x4,
-		collideShapeSettings: ^CollideShapeSettings,
-		baseOffset: ^RVec3,
-	),
-	CastCharacter:    proc "c" (
-		userData: rawptr,
-		character: ^CharacterVirtual,
-		centerOfMassTransform: ^RMatrix4x4,
-		direction: ^Vec3,
-		shapeCastSettings: ^ShapeCastSettings,
-		baseOffset: ^RVec3,
-	),
+	CollideCharacter: CollideCharacter_func_ptr_anon_25,
+	CastCharacter:    CastCharacter_func_ptr_anon_26,
 }
+DrawLine_func_ptr_anon_27 :: #type proc "c" (
+	userData: rawptr,
+	from: ^RVec3,
+	to: ^RVec3,
+	color: Color,
+)
+DrawTriangle_func_ptr_anon_28 :: #type proc "c" (
+	userData: rawptr,
+	v1: ^RVec3,
+	v2: ^RVec3,
+	v3: ^RVec3,
+	color: Color,
+	castShadow: DebugRenderer_CastShadow,
+)
+DrawText3D_func_ptr_anon_29 :: #type proc "c" (
+	userData: rawptr,
+	position: ^RVec3,
+	str: cstring,
+	color: Color,
+	height: f32,
+)
 DebugRenderer_Procs :: struct {
-	DrawLine:     proc "c" (userData: rawptr, from: ^RVec3, to: ^RVec3, color: Color),
-	DrawTriangle: proc "c" (
-		userData: rawptr,
-		v1: ^RVec3,
-		v2: ^RVec3,
-		v3: ^RVec3,
-		color: Color,
-		castShadow: DebugRendererCastShadow,
-	),
-	DrawText3D:   proc "c" (
-		userData: rawptr,
-		position: ^RVec3,
-		str: cstring,
-		color: Color,
-		height: c.float,
-	),
+	DrawLine:     DrawLine_func_ptr_anon_27,
+	DrawTriangle: DrawTriangle_func_ptr_anon_28,
+	DrawText3D:   DrawText3D_func_ptr_anon_29,
 }
+SkeletonJoint :: struct {
+	name:             cstring,
+	parentName:       cstring,
+	parentJointIndex: i32,
+}
+BroadPhaseLayerFilter :: struct #packed {}
+ObjectLayerFilter :: struct #packed {}
+BodyFilter :: struct #packed {}
+ShapeFilter :: struct #packed {}
+SimShapeFilter :: struct #packed {}
+PhysicsSystem :: struct #packed {}
+ShapeSettings :: struct #packed {}
+ConvexShapeSettings :: struct #packed {}
+SphereShapeSettings :: struct #packed {}
+BoxShapeSettings :: struct #packed {}
+PlaneShapeSettings :: struct #packed {}
+TriangleShapeSettings :: struct #packed {}
+CapsuleShapeSettings :: struct #packed {}
+TaperedCapsuleShapeSettings :: struct #packed {}
+CylinderShapeSettings :: struct #packed {}
+TaperedCylinderShapeSettings :: struct #packed {}
+ConvexHullShapeSettings :: struct #packed {}
+CompoundShapeSettings :: struct #packed {}
+StaticCompoundShapeSettings :: struct #packed {}
+MutableCompoundShapeSettings :: struct #packed {}
+MeshShapeSettings :: struct #packed {}
+HeightFieldShapeSettings :: struct #packed {}
+RotatedTranslatedShapeSettings :: struct #packed {}
+ScaledShapeSettings :: struct #packed {}
+OffsetCenterOfMassShapeSettings :: struct #packed {}
+EmptyShapeSettings :: struct #packed {}
+ConvexShape :: struct #packed {}
+SphereShape :: struct #packed {}
+BoxShape :: struct #packed {}
+PlaneShape :: struct #packed {}
+CapsuleShape :: struct #packed {}
+CylinderShape :: struct #packed {}
+TaperedCylinderShape :: struct #packed {}
+TriangleShape :: struct #packed {}
+TaperedCapsuleShape :: struct #packed {}
+ConvexHullShape :: struct #packed {}
+CompoundShape :: struct #packed {}
+StaticCompoundShape :: struct #packed {}
+MutableCompoundShape :: struct #packed {}
+MeshShape :: struct #packed {}
+HeightFieldShape :: struct #packed {}
+DecoratedShape :: struct #packed {}
+RotatedTranslatedShape :: struct #packed {}
+ScaledShape :: struct #packed {}
+OffsetCenterOfMassShape :: struct #packed {}
+EmptyShape :: struct #packed {}
+BodyCreationSettings :: struct #packed {}
+SoftBodyCreationSettings :: struct #packed {}
+BodyInterface :: struct #packed {}
+BroadPhaseQuery :: struct #packed {}
+NarrowPhaseQuery :: struct #packed {}
+MotionProperties :: struct #packed {}
+ContactListener :: struct #packed {}
+BodyActivationListener :: struct #packed {}
+BodyDrawFilter :: struct #packed {}
+DebugRenderer :: struct #packed {}
+Constraint :: struct #packed {}
+TwoBodyConstraint :: struct #packed {}
+FixedConstraint :: struct #packed {}
+DistanceConstraint :: struct #packed {}
+PointConstraint :: struct #packed {}
+HingeConstraint :: struct #packed {}
+SliderConstraint :: struct #packed {}
+ConeConstraint :: struct #packed {}
+SwingTwistConstraint :: struct #packed {}
+SixDOFConstraint :: struct #packed {}
+GearConstraint :: struct #packed {}
+CharacterBase :: struct #packed {}
+Character :: struct #packed {}
+CharacterContactListener :: struct #packed {}
+CharacterVsCharacterCollision :: struct #packed {}
+Skeleton :: struct #packed {}
+RagdollSettings :: struct #packed {}
+Ragdoll :: struct #packed {}
+BodyLockMultiRead :: struct #packed {}
+BodyLockMultiWrite :: struct #packed {}
+JobSystem :: struct #packed {}
 
-@(default_calling_convention = "c", link_prefix = "JPH_")
-foreign lib {
+@(default_calling_convention = "c")
+foreign jolt_runic {
+	@(link_name = "JPH_JobSystemThreadPool_Create")
 	JobSystemThreadPool_Create :: proc(config: ^JobSystemThreadPoolConfig) -> ^JobSystem ---
+
+	@(link_name = "JPH_JobSystemCallback_Create")
 	JobSystemCallback_Create :: proc(config: ^JobSystemConfig) -> ^JobSystem ---
+
+	@(link_name = "JPH_JobSystem_Destroy")
 	JobSystem_Destroy :: proc(jobSystem: ^JobSystem) ---
 
-	Init :: proc() -> c.bool ---
+	@(link_name = "JPH_Init")
+	Init :: proc() -> b8 ---
+
+	@(link_name = "JPH_Shutdown")
 	Shutdown :: proc() ---
+
+	@(link_name = "JPH_SetTraceHandler")
 	SetTraceHandler :: proc(handler: TraceFunc) ---
+
+	@(link_name = "JPH_SetAssertFailureHandler")
 	SetAssertFailureHandler :: proc(handler: AssertFailureFunc) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BroadPhaseLayerInterface
-	//-------------------------------------------------------------------------------------------------
-	BroadPhaseLayerInterfaceMask_Create :: proc(numBroadPhaseLayers: c.uint32_t) -> ^BroadPhaseLayerInterface ---
-	BroadPhaseLayerInterfaceMask_ConfigureLayer :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface, broadPhaseLayer: BroadPhaseLayer, groupsToInclude: c.uint32_t, groupsToExclude: c.uint32_t) ---
+	@(link_name = "JPH_CollideShapeResult_FreeMembers")
+	CollideShapeResult_FreeMembers :: proc(result: ^CollideShapeResult) ---
 
-	BroadPhaseLayerInterfaceTable_Create :: proc(numObjectLayers: c.uint32_t, numBroadPhaseLayers: c.uint32_t) -> ^BroadPhaseLayerInterface ---
-	BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface, objectLayer: ObjectLayer, broadPhaseLayer: BroadPhaseLayer) ---
+	@(link_name = "JPH_CollisionEstimationResult_FreeMembers")
+	CollisionEstimationResult_FreeMembers :: proc(result: ^CollisionEstimationResult) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ObjectLayerPairFilter
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_BroadPhaseLayerInterfaceMask_Create")
+	BroadPhaseLayerInterfaceMask_Create :: proc(numBroadPhaseLayers: u32) -> ^BroadPhaseLayerInterface ---
+
+	@(link_name = "JPH_BroadPhaseLayerInterfaceMask_ConfigureLayer")
+	BroadPhaseLayerInterfaceMask_ConfigureLayer :: proc(bpInterface: ^BroadPhaseLayerInterface, broadPhaseLayer: BroadPhaseLayer, groupsToInclude: u32, groupsToExclude: u32) ---
+
+	@(link_name = "JPH_BroadPhaseLayerInterfaceTable_Create")
+	BroadPhaseLayerInterfaceTable_Create :: proc(numObjectLayers: u32, numBroadPhaseLayers: u32) -> ^BroadPhaseLayerInterface ---
+
+	@(link_name = "JPH_BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer")
+	BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer :: proc(bpInterface: ^BroadPhaseLayerInterface, objectLayer: ObjectLayer, broadPhaseLayer: BroadPhaseLayer) ---
+
+	@(link_name = "JPH_ObjectLayerPairFilterMask_Create")
 	ObjectLayerPairFilterMask_Create :: proc() -> ^ObjectLayerPairFilter ---
-	ObjectLayerPairFilterMask_GetObjectLayer :: proc(group: c.uint32_t, mask: c.uint32_t) -> ObjectLayer ---
-	ObjectLayerPairFilterMask_GetGroup :: proc(layer: ObjectLayer) -> c.uint32_t ---
-	ObjectLayerPairFilterMask_GetMask :: proc(layer: ObjectLayer) -> c.uint32_t ---
 
-	ObjectLayerPairFilterTable_Create :: proc(numObjectLayers: c.uint32_t) -> ^ObjectLayerPairFilter ---
+	@(link_name = "JPH_ObjectLayerPairFilterMask_GetObjectLayer")
+	ObjectLayerPairFilterMask_GetObjectLayer :: proc(group: u32, mask: u32) -> ObjectLayer ---
+
+	@(link_name = "JPH_ObjectLayerPairFilterMask_GetGroup")
+	ObjectLayerPairFilterMask_GetGroup :: proc(layer: ObjectLayer) -> u32 ---
+
+	@(link_name = "JPH_ObjectLayerPairFilterMask_GetMask")
+	ObjectLayerPairFilterMask_GetMask :: proc(layer: ObjectLayer) -> u32 ---
+
+	@(link_name = "JPH_ObjectLayerPairFilterTable_Create")
+	ObjectLayerPairFilterTable_Create :: proc(numObjectLayers: u32) -> ^ObjectLayerPairFilter ---
+
+	@(link_name = "JPH_ObjectLayerPairFilterTable_DisableCollision")
 	ObjectLayerPairFilterTable_DisableCollision :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
+
+	@(link_name = "JPH_ObjectLayerPairFilterTable_EnableCollision")
 	ObjectLayerPairFilterTable_EnableCollision :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
-	ObjectLayerPairFilterTable_ShouldCollide :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ObjectVsBroadPhaseLayerFilter
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_ObjectLayerPairFilterTable_ShouldCollide")
+	ObjectLayerPairFilterTable_ShouldCollide :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) -> b8 ---
+
+	@(link_name = "JPH_ObjectVsBroadPhaseLayerFilterMask_Create")
 	ObjectVsBroadPhaseLayerFilterMask_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface) -> ^ObjectVsBroadPhaseLayerFilter ---
-	ObjectVsBroadPhaseLayerFilterTable_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface, numBroadPhaseLayers: c.uint32_t, objectLayerPairFilter: ^ObjectLayerPairFilter, numObjectLayers: c.uint32_t) -> ^ObjectVsBroadPhaseLayerFilter ---
 
-	//-------------------------------------------------------------------------------------------------
-	// DrawSettings
-	//-------------------------------------------------------------------------------------------------
-	DrawSettings_InitDefault :: proc(settings: ^DrawSettings) ---
+	@(link_name = "JPH_ObjectVsBroadPhaseLayerFilterTable_Create")
+	ObjectVsBroadPhaseLayerFilterTable_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface, numBroadPhaseLayers: u32, objectLayerPairFilter: ^ObjectLayerPairFilter, numObjectLayers: u32) -> ^ObjectVsBroadPhaseLayerFilter ---
 
-	//-------------------------------------------------------------------------------------------------
-	// PhysicsSystem
-	//-------------------------------------------------------------------------------------------------
-	PhysicsSystem_Create :: proc(settings: ^PhysicsSystemSettings) -> ^PhysicsSystem ---
+	@(link_name = "JPH_DrawSettings_InitDefault")
+	DrawSettings_InitDefault :: proc(settings: [^]DrawSettings) ---
+
+	@(link_name = "JPH_PhysicsSystem_Create")
+	PhysicsSystem_Create :: proc(settings: [^]PhysicsSystemSettings) -> ^PhysicsSystem ---
+
+	@(link_name = "JPH_PhysicsSystem_Destroy")
 	PhysicsSystem_Destroy :: proc(system: ^PhysicsSystem) ---
-	PhysicsSystem_SetPhysicsSettings :: proc(system: ^PhysicsSystem, settings: ^PhysicsSettings) ---
+
+	@(link_name = "JPH_PhysicsSystem_SetPhysicsSettings")
+	PhysicsSystem_SetPhysicsSettings :: proc(system: ^PhysicsSystem, settings: [^]PhysicsSettings) ---
+
+	@(link_name = "JPH_PhysicsSystem_GetPhysicsSettings")
 	PhysicsSystem_GetPhysicsSettings :: proc(system: ^PhysicsSystem, result: ^PhysicsSettings) ---
+
+	@(link_name = "JPH_PhysicsSystem_OptimizeBroadPhase")
 	PhysicsSystem_OptimizeBroadPhase :: proc(system: ^PhysicsSystem) ---
-	PhysicsSystem_Update :: proc(system: ^PhysicsSystem, deltaTime: c.float, collisionSteps: c.int, jobSystem: ^JobSystem) -> PhysicsUpdateError ---
+
+	@(link_name = "JPH_PhysicsSystem_Update")
+	PhysicsSystem_Update :: proc(system: ^PhysicsSystem, deltaTime: f32, collisionSteps: i32, jobSystem: ^JobSystem) -> PhysicsUpdateError ---
+
+	@(link_name = "JPH_PhysicsSystem_GetBodyInterface")
 	PhysicsSystem_GetBodyInterface :: proc(system: ^PhysicsSystem) -> ^BodyInterface ---
+
+	@(link_name = "JPH_PhysicsSystem_GetBodyInterfaceNoLock")
 	PhysicsSystem_GetBodyInterfaceNoLock :: proc(system: ^PhysicsSystem) -> ^BodyInterface ---
+
+	@(link_name = "JPH_PhysicsSystem_GetBodyLockInterface")
 	PhysicsSystem_GetBodyLockInterface :: proc(system: ^PhysicsSystem) -> ^BodyLockInterface ---
+
+	@(link_name = "JPH_PhysicsSystem_GetBodyLockInterfaceNoLock")
 	PhysicsSystem_GetBodyLockInterfaceNoLock :: proc(system: ^PhysicsSystem) -> ^BodyLockInterface ---
+
+	@(link_name = "JPH_PhysicsSystem_GetBroadPhaseQuery")
 	PhysicsSystem_GetBroadPhaseQuery :: proc(system: ^PhysicsSystem) -> ^BroadPhaseQuery ---
+
+	@(link_name = "JPH_PhysicsSystem_GetNarrowPhaseQuery")
 	PhysicsSystem_GetNarrowPhaseQuery :: proc(system: ^PhysicsSystem) -> ^NarrowPhaseQuery ---
+
+	@(link_name = "JPH_PhysicsSystem_GetNarrowPhaseQueryNoLock")
 	PhysicsSystem_GetNarrowPhaseQueryNoLock :: proc(system: ^PhysicsSystem) -> ^NarrowPhaseQuery ---
+
+	@(link_name = "JPH_PhysicsSystem_SetContactListener")
 	PhysicsSystem_SetContactListener :: proc(system: ^PhysicsSystem, listener: ^ContactListener) ---
+
+	@(link_name = "JPH_PhysicsSystem_SetBodyActivationListener")
 	PhysicsSystem_SetBodyActivationListener :: proc(system: ^PhysicsSystem, listener: ^BodyActivationListener) ---
-	PhysicsSystem_WereBodiesInContact :: proc(system: ^PhysicsSystem, body1: BodyID, body2: BodyID) -> c.bool ---
-	PhysicsSystem_GetNumBodies :: proc(system: ^PhysicsSystem) -> c.uint32_t ---
-	PhysicsSystem_GetNumActiveBodies :: proc(system: ^PhysicsSystem, type: BodyType) -> c.uint32_t ---
-	PhysicsSystem_GetMaxBodies :: proc(system: ^PhysicsSystem) -> c.uint32_t ---
-	PhysicsSystem_GetNumConstraints :: proc(system: ^PhysicsSystem) -> c.uint32_t ---
+
+	@(link_name = "JPH_PhysicsSystem_SetSimShapeFilter")
+	PhysicsSystem_SetSimShapeFilter :: proc(system: ^PhysicsSystem, filter: ^SimShapeFilter) ---
+
+	@(link_name = "JPH_PhysicsSystem_WereBodiesInContact")
+	PhysicsSystem_WereBodiesInContact :: proc(system: ^PhysicsSystem, body1: BodyID, body2: BodyID) -> b8 ---
+
+	@(link_name = "JPH_PhysicsSystem_GetNumBodies")
+	PhysicsSystem_GetNumBodies :: proc(system: ^PhysicsSystem) -> u32 ---
+
+	@(link_name = "JPH_PhysicsSystem_GetNumActiveBodies")
+	PhysicsSystem_GetNumActiveBodies :: proc(system: ^PhysicsSystem, type: BodyType) -> u32 ---
+
+	@(link_name = "JPH_PhysicsSystem_GetMaxBodies")
+	PhysicsSystem_GetMaxBodies :: proc(system: ^PhysicsSystem) -> u32 ---
+
+	@(link_name = "JPH_PhysicsSystem_GetNumConstraints")
+	PhysicsSystem_GetNumConstraints :: proc(system: ^PhysicsSystem) -> u32 ---
+
+	@(link_name = "JPH_PhysicsSystem_SetGravity")
 	PhysicsSystem_SetGravity :: proc(system: ^PhysicsSystem, value: ^Vec3) ---
+
+	@(link_name = "JPH_PhysicsSystem_GetGravity")
 	PhysicsSystem_GetGravity :: proc(system: ^PhysicsSystem, result: ^Vec3) ---
+
+	@(link_name = "JPH_PhysicsSystem_AddConstraint")
 	PhysicsSystem_AddConstraint :: proc(system: ^PhysicsSystem, constraint: ^Constraint) ---
+
+	@(link_name = "JPH_PhysicsSystem_RemoveConstraint")
 	PhysicsSystem_RemoveConstraint :: proc(system: ^PhysicsSystem, constraint: ^Constraint) ---
-	PhysicsSystem_AddConstraints :: proc(system: ^PhysicsSystem, constraints: ^^Constraint, count: c.uint32_t) ---
-	PhysicsSystem_RemoveConstraints :: proc(system: ^PhysicsSystem, constraints: ^^Constraint, count: c.uint32_t) ---
-	PhysicsSystem_GetBodies :: proc(system: ^PhysicsSystem, ids: ^BodyID, count: c.uint32_t) ---
-	PhysicsSystem_GetConstraints :: proc(system: ^PhysicsSystem, constraints: [^]rawptr) ---
-	PhysicsSystem_DrawBodies :: proc(system: ^PhysicsSystem, settings: ^DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter = nil) ---
+
+	@(link_name = "JPH_PhysicsSystem_AddConstraints")
+	PhysicsSystem_AddConstraints :: proc(system: ^PhysicsSystem, constraints: [^]^Constraint, count: u32) ---
+
+	@(link_name = "JPH_PhysicsSystem_RemoveConstraints")
+	PhysicsSystem_RemoveConstraints :: proc(system: ^PhysicsSystem, constraints: [^]^Constraint, count: u32) ---
+
+	@(link_name = "JPH_PhysicsSystem_GetBodies")
+	PhysicsSystem_GetBodies :: proc(system: ^PhysicsSystem, ids: [^]BodyID, count: u32) ---
+
+	@(link_name = "JPH_PhysicsSystem_GetConstraints")
+	PhysicsSystem_GetConstraints :: proc(system: ^PhysicsSystem, constraints: [^]^Constraint, count: u32) ---
+
+	@(link_name = "JPH_PhysicsSystem_DrawBodies")
+	PhysicsSystem_DrawBodies :: proc(system: ^PhysicsSystem, settings: [^]DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter) ---
+
+	@(link_name = "JPH_PhysicsSystem_DrawConstraints")
 	PhysicsSystem_DrawConstraints :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
+
+	@(link_name = "JPH_PhysicsSystem_DrawConstraintLimits")
 	PhysicsSystem_DrawConstraintLimits :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
+
+	@(link_name = "JPH_PhysicsSystem_DrawConstraintReferenceFrame")
 	PhysicsSystem_DrawConstraintReferenceFrame :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
 
-	//-------------------------------------------------------------------------------------------------
-	//Math
-	//Odin can do all these, just added for completeness...
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_Quaternion_FromTo")
 	Quaternion_FromTo :: proc(from: ^Vec3, to: ^Vec3, quat: ^Quat) ---
-	Quat_GetAxisAngle :: proc(quat: ^Quat, outAxis: ^Vec3, outAngle: ^f32) ---
+
+	@(link_name = "JPH_Quat_GetAxisAngle")
+	Quat_GetAxisAngle :: proc(quat: ^Quat, outAxis: [^]Vec3, outAngle: ^f32) ---
+
+	@(link_name = "JPH_Quat_GetEulerAngles")
 	Quat_GetEulerAngles :: proc(quat: ^Quat, result: ^Vec3) ---
+
+	@(link_name = "JPH_Quat_RotateAxisX")
 	Quat_RotateAxisX :: proc(quat: ^Quat, result: ^Vec3) ---
+
+	@(link_name = "JPH_Quat_RotateAxisY")
 	Quat_RotateAxisY :: proc(quat: ^Quat, result: ^Vec3) ---
+
+	@(link_name = "JPH_Quat_RotateAxisZ")
 	Quat_RotateAxisZ :: proc(quat: ^Quat, result: ^Vec3) ---
+
+	@(link_name = "JPH_Quat_Inversed")
 	Quat_Inversed :: proc(quat: ^Quat, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_GetPerpendicular")
 	Quat_GetPerpendicular :: proc(quat: ^Quat, result: ^Quat) ---
-	Quat_GetRotationAngle :: proc(quat: ^Quat, axis: ^Vec3) -> f32 ---
 
-	Vec3_IsClose :: proc(v1: ^Vec3, v2: ^Vec3, maxDistSq: f32) -> bool ---
-	Vec3_IsNearZero :: proc(v: ^Vec3, maxDistSq: f32) -> bool ---
-	Vec3_IsNormalized :: proc(v: ^Vec3, tolerance: f32) -> bool ---
-	Vec3_IsNaN :: proc(v: ^Vec3) -> bool ---
+	@(link_name = "JPH_Quat_GetRotationAngle")
+	Quat_GetRotationAngle :: proc(quat: ^Quat, axis: [^]Vec3) -> f32 ---
 
+	@(link_name = "JPH_Quat_FromEulerAngles")
+	Quat_FromEulerAngles :: proc(angles: [^]Vec3, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_Add")
+	Quat_Add :: proc(q1: ^Quat, q2: ^Quat, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_Subtract")
+	Quat_Subtract :: proc(q1: ^Quat, q2: ^Quat, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_Multiply")
+	Quat_Multiply :: proc(q1: ^Quat, q2: ^Quat, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_MultiplyScalar")
+	Quat_MultiplyScalar :: proc(q: ^Quat, scalar: f32, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_Divide")
+	Quat_Divide :: proc(q1: ^Quat, q2: ^Quat, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_Dot")
+	Quat_Dot :: proc(q1: ^Quat, q2: ^Quat, result: ^f32) ---
+
+	@(link_name = "JPH_Quat_Conjugated")
+	Quat_Conjugated :: proc(quat: ^Quat, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_GetTwist")
+	Quat_GetTwist :: proc(quat: ^Quat, axis: [^]Vec3, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_GetSwingTwist")
+	Quat_GetSwingTwist :: proc(quat: ^Quat, outSwing: ^Quat, outTwist: ^Quat) ---
+
+	@(link_name = "JPH_Quat_LERP")
+	Quat_LERP :: proc(from: ^Quat, to: ^Quat, fraction: f32, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_SLERP")
+	Quat_SLERP :: proc(from: ^Quat, to: ^Quat, fraction: f32, result: ^Quat) ---
+
+	@(link_name = "JPH_Quat_Rotate")
+	Quat_Rotate :: proc(quat: ^Quat, vec: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Quat_InverseRotate")
+	Quat_InverseRotate :: proc(quat: ^Quat, vec: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_IsClose")
+	Vec3_IsClose :: proc(v1: ^Vec3, v2: ^Vec3, maxDistSq: f32) -> b8 ---
+
+	@(link_name = "JPH_Vec3_IsNearZero")
+	Vec3_IsNearZero :: proc(v: ^Vec3, maxDistSq: f32) -> b8 ---
+
+	@(link_name = "JPH_Vec3_IsNormalized")
+	Vec3_IsNormalized :: proc(v: ^Vec3, tolerance: f32) -> b8 ---
+
+	@(link_name = "JPH_Vec3_IsNaN")
+	Vec3_IsNaN :: proc(v: ^Vec3) -> b8 ---
+
+	@(link_name = "JPH_Vec3_Negate")
 	Vec3_Negate :: proc(v: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_Normalized")
 	Vec3_Normalized :: proc(v: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_Cross")
 	Vec3_Cross :: proc(v1: ^Vec3, v2: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_Abs")
 	Vec3_Abs :: proc(v: ^Vec3, result: ^Vec3) ---
 
+	@(link_name = "JPH_Vec3_Length")
 	Vec3_Length :: proc(v: ^Vec3) -> f32 ---
+
+	@(link_name = "JPH_Vec3_LengthSquared")
 	Vec3_LengthSquared :: proc(v: ^Vec3) -> f32 ---
 
-	Vec3_Multiply :: proc(v1: ^Vec3, v2: ^Vec3, result: ^Vec3) ---
-	Vec3_MultiplyScalar :: proc(v: ^Vec3, scalar: f32, result: ^Vec3) ---
+	@(link_name = "JPH_Vec3_DotProduct")
 	Vec3_DotProduct :: proc(v1: ^Vec3, v2: ^Vec3, result: ^f32) ---
+
+	@(link_name = "JPH_Vec3_Normalize")
 	Vec3_Normalize :: proc(v: ^Vec3, result: ^Vec3) ---
 
+	@(link_name = "JPH_Vec3_Add")
 	Vec3_Add :: proc(v1: ^Vec3, v2: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_Subtract")
 	Vec3_Subtract :: proc(v1: ^Vec3, v2: ^Vec3, result: ^Vec3) ---
 
+	@(link_name = "JPH_Vec3_Multiply")
+	Vec3_Multiply :: proc(v1: ^Vec3, v2: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_MultiplyScalar")
+	Vec3_MultiplyScalar :: proc(v: ^Vec3, scalar: f32, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_Divide")
+	Vec3_Divide :: proc(v1: ^Vec3, v2: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Vec3_DivideScalar")
+	Vec3_DivideScalar :: proc(v: ^Vec3, scalar: f32, result: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_Add")
+	Matrix4x4_Add :: proc(m1: ^Matrix4x4, m2: ^Matrix4x4, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_Subtract")
+	Matrix4x4_Subtract :: proc(m1: ^Matrix4x4, m2: ^Matrix4x4, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_Multiply")
+	Matrix4x4_Multiply :: proc(m1: ^Matrix4x4, m2: ^Matrix4x4, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_MultiplyScalar")
+	Matrix4x4_MultiplyScalar :: proc(m: ^Matrix4x4, scalar: f32, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_Zero")
 	Matrix4x4_Zero :: proc(result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_Identity")
 	Matrix4x4_Identity :: proc(result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_Rotation")
 	Matrix4x4_Rotation :: proc(result: ^Matrix4x4, rotation: ^Quat) ---
+
+	@(link_name = "JPH_Matrix4x4_Translation")
 	Matrix4x4_Translation :: proc(result: ^Matrix4x4, translation: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_RotationTranslation")
 	Matrix4x4_RotationTranslation :: proc(result: ^Matrix4x4, rotation: ^Quat, translation: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_InverseRotationTranslation")
 	Matrix4x4_InverseRotationTranslation :: proc(result: ^Matrix4x4, rotation: ^Quat, translation: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_Scale")
 	Matrix4x4_Scale :: proc(result: ^Matrix4x4, scale: ^Vec3) ---
 
+	@(link_name = "JPH_Matrix4x4_Inversed")
+	Matrix4x4_Inversed :: proc(m: ^Matrix4x4, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Matrix4x4_Transposed")
+	Matrix4x4_Transposed :: proc(m: ^Matrix4x4, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_RMatrix4x4_Zero")
 	RMatrix4x4_Zero :: proc(result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_RMatrix4x4_Identity")
 	RMatrix4x4_Identity :: proc(result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_RMatrix4x4_Rotation")
 	RMatrix4x4_Rotation :: proc(result: ^RMatrix4x4, rotation: ^Quat) ---
+
+	@(link_name = "JPH_RMatrix4x4_Translation")
 	RMatrix4x4_Translation :: proc(result: ^RMatrix4x4, translation: ^RVec3) ---
+
+	@(link_name = "JPH_RMatrix4x4_RotationTranslation")
 	RMatrix4x4_RotationTranslation :: proc(result: ^RMatrix4x4, rotation: ^Quat, translation: ^RVec3) ---
+
+	@(link_name = "JPH_RMatrix4x4_InverseRotationTranslation")
 	RMatrix4x4_InverseRotationTranslation :: proc(result: ^RMatrix4x4, rotation: ^Quat, translation: ^RVec3) ---
+
+	@(link_name = "JPH_RMatrix4x4_Scale")
 	RMatrix4x4_Scale :: proc(result: ^RMatrix4x4, scale: ^Vec3) ---
 
-	Matrix4x4_GetAxisX :: proc(mat: ^Matrix4x4, result: ^Vec3) ---
-	Matrix4x4_GetAxisY :: proc(mat: ^Matrix4x4, result: ^Vec3) ---
-	Matrix4x4_GetAxisZ :: proc(mat: ^Matrix4x4, result: ^Vec3) ---
-	Matrix4x4_GetTranslation :: proc(mat: ^Matrix4x4, result: ^Vec3) ---
-	Matrix4x4_GetQuaternion :: proc(mat: ^Matrix4x4, result: ^Quat) ---
+	@(link_name = "JPH_RMatrix4x4_Inversed")
+	RMatrix4x4_Inversed :: proc(m: ^RMatrix4x4, result: ^RMatrix4x4) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// Material
-	//-------------------------------------------------------------------------------------------------
-	PhysicsMaterial_Create :: proc(name: cstring, color: c.uint32_t) -> ^PhysicsMaterial ---
+	@(link_name = "JPH_Matrix4x4_GetAxisX")
+	Matrix4x4_GetAxisX :: proc(matrix_p: ^Matrix4x4, result: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_GetAxisY")
+	Matrix4x4_GetAxisY :: proc(matrix_p: ^Matrix4x4, result: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_GetAxisZ")
+	Matrix4x4_GetAxisZ :: proc(matrix_p: ^Matrix4x4, result: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_GetTranslation")
+	Matrix4x4_GetTranslation :: proc(matrix_p: ^Matrix4x4, result: ^Vec3) ---
+
+	@(link_name = "JPH_Matrix4x4_GetQuaternion")
+	Matrix4x4_GetQuaternion :: proc(matrix_p: ^Matrix4x4, result: ^Quat) ---
+
+	@(link_name = "JPH_PhysicsMaterial_Create")
+	PhysicsMaterial_Create :: proc(name: cstring, color: u32) -> ^PhysicsMaterial ---
+
+	@(link_name = "JPH_PhysicsMaterial_Destroy")
 	PhysicsMaterial_Destroy :: proc(material: ^PhysicsMaterial) ---
-	PhysicsMaterial_GetDebugName :: proc(material: ^PhysicsMaterial) -> ^c.char ---
-	PhysicsMaterial_GetDebugColor :: proc(material: ^PhysicsMaterial) -> c.uint32_t ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ShapeSettings
-	//-------------------------------------------------------------------------------------------------
-	ShapeSettings_Destroy :: proc(settings: ^ShapeSettings) ---
-	ShapeSettings_GetUserData :: proc(settings: ^ShapeSettings) -> c.uint64_t ---
-	ShapeSettings_SetUserData :: proc(settings: ^ShapeSettings, userData: c.uint64_t) ---
+	@(link_name = "JPH_PhysicsMaterial_GetDebugName")
+	PhysicsMaterial_GetDebugName :: proc(material: ^PhysicsMaterial) -> cstring ---
 
-	//-------------------------------------------------------------------------------------------------
-	// Shape
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_PhysicsMaterial_GetDebugColor")
+	PhysicsMaterial_GetDebugColor :: proc(material: ^PhysicsMaterial) -> u32 ---
+
+	@(link_name = "JPH_ShapeSettings_Destroy")
+	ShapeSettings_Destroy :: proc(settings: [^]ShapeSettings) ---
+
+	@(link_name = "JPH_ShapeSettings_GetUserData")
+	ShapeSettings_GetUserData :: proc(settings: [^]ShapeSettings) -> u64 ---
+
+	@(link_name = "JPH_ShapeSettings_SetUserData")
+	ShapeSettings_SetUserData :: proc(settings: [^]ShapeSettings, userData: u64) ---
+
+	@(link_name = "JPH_Shape_Destroy")
 	Shape_Destroy :: proc(shape: ^Shape) ---
+
+	@(link_name = "JPH_Shape_GetType")
 	Shape_GetType :: proc(shape: ^Shape) -> ShapeType ---
+
+	@(link_name = "JPH_Shape_GetSubType")
 	Shape_GetSubType :: proc(shape: ^Shape) -> ShapeSubType ---
-	Shape_GetUserData :: proc(shape: ^Shape) -> c.uint64_t ---
-	Shape_SetUserData :: proc(shape: ^Shape, userData: c.uint64_t) ---
-	Shape_MustBeStatic :: proc(shape: ^Shape) -> c.bool ---
+
+	@(link_name = "JPH_Shape_GetUserData")
+	Shape_GetUserData :: proc(shape: ^Shape) -> u64 ---
+
+	@(link_name = "JPH_Shape_SetUserData")
+	Shape_SetUserData :: proc(shape: ^Shape, userData: u64) ---
+
+	@(link_name = "JPH_Shape_MustBeStatic")
+	Shape_MustBeStatic :: proc(shape: ^Shape) -> b8 ---
+
+	@(link_name = "JPH_Shape_GetCenterOfMass")
 	Shape_GetCenterOfMass :: proc(shape: ^Shape, result: ^Vec3) ---
+
+	@(link_name = "JPH_Shape_GetLocalBounds")
 	Shape_GetLocalBounds :: proc(shape: ^Shape, result: ^AABox) ---
-	Shape_GetSubShapeIDBitsRecursive :: proc(shape: ^Shape) -> c.uint32_t ---
+
+	@(link_name = "JPH_Shape_GetSubShapeIDBitsRecursive")
+	Shape_GetSubShapeIDBitsRecursive :: proc(shape: ^Shape) -> u32 ---
+
+	@(link_name = "JPH_Shape_GetWorldSpaceBounds")
 	Shape_GetWorldSpaceBounds :: proc(shape: ^Shape, centerOfMassTransform: ^RMatrix4x4, scale: ^Vec3, result: ^AABox) ---
-	Shape_GetInnerRadius :: proc(shape: ^Shape) -> c.float ---
+
+	@(link_name = "JPH_Shape_GetInnerRadius")
+	Shape_GetInnerRadius :: proc(shape: ^Shape) -> f32 ---
+
+	@(link_name = "JPH_Shape_GetMassProperties")
 	Shape_GetMassProperties :: proc(shape: ^Shape, result: ^MassProperties) ---
+
+	@(link_name = "JPH_Shape_GetLeafShape")
 	Shape_GetLeafShape :: proc(shape: ^Shape, subShapeID: SubShapeID, remainder: ^SubShapeID) -> ^Shape ---
+
+	@(link_name = "JPH_Shape_GetMaterial")
 	Shape_GetMaterial :: proc(shape: ^Shape, subShapeID: SubShapeID) -> ^PhysicsMaterial ---
+
+	@(link_name = "JPH_Shape_GetSurfaceNormal")
 	Shape_GetSurfaceNormal :: proc(shape: ^Shape, subShapeID: SubShapeID, localPosition: ^Vec3, normal: ^Vec3) ---
-	Shape_GetVolume :: proc(shape: ^Shape) -> c.float ---
-	Shape_IsValidScale :: proc(shape: ^Shape, scale: ^Vec3) -> c.bool ---
+
+	@(link_name = "JPH_Shape_GetSupportingFace")
+	Shape_GetSupportingFace :: proc(shape: ^Shape, subShapeID: SubShapeID, direction: ^Vec3, scale: ^Vec3, centerOfMassTransform: ^Matrix4x4, outVertices: [^]SupportingFace) ---
+
+	@(link_name = "JPH_Shape_GetVolume")
+	Shape_GetVolume :: proc(shape: ^Shape) -> f32 ---
+
+	@(link_name = "JPH_Shape_IsValidScale")
+	Shape_IsValidScale :: proc(shape: ^Shape, scale: ^Vec3) -> b8 ---
+
+	@(link_name = "JPH_Shape_MakeScaleValid")
 	Shape_MakeScaleValid :: proc(shape: ^Shape, scale: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_Shape_ScaleShape")
 	Shape_ScaleShape :: proc(shape: ^Shape, scale: ^Vec3) -> ^Shape ---
-	Shape_CastRay :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, hit: ^RayCastResult) -> c.bool ---
-	Shape_CastRay2 :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, collectorType: CollisionCollectorType, callback: CastRayResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> c.bool ---
-	Shape_CollidePoint :: proc(shape: ^Shape, point: ^Vec3, shapeFilter: ^ShapeFilter) -> c.bool ---
-	Shape_CollidePoint2 :: proc(shape: ^Shape, point: ^Vec3, collectorType: CollisionCollectorType, callback: CollidePointResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> c.bool ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ConvexShape
-	//-------------------------------------------------------------------------------------------------
-	ConvexShapeSettings_GetDensity :: proc(shape: ^ConvexShapeSettings) -> c.float ---
-	ConvexShapeSettings_SetDensity :: proc(shape: ^ConvexShapeSettings, value: c.float) ---
-	ConvexShape_GetDensity :: proc(shape: ^ConvexShape) -> c.float ---
-	ConvexShape_SetDensity :: proc(shape: ^ConvexShape, inDensity: c.float) ---
+	@(link_name = "JPH_Shape_CastRay")
+	Shape_CastRay :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, hit: ^RayCastResult) -> b8 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BoxShape
-	//-------------------------------------------------------------------------------------------------
-	BoxShapeSettings_Create :: proc(halfExtent: ^Vec3, convexRadius: c.float) -> ^BoxShapeSettings ---
-	BoxShapeSettings_CreateShape :: proc(settings: ^BoxShapeSettings) -> ^BoxShape ---
-	BoxShape_Create :: proc(halfExtent: ^Vec3, convexRadius: c.float = DEFAULT_CONVEX_RADIUS) -> ^BoxShape ---
+	@(link_name = "JPH_Shape_CastRay2")
+	Shape_CastRay2 :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, rayCastSettings: [^]RayCastSettings, collectorType: CollisionCollectorType, callback: ^CastRayResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_Shape_CollidePoint")
+	Shape_CollidePoint :: proc(shape: ^Shape, point: ^Vec3, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_Shape_CollidePoint2")
+	Shape_CollidePoint2 :: proc(shape: ^Shape, point: ^Vec3, collectorType: CollisionCollectorType, callback: ^CollidePointResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_ConvexShapeSettings_GetDensity")
+	ConvexShapeSettings_GetDensity :: proc(shape: ^ConvexShapeSettings) -> f32 ---
+
+	@(link_name = "JPH_ConvexShapeSettings_SetDensity")
+	ConvexShapeSettings_SetDensity :: proc(shape: ^ConvexShapeSettings, value: f32) ---
+
+	@(link_name = "JPH_ConvexShape_GetDensity")
+	ConvexShape_GetDensity :: proc(shape: ^ConvexShape) -> f32 ---
+
+	@(link_name = "JPH_ConvexShape_SetDensity")
+	ConvexShape_SetDensity :: proc(shape: ^ConvexShape, inDensity: f32) ---
+
+	@(link_name = "JPH_BoxShapeSettings_Create")
+	BoxShapeSettings_Create :: proc(halfExtent: ^Vec3, convexRadius: f32) -> ^BoxShapeSettings ---
+
+	@(link_name = "JPH_BoxShapeSettings_CreateShape")
+	BoxShapeSettings_CreateShape :: proc(settings: [^]BoxShapeSettings) -> ^BoxShape ---
+
+	@(link_name = "JPH_BoxShape_Create")
+	BoxShape_Create :: proc(halfExtent: ^Vec3, convexRadius: f32) -> ^BoxShape ---
+
+	@(link_name = "JPH_BoxShape_GetHalfExtent")
 	BoxShape_GetHalfExtent :: proc(shape: ^BoxShape, halfExtent: ^Vec3) ---
-	BoxShape_GetConvexRadius :: proc(shape: ^BoxShape) -> c.float ---
 
-	//-------------------------------------------------------------------------------------------------
-	// SphereShape
-	//-------------------------------------------------------------------------------------------------
-	SphereShapeSettings_Create :: proc(radius: c.float) -> ^SphereShapeSettings ---
-	SphereShapeSettings_CreateShape :: proc(settings: ^SphereShapeSettings) -> ^SphereShape ---
-	SphereShapeSettings_GetRadius :: proc(settings: ^SphereShapeSettings) -> c.float ---
-	SphereShapeSettings_SetRadius :: proc(settings: ^SphereShapeSettings, radius: c.float) ---
-	SphereShape_Create :: proc(radius: c.float) -> ^SphereShape ---
-	SphereShape_GetRadius :: proc(shape: ^SphereShape) -> c.float ---
+	@(link_name = "JPH_BoxShape_GetConvexRadius")
+	BoxShape_GetConvexRadius :: proc(shape: ^BoxShape) -> f32 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// PlaneShape
-	//-------------------------------------------------------------------------------------------------
-	PlaneShapeSettings_Create :: proc(plane: ^Plane, material: ^PhysicsMaterial, halfExtent: c.float) -> ^PlaneShapeSettings ---
-	PlaneShapeSettings_CreateShape :: proc(settings: ^PlaneShapeSettings) -> ^PlaneShape ---
-	PlaneShape_Create :: proc(plane: ^Plane, material: ^PhysicsMaterial, halfExtent: c.float) -> ^PlaneShape ---
+	@(link_name = "JPH_SphereShapeSettings_Create")
+	SphereShapeSettings_Create :: proc(radius: f32) -> ^SphereShapeSettings ---
+
+	@(link_name = "JPH_SphereShapeSettings_CreateShape")
+	SphereShapeSettings_CreateShape :: proc(settings: [^]SphereShapeSettings) -> ^SphereShape ---
+
+	@(link_name = "JPH_SphereShapeSettings_GetRadius")
+	SphereShapeSettings_GetRadius :: proc(settings: [^]SphereShapeSettings) -> f32 ---
+
+	@(link_name = "JPH_SphereShapeSettings_SetRadius")
+	SphereShapeSettings_SetRadius :: proc(settings: [^]SphereShapeSettings, radius: f32) ---
+
+	@(link_name = "JPH_SphereShape_Create")
+	SphereShape_Create :: proc(radius: f32) -> ^SphereShape ---
+
+	@(link_name = "JPH_SphereShape_GetRadius")
+	SphereShape_GetRadius :: proc(shape: ^SphereShape) -> f32 ---
+
+	@(link_name = "JPH_PlaneShapeSettings_Create")
+	PlaneShapeSettings_Create :: proc(plane: ^Plane, material: ^PhysicsMaterial, halfExtent: f32) -> ^PlaneShapeSettings ---
+
+	@(link_name = "JPH_PlaneShapeSettings_CreateShape")
+	PlaneShapeSettings_CreateShape :: proc(settings: [^]PlaneShapeSettings) -> ^PlaneShape ---
+
+	@(link_name = "JPH_PlaneShape_Create")
+	PlaneShape_Create :: proc(plane: ^Plane, material: ^PhysicsMaterial, halfExtent: f32) -> ^PlaneShape ---
+
+	@(link_name = "JPH_PlaneShape_GetPlane")
 	PlaneShape_GetPlane :: proc(shape: ^PlaneShape, result: ^Plane) ---
-	PlaneShape_GetHalfExtent :: proc(shape: ^PlaneShape) -> c.float ---
 
-	//-------------------------------------------------------------------------------------------------
-	// TriangleShape
-	//-------------------------------------------------------------------------------------------------
-	TriangleShapeSettings_Create :: proc(v1: ^Vec3, v2: ^Vec3, v3: ^Vec3, convexRadius: c.float) -> ^TriangleShapeSettings ---
-	TriangleShapeSettings_CreateShape :: proc(settings: ^TriangleShapeSettings) -> ^TriangleShape ---
-	TriangleShape_Create :: proc(v1: ^Vec3, v2: ^Vec3, v3: ^Vec3, convexRadius: c.float) -> ^TriangleShape ---
-	TriangleShape_GetConvexRadius :: proc(shape: ^TriangleShape) -> c.float ---
+	@(link_name = "JPH_PlaneShape_GetHalfExtent")
+	PlaneShape_GetHalfExtent :: proc(shape: ^PlaneShape) -> f32 ---
+
+	@(link_name = "JPH_TriangleShapeSettings_Create")
+	TriangleShapeSettings_Create :: proc(v1: ^Vec3, v2: ^Vec3, v3: ^Vec3, convexRadius: f32) -> ^TriangleShapeSettings ---
+
+	@(link_name = "JPH_TriangleShapeSettings_CreateShape")
+	TriangleShapeSettings_CreateShape :: proc(settings: [^]TriangleShapeSettings) -> ^TriangleShape ---
+
+	@(link_name = "JPH_TriangleShape_Create")
+	TriangleShape_Create :: proc(v1: ^Vec3, v2: ^Vec3, v3: ^Vec3, convexRadius: f32) -> ^TriangleShape ---
+
+	@(link_name = "JPH_TriangleShape_GetConvexRadius")
+	TriangleShape_GetConvexRadius :: proc(shape: ^TriangleShape) -> f32 ---
+
+	@(link_name = "JPH_TriangleShape_GetVertex1")
 	TriangleShape_GetVertex1 :: proc(shape: ^TriangleShape, result: ^Vec3) ---
+
+	@(link_name = "JPH_TriangleShape_GetVertex2")
 	TriangleShape_GetVertex2 :: proc(shape: ^TriangleShape, result: ^Vec3) ---
+
+	@(link_name = "JPH_TriangleShape_GetVertex3")
 	TriangleShape_GetVertex3 :: proc(shape: ^TriangleShape, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CapsuleShape
-	//-------------------------------------------------------------------------------------------------
-	CapsuleShapeSettings_Create :: proc(halfHeightOfCylinder: c.float, radius: c.float) -> ^CapsuleShapeSettings ---
-	CapsuleShapeSettings_CreateShape :: proc(settings: ^CapsuleShapeSettings) -> ^CapsuleShape ---
-	CapsuleShape_Create :: proc(halfHeightOfCylinder: c.float, radius: c.float) -> ^CapsuleShape ---
-	CapsuleShape_GetRadius :: proc(shape: ^CapsuleShape) -> c.float ---
-	CapsuleShape_GetHalfHeightOfCylinder :: proc(shape: ^CapsuleShape) -> c.float ---
+	@(link_name = "JPH_CapsuleShapeSettings_Create")
+	CapsuleShapeSettings_Create :: proc(halfHeightOfCylinder: f32, radius: f32) -> ^CapsuleShapeSettings ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CylinderShape
-	//-------------------------------------------------------------------------------------------------
-	CylinderShapeSettings_Create :: proc(halfHeight: c.float, radius: c.float, convexRadius: c.float) -> ^CylinderShapeSettings ---
-	CylinderShapeSettings_CreateShape :: proc(settings: ^CylinderShapeSettings) -> ^CylinderShape ---
-	CylinderShape_Create :: proc(halfHeight: c.float, radius: c.float) -> ^CylinderShape ---
-	CylinderShape_GetRadius :: proc(shape: ^CylinderShape) -> c.float ---
-	CylinderShape_GetHalfHeight :: proc(shape: ^CylinderShape) -> c.float ---
+	@(link_name = "JPH_CapsuleShapeSettings_CreateShape")
+	CapsuleShapeSettings_CreateShape :: proc(settings: [^]CapsuleShapeSettings) -> ^CapsuleShape ---
 
-	//-------------------------------------------------------------------------------------------------
-	// TaperedCylinderShape
-	//-------------------------------------------------------------------------------------------------
-	TaperedCylinderShapeSettings_Create :: proc(halfHeightOfTaperedCylinder: c.float, topRadius: c.float, bottomRadius: c.float, convexRadius: c.float, material: ^PhysicsMaterial) -> ^TaperedCylinderShapeSettings ---
-	TaperedCylinderShapeSettings_CreateShape :: proc(settings: ^TaperedCylinderShapeSettings) -> ^TaperedCylinderShape ---
-	TaperedCylinderShape_GetTopRadius :: proc(shape: ^TaperedCylinderShape) -> c.float ---
-	TaperedCylinderShape_GetBottomRadius :: proc(shape: ^TaperedCylinderShape) -> c.float ---
-	TaperedCylinderShape_GetConvexRadius :: proc(shape: ^TaperedCylinderShape) -> c.float ---
-	TaperedCylinderShape_GetHalfHeight :: proc(shape: ^TaperedCylinderShape) -> c.float ---
+	@(link_name = "JPH_CapsuleShape_Create")
+	CapsuleShape_Create :: proc(halfHeightOfCylinder: f32, radius: f32) -> ^CapsuleShape ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ConvexHullShape
-	//-------------------------------------------------------------------------------------------------
-	ConvexHullShapeSettings_Create :: proc(points: ^Vec3, pointsCount: c.uint32_t, maxConvexRadius: c.float) -> ^ConvexHullShapeSettings ---
-	ConvexHullShapeSettings_CreateShape :: proc(settings: ^ConvexHullShapeSettings) -> ^ConvexHullShape ---
-	ConvexHullShape_GetNumPoints :: proc(shape: ^ConvexHullShape) -> c.uint32_t ---
-	ConvexHullShape_GetPoint :: proc(shape: ^ConvexHullShape, index: c.uint32_t, result: ^Vec3) ---
-	ConvexHullShape_GetNumFaces :: proc(shape: ^ConvexHullShape) -> c.uint32_t ---
-	ConvexHullShape_GetNumVerticesInFace :: proc(shape: ^ConvexHullShape, faceIndex: c.uint32_t) -> c.uint32_t ---
-	ConvexHullShape_GetFaceVertices :: proc(shape: ^ConvexHullShape, faceIndex: c.uint32_t, maxVertices: c.uint32_t, vertices: ^c.uint32_t) -> c.uint32_t ---
+	@(link_name = "JPH_CapsuleShape_GetRadius")
+	CapsuleShape_GetRadius :: proc(shape: ^CapsuleShape) -> f32 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// MeshShape
-	//-------------------------------------------------------------------------------------------------
-	MeshShapeSettings_Create :: proc(triangles: ^Triangle, triangleCount: c.uint32_t) -> ^MeshShapeSettings ---
-	MeshShapeSettings_Create2 :: proc(vertices: ^Vec3, verticesCount: c.uint32_t, triangles: ^IndexedTriangle, triangleCount: c.uint32_t) -> ^MeshShapeSettings ---
-	MeshShapeSettings_GetPerTriangleUserData :: proc(settings: ^MeshShapeSettings) -> c.bool ---
-	MeshShapeSettings_SetPerTriangleUserData :: proc(settings: ^MeshShapeSettings, perTriangleUserData: c.bool) ---
-	MeshShapeSettings_Sanitize :: proc(settings: ^MeshShapeSettings) ---
-	MeshShapeSettings_CreateShape :: proc(settings: ^MeshShapeSettings) -> ^MeshShape ---
-	MeshShape_GetTriangleUserData :: proc(shape: ^MeshShape, id: SubShapeID) -> c.uint32_t ---
+	@(link_name = "JPH_CapsuleShape_GetHalfHeightOfCylinder")
+	CapsuleShape_GetHalfHeightOfCylinder :: proc(shape: ^CapsuleShape) -> f32 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// HeightFieldShape
-	//-------------------------------------------------------------------------------------------------
-	HeightFieldShapeSettings_Create :: proc(samples: ^c.float, offset: ^Vec3, scale: ^Vec3, sampleCount: c.uint32_t) -> ^HeightFieldShapeSettings ---
-	HeightFieldShapeSettings_CreateShape :: proc(settings: ^HeightFieldShapeSettings) -> ^HeightFieldShape ---
-	HeightFieldShapeSettings_DetermineMinAndMaxSample :: proc(settings: ^HeightFieldShapeSettings, pOutMinValue: ^c.float, pOutMaxValue: ^c.float, pOutQuantizationScale: ^c.float) ---
-	HeightFieldShapeSettings_CalculateBitsPerSampleForError :: proc(settings: ^HeightFieldShapeSettings, maxError: c.float) -> c.uint32_t ---
-	HeightFieldShape_GetSampleCount :: proc(shape: ^HeightFieldShape) -> c.uint32_t ---
-	HeightFieldShape_GetBlockSize :: proc(shape: ^HeightFieldShape) -> c.uint32_t ---
-	HeightFieldShape_GetMaterial :: proc(shape: ^HeightFieldShape, x: c.uint32_t, y: c.uint32_t) -> ^PhysicsMaterial ---
-	HeightFieldShape_GetPosition :: proc(shape: ^HeightFieldShape, x: c.uint32_t, y: c.uint32_t, result: ^Vec3) ---
-	HeightFieldShape_IsNoCollision :: proc(shape: ^HeightFieldShape, x: c.uint32_t, y: c.uint32_t) -> c.bool ---
-	HeightFieldShape_ProjectOntoSurface :: proc(shape: ^HeightFieldShape, localPosition: ^Vec3, outSurfacePosition: ^Vec3, outSubShapeID: ^SubShapeID) -> c.bool ---
-	HeightFieldShape_GetMinHeightValue :: proc(shape: ^HeightFieldShape) -> c.float ---
-	HeightFieldShape_GetMaxHeightValue :: proc(shape: ^HeightFieldShape) -> c.float ---
+	@(link_name = "JPH_CylinderShapeSettings_Create")
+	CylinderShapeSettings_Create :: proc(halfHeight: f32, radius: f32, convexRadius: f32) -> ^CylinderShapeSettings ---
 
-	//-------------------------------------------------------------------------------------------------
-	// TaperedCapsuleShape
-	//-------------------------------------------------------------------------------------------------
-	TaperedCapsuleShapeSettings_Create :: proc(halfHeightOfTaperedCylinder: c.float, topRadius: c.float, bottomRadius: c.float) -> ^TaperedCapsuleShapeSettings ---
-	TaperedCapsuleShapeSettings_CreateShape :: proc(settings: ^TaperedCapsuleShapeSettings) -> ^TaperedCapsuleShape ---
-	TaperedCapsuleShape_GetTopRadius :: proc(shape: ^TaperedCapsuleShape) -> c.float ---
-	TaperedCapsuleShape_GetBottomRadius :: proc(shape: ^TaperedCapsuleShape) -> c.float ---
-	TaperedCapsuleShape_GetHalfHeight :: proc(shape: ^TaperedCapsuleShape) -> c.float ---
+	@(link_name = "JPH_CylinderShapeSettings_CreateShape")
+	CylinderShapeSettings_CreateShape :: proc(settings: [^]CylinderShapeSettings) -> ^CylinderShape ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CompoundShape
-	//-------------------------------------------------------------------------------------------------
-	CompoundShapeSettings_AddShape :: proc(settings: ^CompoundShapeSettings, position: ^Vec3, rotation: ^Quat, shape: ^ShapeSettings, userData: c.uint32_t) ---
-	CompoundShapeSettings_AddShape2 :: proc(settings: ^CompoundShapeSettings, position: ^Vec3, rotation: ^Quat, shape: ^Shape, userData: c.uint32_t) ---
-	CompoundShape_GetNumSubShapes :: proc(shape: ^CompoundShape) -> c.uint32_t ---
-	CompoundShape_GetSubShape :: proc(shape: ^CompoundShape, index: c.uint32_t, subShape: ^^Shape, positionCOM: ^Vec3, rotation: ^Quat, userData: ^c.uint32_t) ---
-	CompoundShape_GetSubShapeIndexFromID :: proc(shape: ^CompoundShape, id: SubShapeID, remainder: ^SubShapeID) -> c.uint32_t ---
+	@(link_name = "JPH_CylinderShape_Create")
+	CylinderShape_Create :: proc(halfHeight: f32, radius: f32) -> ^CylinderShape ---
 
-	//-------------------------------------------------------------------------------------------------
-	// StaticCompoundShape
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_CylinderShape_GetRadius")
+	CylinderShape_GetRadius :: proc(shape: ^CylinderShape) -> f32 ---
+
+	@(link_name = "JPH_CylinderShape_GetHalfHeight")
+	CylinderShape_GetHalfHeight :: proc(shape: ^CylinderShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCylinderShapeSettings_Create")
+	TaperedCylinderShapeSettings_Create :: proc(halfHeightOfTaperedCylinder: f32, topRadius: f32, bottomRadius: f32, convexRadius: f32, material: ^PhysicsMaterial) -> ^TaperedCylinderShapeSettings ---
+
+	@(link_name = "JPH_TaperedCylinderShapeSettings_CreateShape")
+	TaperedCylinderShapeSettings_CreateShape :: proc(settings: [^]TaperedCylinderShapeSettings) -> ^TaperedCylinderShape ---
+
+	@(link_name = "JPH_TaperedCylinderShape_GetTopRadius")
+	TaperedCylinderShape_GetTopRadius :: proc(shape: ^TaperedCylinderShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCylinderShape_GetBottomRadius")
+	TaperedCylinderShape_GetBottomRadius :: proc(shape: ^TaperedCylinderShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCylinderShape_GetConvexRadius")
+	TaperedCylinderShape_GetConvexRadius :: proc(shape: ^TaperedCylinderShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCylinderShape_GetHalfHeight")
+	TaperedCylinderShape_GetHalfHeight :: proc(shape: ^TaperedCylinderShape) -> f32 ---
+
+	@(link_name = "JPH_ConvexHullShapeSettings_Create")
+	ConvexHullShapeSettings_Create :: proc(points: [^]Vec3, pointsCount: u32, maxConvexRadius: f32) -> ^ConvexHullShapeSettings ---
+
+	@(link_name = "JPH_ConvexHullShapeSettings_CreateShape")
+	ConvexHullShapeSettings_CreateShape :: proc(settings: [^]ConvexHullShapeSettings) -> ^ConvexHullShape ---
+
+	@(link_name = "JPH_ConvexHullShape_GetNumPoints")
+	ConvexHullShape_GetNumPoints :: proc(shape: ^ConvexHullShape) -> u32 ---
+
+	@(link_name = "JPH_ConvexHullShape_GetPoint")
+	ConvexHullShape_GetPoint :: proc(shape: ^ConvexHullShape, index: u32, result: ^Vec3) ---
+
+	@(link_name = "JPH_ConvexHullShape_GetNumFaces")
+	ConvexHullShape_GetNumFaces :: proc(shape: ^ConvexHullShape) -> u32 ---
+
+	@(link_name = "JPH_ConvexHullShape_GetNumVerticesInFace")
+	ConvexHullShape_GetNumVerticesInFace :: proc(shape: ^ConvexHullShape, faceIndex: u32) -> u32 ---
+
+	@(link_name = "JPH_ConvexHullShape_GetFaceVertices")
+	ConvexHullShape_GetFaceVertices :: proc(shape: ^ConvexHullShape, faceIndex: u32, maxVertices: u32, vertices: [^]u32) -> u32 ---
+
+	@(link_name = "JPH_MeshShapeSettings_Create")
+	MeshShapeSettings_Create :: proc(triangles: [^]Triangle, triangleCount: u32) -> ^MeshShapeSettings ---
+
+	@(link_name = "JPH_MeshShapeSettings_Create2")
+	MeshShapeSettings_Create2 :: proc(vertices: [^]Vec3, verticesCount: u32, triangles: [^]IndexedTriangle, triangleCount: u32) -> ^MeshShapeSettings ---
+
+	@(link_name = "JPH_MeshShapeSettings_GetMaxTrianglesPerLeaf")
+	MeshShapeSettings_GetMaxTrianglesPerLeaf :: proc(settings: [^]MeshShapeSettings) -> u32 ---
+
+	@(link_name = "JPH_MeshShapeSettings_SetMaxTrianglesPerLeaf")
+	MeshShapeSettings_SetMaxTrianglesPerLeaf :: proc(settings: [^]MeshShapeSettings, value: u32) ---
+
+	@(link_name = "JPH_MeshShapeSettings_GetActiveEdgeCosThresholdAngle")
+	MeshShapeSettings_GetActiveEdgeCosThresholdAngle :: proc(settings: [^]MeshShapeSettings) -> f32 ---
+
+	@(link_name = "JPH_MeshShapeSettings_SetActiveEdgeCosThresholdAngle")
+	MeshShapeSettings_SetActiveEdgeCosThresholdAngle :: proc(settings: [^]MeshShapeSettings, value: f32) ---
+
+	@(link_name = "JPH_MeshShapeSettings_GetPerTriangleUserData")
+	MeshShapeSettings_GetPerTriangleUserData :: proc(settings: [^]MeshShapeSettings) -> b8 ---
+
+	@(link_name = "JPH_MeshShapeSettings_SetPerTriangleUserData")
+	MeshShapeSettings_SetPerTriangleUserData :: proc(settings: [^]MeshShapeSettings, value: b8) ---
+
+	@(link_name = "JPH_MeshShapeSettings_GetBuildQuality")
+	MeshShapeSettings_GetBuildQuality :: proc(settings: [^]MeshShapeSettings) -> Mesh_Shape_BuildQuality ---
+
+	@(link_name = "JPH_MeshShapeSettings_SetBuildQuality")
+	MeshShapeSettings_SetBuildQuality :: proc(settings: [^]MeshShapeSettings, value: Mesh_Shape_BuildQuality) ---
+
+	@(link_name = "JPH_MeshShapeSettings_Sanitize")
+	MeshShapeSettings_Sanitize :: proc(settings: [^]MeshShapeSettings) ---
+
+	@(link_name = "JPH_MeshShapeSettings_CreateShape")
+	MeshShapeSettings_CreateShape :: proc(settings: [^]MeshShapeSettings) -> ^MeshShape ---
+
+	@(link_name = "JPH_MeshShape_GetTriangleUserData")
+	MeshShape_GetTriangleUserData :: proc(shape: ^MeshShape, id: SubShapeID) -> u32 ---
+
+	@(link_name = "JPH_HeightFieldShapeSettings_Create")
+	HeightFieldShapeSettings_Create :: proc(samples: [^]f32, offset: ^Vec3, scale: ^Vec3, sampleCount: u32) -> ^HeightFieldShapeSettings ---
+
+	@(link_name = "JPH_HeightFieldShapeSettings_CreateShape")
+	HeightFieldShapeSettings_CreateShape :: proc(settings: [^]HeightFieldShapeSettings) -> ^HeightFieldShape ---
+
+	@(link_name = "JPH_HeightFieldShapeSettings_DetermineMinAndMaxSample")
+	HeightFieldShapeSettings_DetermineMinAndMaxSample :: proc(settings: [^]HeightFieldShapeSettings, pOutMinValue: ^f32, pOutMaxValue: ^f32, pOutQuantizationScale: ^f32) ---
+
+	@(link_name = "JPH_HeightFieldShapeSettings_CalculateBitsPerSampleForError")
+	HeightFieldShapeSettings_CalculateBitsPerSampleForError :: proc(settings: [^]HeightFieldShapeSettings, maxError: f32) -> u32 ---
+
+	@(link_name = "JPH_HeightFieldShape_GetSampleCount")
+	HeightFieldShape_GetSampleCount :: proc(shape: ^HeightFieldShape) -> u32 ---
+
+	@(link_name = "JPH_HeightFieldShape_GetBlockSize")
+	HeightFieldShape_GetBlockSize :: proc(shape: ^HeightFieldShape) -> u32 ---
+
+	@(link_name = "JPH_HeightFieldShape_GetMaterial")
+	HeightFieldShape_GetMaterial :: proc(shape: ^HeightFieldShape, x: u32, y: u32) -> ^PhysicsMaterial ---
+
+	@(link_name = "JPH_HeightFieldShape_GetPosition")
+	HeightFieldShape_GetPosition :: proc(shape: ^HeightFieldShape, x: u32, y: u32, result: ^Vec3) ---
+
+	@(link_name = "JPH_HeightFieldShape_IsNoCollision")
+	HeightFieldShape_IsNoCollision :: proc(shape: ^HeightFieldShape, x: u32, y: u32) -> b8 ---
+
+	@(link_name = "JPH_HeightFieldShape_ProjectOntoSurface")
+	HeightFieldShape_ProjectOntoSurface :: proc(shape: ^HeightFieldShape, localPosition: ^Vec3, outSurfacePosition: ^Vec3, outSubShapeID: ^SubShapeID) -> b8 ---
+
+	@(link_name = "JPH_HeightFieldShape_GetMinHeightValue")
+	HeightFieldShape_GetMinHeightValue :: proc(shape: ^HeightFieldShape) -> f32 ---
+
+	@(link_name = "JPH_HeightFieldShape_GetMaxHeightValue")
+	HeightFieldShape_GetMaxHeightValue :: proc(shape: ^HeightFieldShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCapsuleShapeSettings_Create")
+	TaperedCapsuleShapeSettings_Create :: proc(halfHeightOfTaperedCylinder: f32, topRadius: f32, bottomRadius: f32) -> ^TaperedCapsuleShapeSettings ---
+
+	@(link_name = "JPH_TaperedCapsuleShapeSettings_CreateShape")
+	TaperedCapsuleShapeSettings_CreateShape :: proc(settings: [^]TaperedCapsuleShapeSettings) -> ^TaperedCapsuleShape ---
+
+	@(link_name = "JPH_TaperedCapsuleShape_GetTopRadius")
+	TaperedCapsuleShape_GetTopRadius :: proc(shape: ^TaperedCapsuleShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCapsuleShape_GetBottomRadius")
+	TaperedCapsuleShape_GetBottomRadius :: proc(shape: ^TaperedCapsuleShape) -> f32 ---
+
+	@(link_name = "JPH_TaperedCapsuleShape_GetHalfHeight")
+	TaperedCapsuleShape_GetHalfHeight :: proc(shape: ^TaperedCapsuleShape) -> f32 ---
+
+	@(link_name = "JPH_CompoundShapeSettings_AddShape")
+	CompoundShapeSettings_AddShape :: proc(settings: [^]CompoundShapeSettings, position: ^Vec3, rotation: ^Quat, shapeSettings: [^]ShapeSettings, userData: u32) ---
+
+	@(link_name = "JPH_CompoundShapeSettings_AddShape2")
+	CompoundShapeSettings_AddShape2 :: proc(settings: [^]CompoundShapeSettings, position: ^Vec3, rotation: ^Quat, shape: ^Shape, userData: u32) ---
+
+	@(link_name = "JPH_CompoundShape_GetNumSubShapes")
+	CompoundShape_GetNumSubShapes :: proc(shape: ^CompoundShape) -> u32 ---
+
+	@(link_name = "JPH_CompoundShape_GetSubShape")
+	CompoundShape_GetSubShape :: proc(shape: ^CompoundShape, index: u32, subShape: ^^Shape, positionCOM: ^Vec3, rotation: ^Quat, userData: ^u32) ---
+
+	@(link_name = "JPH_CompoundShape_GetSubShapeIndexFromID")
+	CompoundShape_GetSubShapeIndexFromID :: proc(shape: ^CompoundShape, id: SubShapeID, remainder: ^SubShapeID) -> u32 ---
+
+	@(link_name = "JPH_StaticCompoundShapeSettings_Create")
 	StaticCompoundShapeSettings_Create :: proc() -> ^StaticCompoundShapeSettings ---
-	StaticCompoundShape_Create :: proc(settings: ^StaticCompoundShapeSettings) -> ^StaticCompoundShape ---
 
-	//-------------------------------------------------------------------------------------------------
-	// MutableCompoundShape
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_StaticCompoundShape_Create")
+	StaticCompoundShape_Create :: proc(settings: [^]StaticCompoundShapeSettings) -> ^StaticCompoundShape ---
+
+	@(link_name = "JPH_MutableCompoundShapeSettings_Create")
 	MutableCompoundShapeSettings_Create :: proc() -> ^MutableCompoundShapeSettings ---
-	MutableCompoundShape_Create :: proc(settings: ^MutableCompoundShapeSettings) -> ^MutableCompoundShape ---
-	MutableCompoundShape_AddShape :: proc(shape: ^MutableCompoundShape, position: ^Vec3, rotation: ^Quat, child: ^Shape, userData: c.uint32_t, index: c.uint32_t) -> c.uint32_t ---
-	MutableCompoundShape_RemoveShape :: proc(shape: ^MutableCompoundShape, index: c.uint32_t) ---
-	MutableCompoundShape_ModifyShape :: proc(shape: ^MutableCompoundShape, index: c.uint32_t, position: ^Vec3, rotation: ^Quat) ---
-	MutableCompoundShape_ModifyShape2 :: proc(shape: ^MutableCompoundShape, index: c.uint32_t, position: ^Vec3, rotation: ^Quat, newShape: ^Shape) ---
+
+	@(link_name = "JPH_MutableCompoundShape_Create")
+	MutableCompoundShape_Create :: proc(settings: [^]MutableCompoundShapeSettings) -> ^MutableCompoundShape ---
+
+	@(link_name = "JPH_MutableCompoundShape_AddShape")
+	MutableCompoundShape_AddShape :: proc(shape: ^MutableCompoundShape, position: ^Vec3, rotation: ^Quat, child: ^Shape, userData: u32, index: u32) -> u32 ---
+
+	@(link_name = "JPH_MutableCompoundShape_RemoveShape")
+	MutableCompoundShape_RemoveShape :: proc(shape: ^MutableCompoundShape, index: u32) ---
+
+	@(link_name = "JPH_MutableCompoundShape_ModifyShape")
+	MutableCompoundShape_ModifyShape :: proc(shape: ^MutableCompoundShape, index: u32, position: ^Vec3, rotation: ^Quat) ---
+
+	@(link_name = "JPH_MutableCompoundShape_ModifyShape2")
+	MutableCompoundShape_ModifyShape2 :: proc(shape: ^MutableCompoundShape, index: u32, position: ^Vec3, rotation: ^Quat, newShape: ^Shape) ---
+
+	@(link_name = "JPH_MutableCompoundShape_AdjustCenterOfMass")
 	MutableCompoundShape_AdjustCenterOfMass :: proc(shape: ^MutableCompoundShape) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// DecoratedShape
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_DecoratedShape_GetInnerShape")
 	DecoratedShape_GetInnerShape :: proc(shape: ^DecoratedShape) -> ^Shape ---
 
-	//-------------------------------------------------------------------------------------------------
-	// RotatedTranslatedShape
-	//-------------------------------------------------------------------------------------------------
-	RotatedTranslatedShapeSettings_Create :: proc(position: ^Vec3, rotation: ^Quat, shapeSettings: ^ShapeSettings) -> ^RotatedTranslatedShapeSettings ---
+	@(link_name = "JPH_RotatedTranslatedShapeSettings_Create")
+	RotatedTranslatedShapeSettings_Create :: proc(position: ^Vec3, rotation: ^Quat, shapeSettings: [^]ShapeSettings) -> ^RotatedTranslatedShapeSettings ---
+
+	@(link_name = "JPH_RotatedTranslatedShapeSettings_Create2")
 	RotatedTranslatedShapeSettings_Create2 :: proc(position: ^Vec3, rotation: ^Quat, shape: ^Shape) -> ^RotatedTranslatedShapeSettings ---
-	RotatedTranslatedShapeSettings_CreateShape :: proc(settings: ^RotatedTranslatedShapeSettings) -> ^RotatedTranslatedShape ---
+
+	@(link_name = "JPH_RotatedTranslatedShapeSettings_CreateShape")
+	RotatedTranslatedShapeSettings_CreateShape :: proc(settings: [^]RotatedTranslatedShapeSettings) -> ^RotatedTranslatedShape ---
+
+	@(link_name = "JPH_RotatedTranslatedShape_Create")
 	RotatedTranslatedShape_Create :: proc(position: ^Vec3, rotation: ^Quat, shape: ^Shape) -> ^RotatedTranslatedShape ---
+
+	@(link_name = "JPH_RotatedTranslatedShape_GetPosition")
 	RotatedTranslatedShape_GetPosition :: proc(shape: ^RotatedTranslatedShape, position: ^Vec3) ---
+
+	@(link_name = "JPH_RotatedTranslatedShape_GetRotation")
 	RotatedTranslatedShape_GetRotation :: proc(shape: ^RotatedTranslatedShape, rotation: ^Quat) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ScaledShape
-	//-------------------------------------------------------------------------------------------------
-	ScaledShapeSettings_Create :: proc(shapeSettings: ^ShapeSettings, scale: ^Vec3) -> ^ScaledShapeSettings ---
+	@(link_name = "JPH_ScaledShapeSettings_Create")
+	ScaledShapeSettings_Create :: proc(shapeSettings: [^]ShapeSettings, scale: ^Vec3) -> ^ScaledShapeSettings ---
+
+	@(link_name = "JPH_ScaledShapeSettings_Create2")
 	ScaledShapeSettings_Create2 :: proc(shape: ^Shape, scale: ^Vec3) -> ^ScaledShapeSettings ---
-	ScaledShapeSettings_CreateShape :: proc(settings: ^ScaledShapeSettings) -> ^ScaledShape ---
+
+	@(link_name = "JPH_ScaledShapeSettings_CreateShape")
+	ScaledShapeSettings_CreateShape :: proc(settings: [^]ScaledShapeSettings) -> ^ScaledShape ---
+
+	@(link_name = "JPH_ScaledShape_Create")
 	ScaledShape_Create :: proc(shape: ^Shape, scale: ^Vec3) -> ^ScaledShape ---
+
+	@(link_name = "JPH_ScaledShape_GetScale")
 	ScaledShape_GetScale :: proc(shape: ^ScaledShape, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// OffsetCenterOfMassShape
-	//-------------------------------------------------------------------------------------------------
-	OffsetCenterOfMassShapeSettings_Create :: proc(offset: ^Vec3, shapeSettings: ^ShapeSettings) -> ^OffsetCenterOfMassShapeSettings ---
+	@(link_name = "JPH_OffsetCenterOfMassShapeSettings_Create")
+	OffsetCenterOfMassShapeSettings_Create :: proc(offset: ^Vec3, shapeSettings: [^]ShapeSettings) -> ^OffsetCenterOfMassShapeSettings ---
+
+	@(link_name = "JPH_OffsetCenterOfMassShapeSettings_Create2")
 	OffsetCenterOfMassShapeSettings_Create2 :: proc(offset: ^Vec3, shape: ^Shape) -> ^OffsetCenterOfMassShapeSettings ---
-	OffsetCenterOfMassShapeSettings_CreateShape :: proc(settings: ^OffsetCenterOfMassShapeSettings) -> ^OffsetCenterOfMassShape ---
+
+	@(link_name = "JPH_OffsetCenterOfMassShapeSettings_CreateShape")
+	OffsetCenterOfMassShapeSettings_CreateShape :: proc(settings: [^]OffsetCenterOfMassShapeSettings) -> ^OffsetCenterOfMassShape ---
+
+	@(link_name = "JPH_OffsetCenterOfMassShape_Create")
 	OffsetCenterOfMassShape_Create :: proc(offset: ^Vec3, shape: ^Shape) -> ^OffsetCenterOfMassShape ---
+
+	@(link_name = "JPH_OffsetCenterOfMassShape_GetOffset")
 	OffsetCenterOfMassShape_GetOffset :: proc(shape: ^OffsetCenterOfMassShape, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// EmptyShape
-	//-------------------------------------------------------------------------------------------------
-	EmptyShapeSettings_Create :: proc(centerOfMass: ^Vec3) -> ^EmptyShapeSettings ---
-	EmptyShapeSettings_CreateShape :: proc(settings: ^EmptyShapeSettings) -> ^EmptyShape ---
+	@(link_name = "JPH_EmptyShapeSettings_Create")
+	EmptyShapeSettings_Create :: proc(centerOfMass: [^]Vec3) -> ^EmptyShapeSettings ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyCreationSettings
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_EmptyShapeSettings_CreateShape")
+	EmptyShapeSettings_CreateShape :: proc(settings: [^]EmptyShapeSettings) -> ^EmptyShape ---
+
+	@(link_name = "JPH_BodyCreationSettings_Create")
 	BodyCreationSettings_Create :: proc() -> ^BodyCreationSettings ---
-	BodyCreationSettings_Create2 :: proc(settings: ^ShapeSettings, position: ^RVec3, rotation: ^Quat, motionType: MotionType, objectLayer: ObjectLayer) -> ^BodyCreationSettings ---
+
+	@(link_name = "JPH_BodyCreationSettings_Create2")
+	BodyCreationSettings_Create2 :: proc(settings: [^]ShapeSettings, position: ^RVec3, rotation: ^Quat, motionType: MotionType, objectLayer: ObjectLayer) -> ^BodyCreationSettings ---
+
+	@(link_name = "JPH_BodyCreationSettings_Create3")
 	BodyCreationSettings_Create3 :: proc(shape: ^Shape, position: ^RVec3, rotation: ^Quat, motionType: MotionType, objectLayer: ObjectLayer) -> ^BodyCreationSettings ---
-	BodyCreationSettings_Destroy :: proc(settings: ^BodyCreationSettings) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyCreationSettings
-	//-------------------------------------------------------------------------------------------------
-	BodyCreationSettings_GetPosition :: proc(settings: ^BodyCreationSettings, result: ^RVec3) ---
-	BodyCreationSettings_SetPosition :: proc(settings: ^BodyCreationSettings, value: ^RVec3) ---
-	BodyCreationSettings_GetRotation :: proc(settings: ^BodyCreationSettings, result: ^Quat) ---
-	BodyCreationSettings_SetRotation :: proc(settings: ^BodyCreationSettings, value: ^Quat) ---
-	BodyCreationSettings_GetLinearVelocity :: proc(settings: ^BodyCreationSettings, velocity: ^Vec3) ---
-	BodyCreationSettings_SetLinearVelocity :: proc(settings: ^BodyCreationSettings, velocity: ^Vec3) ---
-	BodyCreationSettings_GetAngularVelocity :: proc(settings: ^BodyCreationSettings, velocity: ^Vec3) ---
-	BodyCreationSettings_SetAngularVelocity :: proc(settings: ^BodyCreationSettings, velocity: ^Vec3) ---
-	BodyCreationSettings_GetUserData :: proc(settings: ^BodyCreationSettings) -> u64 ---
-	BodyCreationSettings_SetUserData :: proc(settings: ^BodyCreationSettings, value: u64) ---
-	BodyCreationSettings_GetObjectLayer :: proc(settings: ^BodyCreationSettings) -> ObjectLayer ---
-	BodyCreationSettings_SetObjectLayer :: proc(settings: ^BodyCreationSettings, value: ObjectLayer) ---
-	BodyCreationSettings_GetMotionType :: proc(settings: ^BodyCreationSettings) -> MotionType ---
-	BodyCreationSettings_SetMotionType :: proc(settings: ^BodyCreationSettings, value: MotionType) ---
-	BodyCreationSettings_GetAllowedDOFs :: proc(settings: ^BodyCreationSettings) -> AllowedDOFs ---
-	BodyCreationSettings_SetAllowedDOFs :: proc(settings: ^BodyCreationSettings, value: AllowedDOFs) ---
-	BodyCreationSettings_GetAllowDynamicOrKinematic :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetAllowDynamicOrKinematic :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetIsSensor :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetIsSensor :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetCollideKinematicVsNonDynamic :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetCollideKinematicVsNonDynamic :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetUseManifoldReduction :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetUseManifoldReduction :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetApplyGyroscopicForce :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetApplyGyroscopicForce :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetMotionQuality :: proc(settings: ^BodyCreationSettings) -> MotionQuality ---
-	BodyCreationSettings_SetMotionQuality :: proc(settings: ^BodyCreationSettings, value: MotionQuality) ---
-	BodyCreationSettings_GetEnhancedInternalEdgeRemoval :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetEnhancedInternalEdgeRemoval :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetAllowSleeping :: proc(settings: ^BodyCreationSettings) -> bool ---
-	BodyCreationSettings_SetAllowSleeping :: proc(settings: ^BodyCreationSettings, value: bool) ---
-	BodyCreationSettings_GetFriction :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetFriction :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetRestitution :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetRestitution :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetLinearDamping :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetLinearDamping :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetAngularDamping :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetAngularDamping :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetMaxLinearVelocity :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetMaxLinearVelocity :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetMaxAngularVelocity :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetMaxAngularVelocity :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetGravityFactor :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetGravityFactor :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetNumVelocityStepsOverride :: proc(settings: ^BodyCreationSettings) -> u32 ---
-	BodyCreationSettings_SetNumVelocityStepsOverride :: proc(settings: ^BodyCreationSettings, value: u32) ---
-	BodyCreationSettings_GetNumPositionStepsOverride :: proc(settings: ^BodyCreationSettings) -> u32 ---
-	BodyCreationSettings_SetNumPositionStepsOverride :: proc(settings: ^BodyCreationSettings, value: u32) ---
-	BodyCreationSettings_GetOverrideMassProperties :: proc(settings: ^BodyCreationSettings) -> OverrideMassProperties ---
-	BodyCreationSettings_SetOverrideMassProperties :: proc(settings: ^BodyCreationSettings, value: OverrideMassProperties) ---
-	BodyCreationSettings_GetInertiaMultiplier :: proc(settings: ^BodyCreationSettings) -> f32 ---
-	BodyCreationSettings_SetInertiaMultiplier :: proc(settings: ^BodyCreationSettings, value: f32) ---
-	BodyCreationSettings_GetMassPropertiesOverride :: proc(settings: ^BodyCreationSettings, result: ^MassProperties) ---
-	BodyCreationSettings_SetMassPropertiesOverride :: proc(settings: ^BodyCreationSettings, massProperties: ^MassProperties) ---
+	@(link_name = "JPH_BodyCreationSettings_Destroy")
+	BodyCreationSettings_Destroy :: proc(settings: [^]BodyCreationSettings) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// SoftBodyCreationSettings
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_BodyCreationSettings_GetPosition")
+	BodyCreationSettings_GetPosition :: proc(settings: [^]BodyCreationSettings, result: ^RVec3) ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetPosition")
+	BodyCreationSettings_SetPosition :: proc(settings: [^]BodyCreationSettings, value: ^RVec3) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetRotation")
+	BodyCreationSettings_GetRotation :: proc(settings: [^]BodyCreationSettings, result: ^Quat) ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetRotation")
+	BodyCreationSettings_SetRotation :: proc(settings: [^]BodyCreationSettings, value: ^Quat) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetLinearVelocity")
+	BodyCreationSettings_GetLinearVelocity :: proc(settings: [^]BodyCreationSettings, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetLinearVelocity")
+	BodyCreationSettings_SetLinearVelocity :: proc(settings: [^]BodyCreationSettings, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetAngularVelocity")
+	BodyCreationSettings_GetAngularVelocity :: proc(settings: [^]BodyCreationSettings, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetAngularVelocity")
+	BodyCreationSettings_SetAngularVelocity :: proc(settings: [^]BodyCreationSettings, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetUserData")
+	BodyCreationSettings_GetUserData :: proc(settings: [^]BodyCreationSettings) -> u64 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetUserData")
+	BodyCreationSettings_SetUserData :: proc(settings: [^]BodyCreationSettings, value: u64) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetObjectLayer")
+	BodyCreationSettings_GetObjectLayer :: proc(settings: [^]BodyCreationSettings) -> ObjectLayer ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetObjectLayer")
+	BodyCreationSettings_SetObjectLayer :: proc(settings: [^]BodyCreationSettings, value: ObjectLayer) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetMotionType")
+	BodyCreationSettings_GetMotionType :: proc(settings: [^]BodyCreationSettings) -> MotionType ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetMotionType")
+	BodyCreationSettings_SetMotionType :: proc(settings: [^]BodyCreationSettings, value: MotionType) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetAllowedDOFs")
+	BodyCreationSettings_GetAllowedDOFs :: proc(settings: [^]BodyCreationSettings) -> AllowedDOFs ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetAllowedDOFs")
+	BodyCreationSettings_SetAllowedDOFs :: proc(settings: [^]BodyCreationSettings, value: AllowedDOFs) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetAllowDynamicOrKinematic")
+	BodyCreationSettings_GetAllowDynamicOrKinematic :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetAllowDynamicOrKinematic")
+	BodyCreationSettings_SetAllowDynamicOrKinematic :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetIsSensor")
+	BodyCreationSettings_GetIsSensor :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetIsSensor")
+	BodyCreationSettings_SetIsSensor :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetCollideKinematicVsNonDynamic")
+	BodyCreationSettings_GetCollideKinematicVsNonDynamic :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetCollideKinematicVsNonDynamic")
+	BodyCreationSettings_SetCollideKinematicVsNonDynamic :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetUseManifoldReduction")
+	BodyCreationSettings_GetUseManifoldReduction :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetUseManifoldReduction")
+	BodyCreationSettings_SetUseManifoldReduction :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetApplyGyroscopicForce")
+	BodyCreationSettings_GetApplyGyroscopicForce :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetApplyGyroscopicForce")
+	BodyCreationSettings_SetApplyGyroscopicForce :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetMotionQuality")
+	BodyCreationSettings_GetMotionQuality :: proc(settings: [^]BodyCreationSettings) -> MotionQuality ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetMotionQuality")
+	BodyCreationSettings_SetMotionQuality :: proc(settings: [^]BodyCreationSettings, value: MotionQuality) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetEnhancedInternalEdgeRemoval")
+	BodyCreationSettings_GetEnhancedInternalEdgeRemoval :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetEnhancedInternalEdgeRemoval")
+	BodyCreationSettings_SetEnhancedInternalEdgeRemoval :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetAllowSleeping")
+	BodyCreationSettings_GetAllowSleeping :: proc(settings: [^]BodyCreationSettings) -> b8 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetAllowSleeping")
+	BodyCreationSettings_SetAllowSleeping :: proc(settings: [^]BodyCreationSettings, value: b8) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetFriction")
+	BodyCreationSettings_GetFriction :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetFriction")
+	BodyCreationSettings_SetFriction :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetRestitution")
+	BodyCreationSettings_GetRestitution :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetRestitution")
+	BodyCreationSettings_SetRestitution :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetLinearDamping")
+	BodyCreationSettings_GetLinearDamping :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetLinearDamping")
+	BodyCreationSettings_SetLinearDamping :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetAngularDamping")
+	BodyCreationSettings_GetAngularDamping :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetAngularDamping")
+	BodyCreationSettings_SetAngularDamping :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetMaxLinearVelocity")
+	BodyCreationSettings_GetMaxLinearVelocity :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetMaxLinearVelocity")
+	BodyCreationSettings_SetMaxLinearVelocity :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetMaxAngularVelocity")
+	BodyCreationSettings_GetMaxAngularVelocity :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetMaxAngularVelocity")
+	BodyCreationSettings_SetMaxAngularVelocity :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetGravityFactor")
+	BodyCreationSettings_GetGravityFactor :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetGravityFactor")
+	BodyCreationSettings_SetGravityFactor :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetNumVelocityStepsOverride")
+	BodyCreationSettings_GetNumVelocityStepsOverride :: proc(settings: [^]BodyCreationSettings) -> u32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetNumVelocityStepsOverride")
+	BodyCreationSettings_SetNumVelocityStepsOverride :: proc(settings: [^]BodyCreationSettings, value: u32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetNumPositionStepsOverride")
+	BodyCreationSettings_GetNumPositionStepsOverride :: proc(settings: [^]BodyCreationSettings) -> u32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetNumPositionStepsOverride")
+	BodyCreationSettings_SetNumPositionStepsOverride :: proc(settings: [^]BodyCreationSettings, value: u32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetOverrideMassProperties")
+	BodyCreationSettings_GetOverrideMassProperties :: proc(settings: [^]BodyCreationSettings) -> OverrideMassProperties ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetOverrideMassProperties")
+	BodyCreationSettings_SetOverrideMassProperties :: proc(settings: [^]BodyCreationSettings, value: OverrideMassProperties) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetInertiaMultiplier")
+	BodyCreationSettings_GetInertiaMultiplier :: proc(settings: [^]BodyCreationSettings) -> f32 ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetInertiaMultiplier")
+	BodyCreationSettings_SetInertiaMultiplier :: proc(settings: [^]BodyCreationSettings, value: f32) ---
+
+	@(link_name = "JPH_BodyCreationSettings_GetMassPropertiesOverride")
+	BodyCreationSettings_GetMassPropertiesOverride :: proc(settings: [^]BodyCreationSettings, result: ^MassProperties) ---
+
+	@(link_name = "JPH_BodyCreationSettings_SetMassPropertiesOverride")
+	BodyCreationSettings_SetMassPropertiesOverride :: proc(settings: [^]BodyCreationSettings, massProperties: [^]MassProperties) ---
+
+	@(link_name = "JPH_SoftBodyCreationSettings_Create")
 	SoftBodyCreationSettings_Create :: proc() -> ^SoftBodyCreationSettings ---
-	SoftBodyCreationSettings_Destroy :: proc(settings: ^SoftBodyCreationSettings) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// Constraint
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_SoftBodyCreationSettings_Destroy")
+	SoftBodyCreationSettings_Destroy :: proc(settings: [^]SoftBodyCreationSettings) ---
+
+	@(link_name = "JPH_Constraint_Destroy")
 	Constraint_Destroy :: proc(constraint: ^Constraint) ---
-	Constraint_GetType :: proc(constraint: ^Constraint) -> ConstraintType ---
-	Constraint_GetSubType :: proc(constraint: ^Constraint) -> ConstraintSubType ---
-	Constraint_GetConstraintPriority :: proc(constraint: ^Constraint) -> c.uint32_t ---
-	Constraint_SetConstraintPriority :: proc(constraint: ^Constraint, priority: c.uint32_t) ---
-	Constraint_GetNumVelocityStepsOverride :: proc(constraint: ^Constraint) -> c.uint32_t ---
-	Constraint_SetNumVelocityStepsOverride :: proc(constraint: ^Constraint, value: c.uint32_t) ---
-	Constraint_GetNumPositionStepsOverride :: proc(constraint: ^Constraint) -> c.uint32_t ---
-	Constraint_SetNumPositionStepsOverride :: proc(constraint: ^Constraint, value: c.uint32_t) ---
-	Constraint_GetEnabled :: proc(constraint: ^Constraint) -> c.bool ---
-	Constraint_SetEnabled :: proc(constraint: ^Constraint, enabled: c.bool) ---
-	Constraint_GetUserData :: proc(constraint: ^Constraint) -> c.uint64_t ---
-	Constraint_SetUserData :: proc(constraint: ^Constraint, userData: c.uint64_t) ---
-	Constraint_NotifyShapeChanged :: proc(constraint: ^Constraint, bodyID: BodyID, deltaCOM: ^Vec3) ---
-	Constraint_ResetWarmStart :: proc(constraint: ^Constraint) ---
-	Constraint_IsActive :: proc(constraint: ^Constraint) -> c.bool ---
-	Constraint_SetupVelocityConstraint :: proc(constraint: ^Constraint, deltaTime: c.float) ---
-	Constraint_WarmStartVelocityConstraint :: proc(constraint: ^Constraint, warmStartImpulseRatio: c.float) ---
-	Constraint_SolveVelocityConstraint :: proc(constraint: ^Constraint, deltaTime: c.float) -> c.bool ---
-	Constraint_SolvePositionConstraint :: proc(constraint: ^Constraint, deltaTime: c.float, baumgarte: c.float) -> c.bool ---
 
-	//-------------------------------------------------------------------------------------------------
-	// TwoBodyConstraint
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_Constraint_GetType")
+	Constraint_GetType :: proc(constraint: ^Constraint) -> ConstraintType ---
+
+	@(link_name = "JPH_Constraint_GetSubType")
+	Constraint_GetSubType :: proc(constraint: ^Constraint) -> ConstraintSubType ---
+
+	@(link_name = "JPH_Constraint_GetConstraintPriority")
+	Constraint_GetConstraintPriority :: proc(constraint: ^Constraint) -> u32 ---
+
+	@(link_name = "JPH_Constraint_SetConstraintPriority")
+	Constraint_SetConstraintPriority :: proc(constraint: ^Constraint, priority: u32) ---
+
+	@(link_name = "JPH_Constraint_GetNumVelocityStepsOverride")
+	Constraint_GetNumVelocityStepsOverride :: proc(constraint: ^Constraint) -> u32 ---
+
+	@(link_name = "JPH_Constraint_SetNumVelocityStepsOverride")
+	Constraint_SetNumVelocityStepsOverride :: proc(constraint: ^Constraint, value: u32) ---
+
+	@(link_name = "JPH_Constraint_GetNumPositionStepsOverride")
+	Constraint_GetNumPositionStepsOverride :: proc(constraint: ^Constraint) -> u32 ---
+
+	@(link_name = "JPH_Constraint_SetNumPositionStepsOverride")
+	Constraint_SetNumPositionStepsOverride :: proc(constraint: ^Constraint, value: u32) ---
+
+	@(link_name = "JPH_Constraint_GetEnabled")
+	Constraint_GetEnabled :: proc(constraint: ^Constraint) -> b8 ---
+
+	@(link_name = "JPH_Constraint_SetEnabled")
+	Constraint_SetEnabled :: proc(constraint: ^Constraint, enabled: b8) ---
+
+	@(link_name = "JPH_Constraint_GetUserData")
+	Constraint_GetUserData :: proc(constraint: ^Constraint) -> u64 ---
+
+	@(link_name = "JPH_Constraint_SetUserData")
+	Constraint_SetUserData :: proc(constraint: ^Constraint, userData: u64) ---
+
+	@(link_name = "JPH_Constraint_NotifyShapeChanged")
+	Constraint_NotifyShapeChanged :: proc(constraint: ^Constraint, bodyID: BodyID, deltaCOM: ^Vec3) ---
+
+	@(link_name = "JPH_Constraint_ResetWarmStart")
+	Constraint_ResetWarmStart :: proc(constraint: ^Constraint) ---
+
+	@(link_name = "JPH_Constraint_IsActive")
+	Constraint_IsActive :: proc(constraint: ^Constraint) -> b8 ---
+
+	@(link_name = "JPH_Constraint_SetupVelocityConstraint")
+	Constraint_SetupVelocityConstraint :: proc(constraint: ^Constraint, deltaTime: f32) ---
+
+	@(link_name = "JPH_Constraint_WarmStartVelocityConstraint")
+	Constraint_WarmStartVelocityConstraint :: proc(constraint: ^Constraint, warmStartImpulseRatio: f32) ---
+
+	@(link_name = "JPH_Constraint_SolveVelocityConstraint")
+	Constraint_SolveVelocityConstraint :: proc(constraint: ^Constraint, deltaTime: f32) -> b8 ---
+
+	@(link_name = "JPH_Constraint_SolvePositionConstraint")
+	Constraint_SolvePositionConstraint :: proc(constraint: ^Constraint, deltaTime: f32, baumgarte: f32) -> b8 ---
+
+	@(link_name = "JPH_TwoBodyConstraint_GetBody1")
 	TwoBodyConstraint_GetBody1 :: proc(constraint: ^TwoBodyConstraint) -> ^Body ---
+
+	@(link_name = "JPH_TwoBodyConstraint_GetBody2")
 	TwoBodyConstraint_GetBody2 :: proc(constraint: ^TwoBodyConstraint) -> ^Body ---
+
+	@(link_name = "JPH_TwoBodyConstraint_GetConstraintToBody1Matrix")
 	TwoBodyConstraint_GetConstraintToBody1Matrix :: proc(constraint: ^TwoBodyConstraint, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_TwoBodyConstraint_GetConstraintToBody2Matrix")
 	TwoBodyConstraint_GetConstraintToBody2Matrix :: proc(constraint: ^TwoBodyConstraint, result: ^Matrix4x4) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// FixedConstraint
-	//-------------------------------------------------------------------------------------------------
-	FixedConstraintSettings_Init :: proc(settings: ^FixedConstraintSettings) ---
-	FixedConstraint_Create :: proc(settings: ^FixedConstraintSettings, body1: ^Body, body2: ^Body) -> ^FixedConstraint ---
-	FixedConstraint_GetSettings :: proc(constraint: ^FixedConstraint, settings: ^FixedConstraintSettings) ---
+	@(link_name = "JPH_FixedConstraintSettings_Init")
+	FixedConstraintSettings_Init :: proc(settings: [^]FixedConstraintSettings) ---
+
+	@(link_name = "JPH_FixedConstraint_Create")
+	FixedConstraint_Create :: proc(settings: [^]FixedConstraintSettings, body1: ^Body, body2: ^Body) -> ^FixedConstraint ---
+
+	@(link_name = "JPH_FixedConstraint_GetSettings")
+	FixedConstraint_GetSettings :: proc(constraint: ^FixedConstraint, settings: [^]FixedConstraintSettings) ---
+
+	@(link_name = "JPH_FixedConstraint_GetTotalLambdaPosition")
 	FixedConstraint_GetTotalLambdaPosition :: proc(constraint: ^FixedConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_FixedConstraint_GetTotalLambdaRotation")
 	FixedConstraint_GetTotalLambdaRotation :: proc(constraint: ^FixedConstraint, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// DistanceConstraint
-	//-------------------------------------------------------------------------------------------------
-	DistanceConstraintSettings_Init :: proc(settings: ^DistanceConstraintSettings) ---
-	DistanceConstraint_Create :: proc(settings: ^DistanceConstraintSettings, body1: ^Body, body2: ^Body) -> ^DistanceConstraint ---
-	DistanceConstraint_GetSettings :: proc(constraint: ^DistanceConstraint, settings: ^DistanceConstraintSettings) ---
-	DistanceConstraint_SetDistance :: proc(constraint: ^DistanceConstraint, minDistance: c.float, maxDistance: c.float) ---
-	DistanceConstraint_GetMinDistance :: proc(constraint: ^DistanceConstraint) -> c.float ---
-	DistanceConstraint_GetMaxDistance :: proc(constraint: ^DistanceConstraint) -> c.float ---
-	DistanceConstraint_GetLimitsSpringSettings :: proc(constraint: ^DistanceConstraint, result: ^SpringSettings) ---
-	DistanceConstraint_SetLimitsSpringSettings :: proc(constraint: ^DistanceConstraint, settings: ^SpringSettings) ---
-	DistanceConstraint_GetTotalLambdaPosition :: proc(constraint: ^DistanceConstraint) -> c.float ---
+	@(link_name = "JPH_DistanceConstraintSettings_Init")
+	DistanceConstraintSettings_Init :: proc(settings: [^]DistanceConstraintSettings) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// PointConstraint
-	//-------------------------------------------------------------------------------------------------
-	PointConstraintSettings_Init :: proc(settings: ^PointConstraintSettings) ---
-	PointConstraint_Create :: proc(settings: ^PointConstraintSettings, body1: ^Body, body2: ^Body) -> ^PointConstraint ---
-	PointConstraint_GetSettings :: proc(constraint: ^PointConstraint, settings: ^PointConstraintSettings) ---
+	@(link_name = "JPH_DistanceConstraint_Create")
+	DistanceConstraint_Create :: proc(settings: [^]DistanceConstraintSettings, body1: ^Body, body2: ^Body) -> ^DistanceConstraint ---
+
+	@(link_name = "JPH_DistanceConstraint_GetSettings")
+	DistanceConstraint_GetSettings :: proc(constraint: ^DistanceConstraint, settings: [^]DistanceConstraintSettings) ---
+
+	@(link_name = "JPH_DistanceConstraint_SetDistance")
+	DistanceConstraint_SetDistance :: proc(constraint: ^DistanceConstraint, minDistance: f32, maxDistance: f32) ---
+
+	@(link_name = "JPH_DistanceConstraint_GetMinDistance")
+	DistanceConstraint_GetMinDistance :: proc(constraint: ^DistanceConstraint) -> f32 ---
+
+	@(link_name = "JPH_DistanceConstraint_GetMaxDistance")
+	DistanceConstraint_GetMaxDistance :: proc(constraint: ^DistanceConstraint) -> f32 ---
+
+	@(link_name = "JPH_DistanceConstraint_GetLimitsSpringSettings")
+	DistanceConstraint_GetLimitsSpringSettings :: proc(constraint: ^DistanceConstraint, result: ^SpringSettings) ---
+
+	@(link_name = "JPH_DistanceConstraint_SetLimitsSpringSettings")
+	DistanceConstraint_SetLimitsSpringSettings :: proc(constraint: ^DistanceConstraint, settings: [^]SpringSettings) ---
+
+	@(link_name = "JPH_DistanceConstraint_GetTotalLambdaPosition")
+	DistanceConstraint_GetTotalLambdaPosition :: proc(constraint: ^DistanceConstraint) -> f32 ---
+
+	@(link_name = "JPH_PointConstraintSettings_Init")
+	PointConstraintSettings_Init :: proc(settings: [^]PointConstraintSettings) ---
+
+	@(link_name = "JPH_PointConstraint_Create")
+	PointConstraint_Create :: proc(settings: [^]PointConstraintSettings, body1: ^Body, body2: ^Body) -> ^PointConstraint ---
+
+	@(link_name = "JPH_PointConstraint_GetSettings")
+	PointConstraint_GetSettings :: proc(constraint: ^PointConstraint, settings: [^]PointConstraintSettings) ---
+
+	@(link_name = "JPH_PointConstraint_SetPoint1")
 	PointConstraint_SetPoint1 :: proc(constraint: ^PointConstraint, space: ConstraintSpace, value: ^RVec3) ---
+
+	@(link_name = "JPH_PointConstraint_SetPoint2")
 	PointConstraint_SetPoint2 :: proc(constraint: ^PointConstraint, space: ConstraintSpace, value: ^RVec3) ---
+
+	@(link_name = "JPH_PointConstraint_GetLocalSpacePoint1")
 	PointConstraint_GetLocalSpacePoint1 :: proc(constraint: ^PointConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_PointConstraint_GetLocalSpacePoint2")
 	PointConstraint_GetLocalSpacePoint2 :: proc(constraint: ^PointConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_PointConstraint_GetTotalLambdaPosition")
 	PointConstraint_GetTotalLambdaPosition :: proc(constraint: ^PointConstraint, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// HingeConstraint
-	//-------------------------------------------------------------------------------------------------
-	HingeConstraintSettings_Init :: proc(settings: ^HingeConstraintSettings) ---
-	HingeConstraint_Create :: proc(settings: ^HingeConstraintSettings, body1: ^Body, body2: ^Body) -> ^HingeConstraint ---
-	HingeConstraint_GetSettings :: proc(constraint: ^HingeConstraint, settings: ^HingeConstraintSettings) ---
+	@(link_name = "JPH_HingeConstraintSettings_Init")
+	HingeConstraintSettings_Init :: proc(settings: [^]HingeConstraintSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_Create")
+	HingeConstraint_Create :: proc(settings: [^]HingeConstraintSettings, body1: ^Body, body2: ^Body) -> ^HingeConstraint ---
+
+	@(link_name = "JPH_HingeConstraint_GetSettings")
+	HingeConstraint_GetSettings :: proc(constraint: ^HingeConstraint, settings: [^]HingeConstraintSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLocalSpacePoint1")
 	HingeConstraint_GetLocalSpacePoint1 :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLocalSpacePoint2")
 	HingeConstraint_GetLocalSpacePoint2 :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLocalSpaceHingeAxis1")
 	HingeConstraint_GetLocalSpaceHingeAxis1 :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLocalSpaceHingeAxis2")
 	HingeConstraint_GetLocalSpaceHingeAxis2 :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLocalSpaceNormalAxis1")
 	HingeConstraint_GetLocalSpaceNormalAxis1 :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLocalSpaceNormalAxis2")
 	HingeConstraint_GetLocalSpaceNormalAxis2 :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
-	HingeConstraint_GetCurrentAngle :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_SetMaxFrictionTorque :: proc(constraint: ^HingeConstraint, frictionTorque: c.float) ---
-	HingeConstraint_GetMaxFrictionTorque :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_SetMotorSettings :: proc(constraint: ^HingeConstraint, settings: ^MotorSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_GetCurrentAngle")
+	HingeConstraint_GetCurrentAngle :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_SetMaxFrictionTorque")
+	HingeConstraint_SetMaxFrictionTorque :: proc(constraint: ^HingeConstraint, frictionTorque: f32) ---
+
+	@(link_name = "JPH_HingeConstraint_GetMaxFrictionTorque")
+	HingeConstraint_GetMaxFrictionTorque :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_SetMotorSettings")
+	HingeConstraint_SetMotorSettings :: proc(constraint: ^HingeConstraint, settings: [^]MotorSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_GetMotorSettings")
 	HingeConstraint_GetMotorSettings :: proc(constraint: ^HingeConstraint, result: ^MotorSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_SetMotorState")
 	HingeConstraint_SetMotorState :: proc(constraint: ^HingeConstraint, state: MotorState) ---
+
+	@(link_name = "JPH_HingeConstraint_GetMotorState")
 	HingeConstraint_GetMotorState :: proc(constraint: ^HingeConstraint) -> MotorState ---
-	HingeConstraint_SetTargetAngularVelocity :: proc(constraint: ^HingeConstraint, angularVelocity: c.float) ---
-	HingeConstraint_GetTargetAngularVelocity :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_SetTargetAngle :: proc(constraint: ^HingeConstraint, angle: c.float) ---
-	HingeConstraint_GetTargetAngle :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_SetLimits :: proc(constraint: ^HingeConstraint, inLimitsMin: c.float, inLimitsMax: c.float) ---
-	HingeConstraint_GetLimitsMin :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_GetLimitsMax :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_HasLimits :: proc(constraint: ^HingeConstraint) -> c.bool ---
+
+	@(link_name = "JPH_HingeConstraint_SetTargetAngularVelocity")
+	HingeConstraint_SetTargetAngularVelocity :: proc(constraint: ^HingeConstraint, angularVelocity: f32) ---
+
+	@(link_name = "JPH_HingeConstraint_GetTargetAngularVelocity")
+	HingeConstraint_GetTargetAngularVelocity :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_SetTargetAngle")
+	HingeConstraint_SetTargetAngle :: proc(constraint: ^HingeConstraint, angle: f32) ---
+
+	@(link_name = "JPH_HingeConstraint_GetTargetAngle")
+	HingeConstraint_GetTargetAngle :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_SetLimits")
+	HingeConstraint_SetLimits :: proc(constraint: ^HingeConstraint, inLimitsMin: f32, inLimitsMax: f32) ---
+
+	@(link_name = "JPH_HingeConstraint_GetLimitsMin")
+	HingeConstraint_GetLimitsMin :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_GetLimitsMax")
+	HingeConstraint_GetLimitsMax :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_HasLimits")
+	HingeConstraint_HasLimits :: proc(constraint: ^HingeConstraint) -> b8 ---
+
+	@(link_name = "JPH_HingeConstraint_GetLimitsSpringSettings")
 	HingeConstraint_GetLimitsSpringSettings :: proc(constraint: ^HingeConstraint, result: ^SpringSettings) ---
-	HingeConstraint_SetLimitsSpringSettings :: proc(constraint: ^HingeConstraint, settings: ^SpringSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_SetLimitsSpringSettings")
+	HingeConstraint_SetLimitsSpringSettings :: proc(constraint: ^HingeConstraint, settings: [^]SpringSettings) ---
+
+	@(link_name = "JPH_HingeConstraint_GetTotalLambdaPosition")
 	HingeConstraint_GetTotalLambdaPosition :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
-	HingeConstraint_GetTotalLambdaRotation :: proc(constraint: ^HingeConstraint, rotation: [2]c.float) ---
-	HingeConstraint_GetTotalLambdaRotationLimits :: proc(constraint: ^HingeConstraint) -> c.float ---
-	HingeConstraint_GetTotalLambdaMotor :: proc(constraint: ^HingeConstraint) -> c.float ---
 
-	//-------------------------------------------------------------------------------------------------
-	// SliderConstraint
-	//-------------------------------------------------------------------------------------------------
-	SliderConstraintSettings_Init :: proc(settings: ^SliderConstraintSettings) ---
-	SliderConstraintSettings_SetSliderAxis :: proc(settings: ^SliderConstraintSettings, axis: ^Vec3) ---
-	SliderConstraint_Create :: proc(settings: ^SliderConstraintSettings, body1: ^Body, body2: ^Body) -> ^SliderConstraint ---
-	SliderConstraint_GetSettings :: proc(constraint: ^SliderConstraint, settings: ^SliderConstraintSettings) ---
-	SliderConstraint_GetCurrentPosition :: proc(constraint: ^SliderConstraint) -> c.float ---
-	SliderConstraint_SetMaxFrictionForce :: proc(constraint: ^SliderConstraint, frictionForce: c.float) ---
-	SliderConstraint_GetMaxFrictionForce :: proc(constraint: ^SliderConstraint) -> c.float ---
-	SliderConstraint_SetMotorSettings :: proc(constraint: ^SliderConstraint, settings: ^MotorSettings) ---
+	@(link_name = "JPH_HingeConstraint_GetTotalLambdaRotation")
+	HingeConstraint_GetTotalLambdaRotation :: proc(constraint: ^HingeConstraint, rotation: [2]f32) ---
+
+	@(link_name = "JPH_HingeConstraint_GetTotalLambdaRotationLimits")
+	HingeConstraint_GetTotalLambdaRotationLimits :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_HingeConstraint_GetTotalLambdaMotor")
+	HingeConstraint_GetTotalLambdaMotor :: proc(constraint: ^HingeConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraintSettings_Init")
+	SliderConstraintSettings_Init :: proc(settings: [^]SliderConstraintSettings) ---
+
+	@(link_name = "JPH_SliderConstraintSettings_SetSliderAxis")
+	SliderConstraintSettings_SetSliderAxis :: proc(settings: [^]SliderConstraintSettings, axis: [^]Vec3) ---
+
+	@(link_name = "JPH_SliderConstraint_Create")
+	SliderConstraint_Create :: proc(settings: [^]SliderConstraintSettings, body1: ^Body, body2: ^Body) -> ^SliderConstraint ---
+
+	@(link_name = "JPH_SliderConstraint_GetSettings")
+	SliderConstraint_GetSettings :: proc(constraint: ^SliderConstraint, settings: [^]SliderConstraintSettings) ---
+
+	@(link_name = "JPH_SliderConstraint_GetCurrentPosition")
+	SliderConstraint_GetCurrentPosition :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_SetMaxFrictionForce")
+	SliderConstraint_SetMaxFrictionForce :: proc(constraint: ^SliderConstraint, frictionForce: f32) ---
+
+	@(link_name = "JPH_SliderConstraint_GetMaxFrictionForce")
+	SliderConstraint_GetMaxFrictionForce :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_SetMotorSettings")
+	SliderConstraint_SetMotorSettings :: proc(constraint: ^SliderConstraint, settings: [^]MotorSettings) ---
+
+	@(link_name = "JPH_SliderConstraint_GetMotorSettings")
 	SliderConstraint_GetMotorSettings :: proc(constraint: ^SliderConstraint, result: ^MotorSettings) ---
+
+	@(link_name = "JPH_SliderConstraint_SetMotorState")
 	SliderConstraint_SetMotorState :: proc(constraint: ^SliderConstraint, state: MotorState) ---
+
+	@(link_name = "JPH_SliderConstraint_GetMotorState")
 	SliderConstraint_GetMotorState :: proc(constraint: ^SliderConstraint) -> MotorState ---
-	SliderConstraint_SetTargetVelocity :: proc(constraint: ^SliderConstraint, velocity: c.float) ---
-	SliderConstraint_GetTargetVelocity :: proc(constraint: ^SliderConstraint) -> c.float ---
-	SliderConstraint_SetTargetPosition :: proc(constraint: ^SliderConstraint, position: c.float) ---
-	SliderConstraint_GetTargetPosition :: proc(constraint: ^SliderConstraint) -> c.float ---
-	SliderConstraint_SetLimits :: proc(constraint: ^SliderConstraint, inLimitsMin: c.float, inLimitsMax: c.float) ---
-	SliderConstraint_GetLimitsMin :: proc(constraint: ^SliderConstraint) -> c.float ---
-	SliderConstraint_GetLimitsMax :: proc(constraint: ^SliderConstraint) -> c.float ---
-	SliderConstraint_HasLimits :: proc(constraint: ^SliderConstraint) -> c.bool ---
+
+	@(link_name = "JPH_SliderConstraint_SetTargetVelocity")
+	SliderConstraint_SetTargetVelocity :: proc(constraint: ^SliderConstraint, velocity: f32) ---
+
+	@(link_name = "JPH_SliderConstraint_GetTargetVelocity")
+	SliderConstraint_GetTargetVelocity :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_SetTargetPosition")
+	SliderConstraint_SetTargetPosition :: proc(constraint: ^SliderConstraint, position: f32) ---
+
+	@(link_name = "JPH_SliderConstraint_GetTargetPosition")
+	SliderConstraint_GetTargetPosition :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_SetLimits")
+	SliderConstraint_SetLimits :: proc(constraint: ^SliderConstraint, inLimitsMin: f32, inLimitsMax: f32) ---
+
+	@(link_name = "JPH_SliderConstraint_GetLimitsMin")
+	SliderConstraint_GetLimitsMin :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_GetLimitsMax")
+	SliderConstraint_GetLimitsMax :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_HasLimits")
+	SliderConstraint_HasLimits :: proc(constraint: ^SliderConstraint) -> b8 ---
+
+	@(link_name = "JPH_SliderConstraint_GetLimitsSpringSettings")
 	SliderConstraint_GetLimitsSpringSettings :: proc(constraint: ^SliderConstraint, result: ^SpringSettings) ---
-	SliderConstraint_SetLimitsSpringSettings :: proc(constraint: ^SliderConstraint, settings: ^SpringSettings) ---
-	SliderConstraint_GetTotalLambdaPosition :: proc(constraint: ^SliderConstraint, position: [2]c.float) ---
-	SliderConstraint_GetTotalLambdaPositionLimits :: proc(constraint: ^SliderConstraint) -> c.float ---
+
+	@(link_name = "JPH_SliderConstraint_SetLimitsSpringSettings")
+	SliderConstraint_SetLimitsSpringSettings :: proc(constraint: ^SliderConstraint, settings: [^]SpringSettings) ---
+
+	@(link_name = "JPH_SliderConstraint_GetTotalLambdaPosition")
+	SliderConstraint_GetTotalLambdaPosition :: proc(constraint: ^SliderConstraint, position: [2]f32) ---
+
+	@(link_name = "JPH_SliderConstraint_GetTotalLambdaPositionLimits")
+	SliderConstraint_GetTotalLambdaPositionLimits :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_SliderConstraint_GetTotalLambdaRotation")
 	SliderConstraint_GetTotalLambdaRotation :: proc(constraint: ^SliderConstraint, result: ^Vec3) ---
-	SliderConstraint_GetTotalLambdaMotor :: proc(constraint: ^SliderConstraint) -> c.float ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ConeConstraint
-	//-------------------------------------------------------------------------------------------------
-	ConeConstraintSettings_Init :: proc(settings: ^ConeConstraintSettings) ---
-	ConeConstraint_Create :: proc(settings: ^ConeConstraintSettings, body1: ^Body, body2: ^Body) -> ^ConeConstraint ---
-	ConeConstraint_GetSettings :: proc(constraint: ^ConeConstraint, settings: ^ConeConstraintSettings) ---
-	ConeConstraint_SetHalfConeAngle :: proc(constraint: ^ConeConstraint, halfConeAngle: c.float) ---
-	ConeConstraint_GetCosHalfConeAngle :: proc(constraint: ^ConeConstraint) -> c.float ---
+	@(link_name = "JPH_SliderConstraint_GetTotalLambdaMotor")
+	SliderConstraint_GetTotalLambdaMotor :: proc(constraint: ^SliderConstraint) -> f32 ---
+
+	@(link_name = "JPH_ConeConstraintSettings_Init")
+	ConeConstraintSettings_Init :: proc(settings: [^]ConeConstraintSettings) ---
+
+	@(link_name = "JPH_ConeConstraint_Create")
+	ConeConstraint_Create :: proc(settings: [^]ConeConstraintSettings, body1: ^Body, body2: ^Body) -> ^ConeConstraint ---
+
+	@(link_name = "JPH_ConeConstraint_GetSettings")
+	ConeConstraint_GetSettings :: proc(constraint: ^ConeConstraint, settings: [^]ConeConstraintSettings) ---
+
+	@(link_name = "JPH_ConeConstraint_SetHalfConeAngle")
+	ConeConstraint_SetHalfConeAngle :: proc(constraint: ^ConeConstraint, halfConeAngle: f32) ---
+
+	@(link_name = "JPH_ConeConstraint_GetCosHalfConeAngle")
+	ConeConstraint_GetCosHalfConeAngle :: proc(constraint: ^ConeConstraint) -> f32 ---
+
+	@(link_name = "JPH_ConeConstraint_GetTotalLambdaPosition")
 	ConeConstraint_GetTotalLambdaPosition :: proc(constraint: ^ConeConstraint, result: ^Vec3) ---
-	ConeConstraint_GetTotalLambdaRotation :: proc(constraint: ^ConeConstraint) -> c.float ---
 
-	//-------------------------------------------------------------------------------------------------
-	// SwingTwistConstraint
-	//-------------------------------------------------------------------------------------------------
-	SwingTwistConstraintSettings_Init :: proc(settings: ^SwingTwistConstraintSettings) ---
-	SwingTwistConstraint_Create :: proc(settings: ^SwingTwistConstraintSettings, body1: ^Body, body2: ^Body) -> ^SwingTwistConstraint ---
-	SwingTwistConstraint_GetSettings :: proc(constraint: ^SwingTwistConstraint, settings: ^SwingTwistConstraintSettings) ---
-	SwingTwistConstraint_GetNormalHalfConeAngle :: proc(constraint: ^SwingTwistConstraint) -> c.float ---
+	@(link_name = "JPH_ConeConstraint_GetTotalLambdaRotation")
+	ConeConstraint_GetTotalLambdaRotation :: proc(constraint: ^ConeConstraint) -> f32 ---
+
+	@(link_name = "JPH_SwingTwistConstraintSettings_Init")
+	SwingTwistConstraintSettings_Init :: proc(settings: [^]SwingTwistConstraintSettings) ---
+
+	@(link_name = "JPH_SwingTwistConstraint_Create")
+	SwingTwistConstraint_Create :: proc(settings: [^]SwingTwistConstraintSettings, body1: ^Body, body2: ^Body) -> ^SwingTwistConstraint ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetSettings")
+	SwingTwistConstraint_GetSettings :: proc(constraint: ^SwingTwistConstraint, settings: [^]SwingTwistConstraintSettings) ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetNormalHalfConeAngle")
+	SwingTwistConstraint_GetNormalHalfConeAngle :: proc(constraint: ^SwingTwistConstraint) -> f32 ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetTotalLambdaPosition")
 	SwingTwistConstraint_GetTotalLambdaPosition :: proc(constraint: ^SwingTwistConstraint, result: ^Vec3) ---
-	SwingTwistConstraint_GetTotalLambdaTwist :: proc(constraint: ^SwingTwistConstraint) -> c.float ---
-	SwingTwistConstraint_GetTotalLambdaSwingY :: proc(constraint: ^SwingTwistConstraint) -> c.float ---
-	SwingTwistConstraint_GetTotalLambdaSwingZ :: proc(constraint: ^SwingTwistConstraint) -> c.float ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetTotalLambdaTwist")
+	SwingTwistConstraint_GetTotalLambdaTwist :: proc(constraint: ^SwingTwistConstraint) -> f32 ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetTotalLambdaSwingY")
+	SwingTwistConstraint_GetTotalLambdaSwingY :: proc(constraint: ^SwingTwistConstraint) -> f32 ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetTotalLambdaSwingZ")
+	SwingTwistConstraint_GetTotalLambdaSwingZ :: proc(constraint: ^SwingTwistConstraint) -> f32 ---
+
+	@(link_name = "JPH_SwingTwistConstraint_GetTotalLambdaMotor")
 	SwingTwistConstraint_GetTotalLambdaMotor :: proc(constraint: ^SwingTwistConstraint, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// SixDOFConstraint
-	//-------------------------------------------------------------------------------------------------
-	SixDOFConstraintSettings_Init :: proc(settings: ^SixDOFConstraintSettings) ---
-	SixDOFConstraintSettings_MakeFreeAxis :: proc(settings: ^SixDOFConstraintSettings, axis: SixDOFConstraintAxis) ---
-	SixDOFConstraintSettings_IsFreeAxis :: proc(settings: ^SixDOFConstraintSettings, axis: SixDOFConstraintAxis) -> c.bool ---
-	SixDOFConstraintSettings_MakeFixedAxis :: proc(settings: ^SixDOFConstraintSettings, axis: SixDOFConstraintAxis) ---
-	SixDOFConstraintSettings_IsFixedAxis :: proc(settings: ^SixDOFConstraintSettings, axis: SixDOFConstraintAxis) -> c.bool ---
-	SixDOFConstraintSettings_SetLimitedAxis :: proc(settings: ^SixDOFConstraintSettings, axis: SixDOFConstraintAxis, min: c.float, max: c.float) ---
-	SixDOFConstraint_Create :: proc(settings: ^SixDOFConstraintSettings, body1: ^Body, body2: ^Body) -> ^SixDOFConstraint ---
-	SixDOFConstraint_GetSettings :: proc(constraint: ^SixDOFConstraint, settings: ^SixDOFConstraintSettings) ---
-	SixDOFConstraint_GetLimitsMin :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> c.float ---
-	SixDOFConstraint_GetLimitsMax :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> c.float ---
+	@(link_name = "JPH_SixDOFConstraintSettings_Init")
+	SixDOFConstraintSettings_Init :: proc(settings: [^]SixDOFConstraintSettings) ---
+
+	@(link_name = "JPH_SixDOFConstraintSettings_MakeFreeAxis")
+	SixDOFConstraintSettings_MakeFreeAxis :: proc(settings: [^]SixDOFConstraintSettings, axis: SixDOFConstraintAxis) ---
+
+	@(link_name = "JPH_SixDOFConstraintSettings_IsFreeAxis")
+	SixDOFConstraintSettings_IsFreeAxis :: proc(settings: [^]SixDOFConstraintSettings, axis: SixDOFConstraintAxis) -> b8 ---
+
+	@(link_name = "JPH_SixDOFConstraintSettings_MakeFixedAxis")
+	SixDOFConstraintSettings_MakeFixedAxis :: proc(settings: [^]SixDOFConstraintSettings, axis: SixDOFConstraintAxis) ---
+
+	@(link_name = "JPH_SixDOFConstraintSettings_IsFixedAxis")
+	SixDOFConstraintSettings_IsFixedAxis :: proc(settings: [^]SixDOFConstraintSettings, axis: SixDOFConstraintAxis) -> b8 ---
+
+	@(link_name = "JPH_SixDOFConstraintSettings_SetLimitedAxis")
+	SixDOFConstraintSettings_SetLimitedAxis :: proc(settings: [^]SixDOFConstraintSettings, axis: SixDOFConstraintAxis, min: f32, max: f32) ---
+
+	@(link_name = "JPH_SixDOFConstraint_Create")
+	SixDOFConstraint_Create :: proc(settings: [^]SixDOFConstraintSettings, body1: ^Body, body2: ^Body) -> ^SixDOFConstraint ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetSettings")
+	SixDOFConstraint_GetSettings :: proc(constraint: ^SixDOFConstraint, settings: [^]SixDOFConstraintSettings) ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetLimitsMin")
+	SixDOFConstraint_GetLimitsMin :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> f32 ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetLimitsMax")
+	SixDOFConstraint_GetLimitsMax :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> f32 ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetTotalLambdaPosition")
 	SixDOFConstraint_GetTotalLambdaPosition :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetTotalLambdaRotation")
 	SixDOFConstraint_GetTotalLambdaRotation :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetTotalLambdaMotorTranslation")
 	SixDOFConstraint_GetTotalLambdaMotorTranslation :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+
+	@(link_name = "JPH_SixDOFConstraint_GetTotalLambdaMotorRotation")
 	SixDOFConstraint_GetTotalLambdaMotorRotation :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// GearConstraint
-	//-------------------------------------------------------------------------------------------------
-	GearConstraintSettings_Init :: proc(settings: ^GearConstraintSettings) ---
-	GearConstraint_Create :: proc(settings: ^GearConstraintSettings, body1: ^Body, body2: ^Body) -> ^GearConstraint ---
-	GearConstraint_GetSettings :: proc(constraint: ^GearConstraint, settings: ^GearConstraintSettings) ---
-	GearConstraint_SetConstraints :: proc(constraint: ^GearConstraint, gear1: ^Constraint, gear2: ^Constraint) ---
-	GearConstraint_GetTotalLambda :: proc(constraint: ^GearConstraint) -> c.float ---
+	@(link_name = "JPH_GearConstraintSettings_Init")
+	GearConstraintSettings_Init :: proc(settings: [^]GearConstraintSettings) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyInterface
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_GearConstraint_Create")
+	GearConstraint_Create :: proc(settings: [^]GearConstraintSettings, body1: ^Body, body2: ^Body) -> ^GearConstraint ---
+
+	@(link_name = "JPH_GearConstraint_GetSettings")
+	GearConstraint_GetSettings :: proc(constraint: ^GearConstraint, settings: [^]GearConstraintSettings) ---
+
+	@(link_name = "JPH_GearConstraint_SetConstraints")
+	GearConstraint_SetConstraints :: proc(constraint: ^GearConstraint, gear1: ^Constraint, gear2: ^Constraint) ---
+
+	@(link_name = "JPH_GearConstraint_GetTotalLambda")
+	GearConstraint_GetTotalLambda :: proc(constraint: ^GearConstraint) -> f32 ---
+
+	@(link_name = "JPH_BodyInterface_DestroyBody")
 	BodyInterface_DestroyBody :: proc(interface: ^BodyInterface, bodyID: BodyID) ---
-	BodyInterface_CreateAndAddBody :: proc(interface: ^BodyInterface, settings: ^BodyCreationSettings, activationMode: Activation) -> BodyID ---
-	BodyInterface_CreateBody :: proc(interface: ^BodyInterface, settings: ^BodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateBodyWithID :: proc(interface: ^BodyInterface, bodyID: BodyID, settings: ^BodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateBodyWithoutID :: proc(interface: ^BodyInterface, settings: ^BodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_CreateAndAddBody")
+	BodyInterface_CreateAndAddBody :: proc(interface: ^BodyInterface, settings: [^]BodyCreationSettings, activationMode: Activation) -> BodyID ---
+
+	@(link_name = "JPH_BodyInterface_CreateBody")
+	BodyInterface_CreateBody :: proc(interface: ^BodyInterface, settings: [^]BodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_CreateBodyWithID")
+	BodyInterface_CreateBodyWithID :: proc(interface: ^BodyInterface, bodyID: BodyID, settings: [^]BodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_CreateBodyWithoutID")
+	BodyInterface_CreateBodyWithoutID :: proc(interface: ^BodyInterface, settings: [^]BodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_DestroyBodyWithoutID")
 	BodyInterface_DestroyBodyWithoutID :: proc(interface: ^BodyInterface, body: ^Body) ---
-	BodyInterface_AssignBodyID :: proc(interface: ^BodyInterface, body: ^Body) -> c.bool ---
-	BodyInterface_AssignBodyID2 :: proc(interface: ^BodyInterface, body: ^Body, bodyID: BodyID) -> c.bool ---
+
+	@(link_name = "JPH_BodyInterface_AssignBodyID")
+	BodyInterface_AssignBodyID :: proc(interface: ^BodyInterface, body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_BodyInterface_AssignBodyID2")
+	BodyInterface_AssignBodyID2 :: proc(interface: ^BodyInterface, body: ^Body, bodyID: BodyID) -> b8 ---
+
+	@(link_name = "JPH_BodyInterface_UnassignBodyID")
 	BodyInterface_UnassignBodyID :: proc(interface: ^BodyInterface, bodyID: BodyID) -> ^Body ---
-	BodyInterface_CreateSoftBody :: proc(interface: ^BodyInterface, settings: ^SoftBodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateSoftBodyWithID :: proc(interface: ^BodyInterface, bodyID: BodyID, settings: ^SoftBodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateSoftBodyWithoutID :: proc(interface: ^BodyInterface, settings: ^SoftBodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateAndAddSoftBody :: proc(interface: ^BodyInterface, settings: ^SoftBodyCreationSettings, activationMode: Activation) -> BodyID ---
+
+	@(link_name = "JPH_BodyInterface_CreateSoftBody")
+	BodyInterface_CreateSoftBody :: proc(interface: ^BodyInterface, settings: [^]SoftBodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_CreateSoftBodyWithID")
+	BodyInterface_CreateSoftBodyWithID :: proc(interface: ^BodyInterface, bodyID: BodyID, settings: [^]SoftBodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_CreateSoftBodyWithoutID")
+	BodyInterface_CreateSoftBodyWithoutID :: proc(interface: ^BodyInterface, settings: [^]SoftBodyCreationSettings) -> ^Body ---
+
+	@(link_name = "JPH_BodyInterface_CreateAndAddSoftBody")
+	BodyInterface_CreateAndAddSoftBody :: proc(interface: ^BodyInterface, settings: [^]SoftBodyCreationSettings, activationMode: Activation) -> BodyID ---
+
+	@(link_name = "JPH_BodyInterface_AddBody")
 	BodyInterface_AddBody :: proc(interface: ^BodyInterface, bodyID: BodyID, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_RemoveBody")
 	BodyInterface_RemoveBody :: proc(interface: ^BodyInterface, bodyID: BodyID) ---
+
+	@(link_name = "JPH_BodyInterface_RemoveAndDestroyBody")
 	BodyInterface_RemoveAndDestroyBody :: proc(interface: ^BodyInterface, bodyID: BodyID) ---
-	BodyInterface_IsActive :: proc(interface: ^BodyInterface, bodyID: BodyID) -> c.bool ---
-	BodyInterface_IsAdded :: proc(interface: ^BodyInterface, bodyID: BodyID) -> c.bool ---
+
+	@(link_name = "JPH_BodyInterface_IsActive")
+	BodyInterface_IsActive :: proc(interface: ^BodyInterface, bodyID: BodyID) -> b8 ---
+
+	@(link_name = "JPH_BodyInterface_IsAdded")
+	BodyInterface_IsAdded :: proc(interface: ^BodyInterface, bodyID: BodyID) -> b8 ---
+
+	@(link_name = "JPH_BodyInterface_GetBodyType")
 	BodyInterface_GetBodyType :: proc(interface: ^BodyInterface, bodyID: BodyID) -> BodyType ---
+
+	@(link_name = "JPH_BodyInterface_SetLinearVelocity")
 	BodyInterface_SetLinearVelocity :: proc(interface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetLinearVelocity")
 	BodyInterface_GetLinearVelocity :: proc(interface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetCenterOfMassPosition")
 	BodyInterface_GetCenterOfMassPosition :: proc(interface: ^BodyInterface, bodyID: BodyID, position: ^RVec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetMotionType")
 	BodyInterface_GetMotionType :: proc(interface: ^BodyInterface, bodyID: BodyID) -> MotionType ---
+
+	@(link_name = "JPH_BodyInterface_SetMotionType")
 	BodyInterface_SetMotionType :: proc(interface: ^BodyInterface, bodyID: BodyID, motionType: MotionType, activationMode: Activation) ---
-	BodyInterface_GetRestitution :: proc(interface: ^BodyInterface, bodyID: BodyID) -> c.float ---
-	BodyInterface_SetRestitution :: proc(interface: ^BodyInterface, bodyID: BodyID, restitution: c.float) ---
-	BodyInterface_GetFriction :: proc(interface: ^BodyInterface, bodyID: BodyID) -> c.float ---
-	BodyInterface_SetFriction :: proc(interface: ^BodyInterface, bodyID: BodyID, friction: c.float) ---
+
+	@(link_name = "JPH_BodyInterface_GetRestitution")
+	BodyInterface_GetRestitution :: proc(interface: ^BodyInterface, bodyID: BodyID) -> f32 ---
+
+	@(link_name = "JPH_BodyInterface_SetRestitution")
+	BodyInterface_SetRestitution :: proc(interface: ^BodyInterface, bodyID: BodyID, restitution: f32) ---
+
+	@(link_name = "JPH_BodyInterface_GetFriction")
+	BodyInterface_GetFriction :: proc(interface: ^BodyInterface, bodyID: BodyID) -> f32 ---
+
+	@(link_name = "JPH_BodyInterface_SetFriction")
+	BodyInterface_SetFriction :: proc(interface: ^BodyInterface, bodyID: BodyID, friction: f32) ---
+
+	@(link_name = "JPH_BodyInterface_SetPosition")
 	BodyInterface_SetPosition :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_GetPosition")
 	BodyInterface_GetPosition :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^RVec3) ---
+
+	@(link_name = "JPH_BodyInterface_SetRotation")
 	BodyInterface_SetRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, rotation: ^Quat, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_GetRotation")
 	BodyInterface_GetRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^Quat) ---
+
+	@(link_name = "JPH_BodyInterface_SetPositionAndRotation")
 	BodyInterface_SetPositionAndRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_SetPositionAndRotationWhenChanged")
 	BodyInterface_SetPositionAndRotationWhenChanged :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_GetPositionAndRotation")
 	BodyInterface_GetPositionAndRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat) ---
+
+	@(link_name = "JPH_BodyInterface_SetPositionRotationAndVelocity")
 	BodyInterface_SetPositionRotationAndVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetShape")
 	BodyInterface_GetShape :: proc(interface: ^BodyInterface, bodyId: BodyID) -> ^Shape ---
-	BodyInterface_SetShape :: proc(interface: ^BodyInterface, bodyId: BodyID, shape: ^Shape, updateMassProperties: c.bool, activationMode: Activation) ---
-	BodyInterface_NotifyShapeChanged :: proc(interface: ^BodyInterface, bodyId: BodyID, previousCenterOfMass: ^Vec3, updateMassProperties: c.bool, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_SetShape")
+	BodyInterface_SetShape :: proc(interface: ^BodyInterface, bodyId: BodyID, shape: ^Shape, updateMassProperties: b8, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_NotifyShapeChanged")
+	BodyInterface_NotifyShapeChanged :: proc(interface: ^BodyInterface, bodyId: BodyID, previousCenterOfMass: [^]Vec3, updateMassProperties: b8, activationMode: Activation) ---
+
+	@(link_name = "JPH_BodyInterface_ActivateBody")
 	BodyInterface_ActivateBody :: proc(interface: ^BodyInterface, bodyId: BodyID) ---
+
+	@(link_name = "JPH_BodyInterface_DeactivateBody")
 	BodyInterface_DeactivateBody :: proc(interface: ^BodyInterface, bodyId: BodyID) ---
+
+	@(link_name = "JPH_BodyInterface_GetObjectLayer")
 	BodyInterface_GetObjectLayer :: proc(interface: ^BodyInterface, bodyId: BodyID) -> ObjectLayer ---
+
+	@(link_name = "JPH_BodyInterface_SetObjectLayer")
 	BodyInterface_SetObjectLayer :: proc(interface: ^BodyInterface, bodyId: BodyID, layer: ObjectLayer) ---
+
+	@(link_name = "JPH_BodyInterface_GetWorldTransform")
 	BodyInterface_GetWorldTransform :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_BodyInterface_GetCenterOfMassTransform")
 	BodyInterface_GetCenterOfMassTransform :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^RMatrix4x4) ---
-	BodyInterface_MoveKinematic :: proc(interface: ^BodyInterface, bodyId: BodyID, targetPosition: ^RVec3, targetRotation: ^Quat, deltaTime: c.float) ---
-	BodyInterface_ApplyBuoyancyImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, surfacePosition: ^RVec3, surfaceNormal: ^Vec3, buoyancy: c.float, linearDrag: c.float, angularDrag: c.float, fluidVelocity: ^Vec3, gravity: ^Vec3, deltaTime: c.float) -> c.bool ---
+
+	@(link_name = "JPH_BodyInterface_MoveKinematic")
+	BodyInterface_MoveKinematic :: proc(interface: ^BodyInterface, bodyId: BodyID, targetPosition: ^RVec3, targetRotation: ^Quat, deltaTime: f32) ---
+
+	@(link_name = "JPH_BodyInterface_ApplyBuoyancyImpulse")
+	BodyInterface_ApplyBuoyancyImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, surfacePosition: ^RVec3, surfaceNormal: ^Vec3, buoyancy: f32, linearDrag: f32, angularDrag: f32, fluidVelocity: ^Vec3, gravity: ^Vec3, deltaTime: f32) -> b8 ---
+
+	@(link_name = "JPH_BodyInterface_SetLinearAndAngularVelocity")
 	BodyInterface_SetLinearAndAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetLinearAndAngularVelocity")
 	BodyInterface_GetLinearAndAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddLinearVelocity")
 	BodyInterface_AddLinearVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddLinearAndAngularVelocity")
 	BodyInterface_AddLinearAndAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_SetAngularVelocity")
 	BodyInterface_SetAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, angularVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetAngularVelocity")
 	BodyInterface_GetAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, angularVelocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_GetPointVelocity")
 	BodyInterface_GetPointVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, point: ^RVec3, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddForce")
 	BodyInterface_AddForce :: proc(interface: ^BodyInterface, bodyId: BodyID, force: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddForce2")
 	BodyInterface_AddForce2 :: proc(interface: ^BodyInterface, bodyId: BodyID, force: ^Vec3, point: ^RVec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddTorque")
 	BodyInterface_AddTorque :: proc(interface: ^BodyInterface, bodyId: BodyID, torque: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddForceAndTorque")
 	BodyInterface_AddForceAndTorque :: proc(interface: ^BodyInterface, bodyId: BodyID, force: ^Vec3, torque: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddImpulse")
 	BodyInterface_AddImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, impulse: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddImpulse2")
 	BodyInterface_AddImpulse2 :: proc(interface: ^BodyInterface, bodyId: BodyID, impulse: ^Vec3, point: ^RVec3) ---
+
+	@(link_name = "JPH_BodyInterface_AddAngularImpulse")
 	BodyInterface_AddAngularImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, angularImpulse: ^Vec3) ---
+
+	@(link_name = "JPH_BodyInterface_SetMotionQuality")
 	BodyInterface_SetMotionQuality :: proc(interface: ^BodyInterface, bodyId: BodyID, quality: MotionQuality) ---
+
+	@(link_name = "JPH_BodyInterface_GetMotionQuality")
 	BodyInterface_GetMotionQuality :: proc(interface: ^BodyInterface, bodyId: BodyID) -> MotionQuality ---
+
+	@(link_name = "JPH_BodyInterface_GetInverseInertia")
 	BodyInterface_GetInverseInertia :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^Matrix4x4) ---
-	BodyInterface_SetGravityFactor :: proc(interface: ^BodyInterface, bodyId: BodyID, value: c.float) ---
-	BodyInterface_GetGravityFactor :: proc(interface: ^BodyInterface, bodyId: BodyID) -> c.float ---
-	BodyInterface_SetUseManifoldReduction :: proc(interface: ^BodyInterface, bodyId: BodyID, value: c.bool) ---
-	BodyInterface_GetUseManifoldReduction :: proc(interface: ^BodyInterface, bodyId: BodyID) -> c.bool ---
-	BodyInterface_SetUserData :: proc(interface: ^BodyInterface, bodyId: BodyID, inUserData: c.uint64_t) ---
-	BodyInterface_GetUserData :: proc(interface: ^BodyInterface, bodyId: BodyID) -> c.uint64_t ---
+
+	@(link_name = "JPH_BodyInterface_SetGravityFactor")
+	BodyInterface_SetGravityFactor :: proc(interface: ^BodyInterface, bodyId: BodyID, value: f32) ---
+
+	@(link_name = "JPH_BodyInterface_GetGravityFactor")
+	BodyInterface_GetGravityFactor :: proc(interface: ^BodyInterface, bodyId: BodyID) -> f32 ---
+
+	@(link_name = "JPH_BodyInterface_SetUseManifoldReduction")
+	BodyInterface_SetUseManifoldReduction :: proc(interface: ^BodyInterface, bodyId: BodyID, value: b8) ---
+
+	@(link_name = "JPH_BodyInterface_GetUseManifoldReduction")
+	BodyInterface_GetUseManifoldReduction :: proc(interface: ^BodyInterface, bodyId: BodyID) -> b8 ---
+
+	@(link_name = "JPH_BodyInterface_SetUserData")
+	BodyInterface_SetUserData :: proc(interface: ^BodyInterface, bodyId: BodyID, inUserData: u64) ---
+
+	@(link_name = "JPH_BodyInterface_GetUserData")
+	BodyInterface_GetUserData :: proc(interface: ^BodyInterface, bodyId: BodyID) -> u64 ---
+
+	@(link_name = "JPH_BodyInterface_GetMaterial")
 	BodyInterface_GetMaterial :: proc(interface: ^BodyInterface, bodyId: BodyID, subShapeID: SubShapeID) -> ^PhysicsMaterial ---
+
+	@(link_name = "JPH_BodyInterface_InvalidateContactCache")
 	BodyInterface_InvalidateContactCache :: proc(interface: ^BodyInterface, bodyId: BodyID) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyLockInterface
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_BodyLockInterface_LockRead")
 	BodyLockInterface_LockRead :: proc(lockInterface: ^BodyLockInterface, bodyID: BodyID, outLock: ^BodyLockRead) ---
+
+	@(link_name = "JPH_BodyLockInterface_UnlockRead")
 	BodyLockInterface_UnlockRead :: proc(lockInterface: ^BodyLockInterface, ioLock: ^BodyLockRead) ---
 
+	@(link_name = "JPH_BodyLockInterface_LockWrite")
 	BodyLockInterface_LockWrite :: proc(lockInterface: ^BodyLockInterface, bodyID: BodyID, outLock: ^BodyLockWrite) ---
+
+	@(link_name = "JPH_BodyLockInterface_UnlockWrite")
 	BodyLockInterface_UnlockWrite :: proc(lockInterface: ^BodyLockInterface, ioLock: ^BodyLockWrite) ---
 
-	BodyLockInterface_LockMultiRead :: proc(lockInterface: ^BodyLockInterface, bodyIDs: [^]BodyID, count: c.uint32_t) -> ^BodyLockMultiRead ---
+	@(link_name = "JPH_BodyLockInterface_LockMultiRead")
+	BodyLockInterface_LockMultiRead :: proc(lockInterface: ^BodyLockInterface, bodyIDs: [^]BodyID, count: u32) -> ^BodyLockMultiRead ---
+
+	@(link_name = "JPH_BodyLockMultiRead_Destroy")
 	BodyLockMultiRead_Destroy :: proc(ioLock: ^BodyLockMultiRead) ---
-	BodyLockMultiRead_GetBody :: proc(ioLock: ^BodyLockMultiRead, bodyIndex: c.uint32_t) -> ^Body ---
 
-	BodyLockInterface_LockMultiWrite :: proc(lockInterface: ^BodyLockInterface, bodyIDs: [^]BodyID, count: c.uint32_t) -> ^BodyLockMultiWrite ---
+	@(link_name = "JPH_BodyLockMultiRead_GetBody")
+	BodyLockMultiRead_GetBody :: proc(ioLock: ^BodyLockMultiRead, bodyIndex: u32) -> ^Body ---
+
+	@(link_name = "JPH_BodyLockInterface_LockMultiWrite")
+	BodyLockInterface_LockMultiWrite :: proc(lockInterface: ^BodyLockInterface, bodyIDs: [^]BodyID, count: u32) -> ^BodyLockMultiWrite ---
+
+	@(link_name = "JPH_BodyLockMultiWrite_Destroy")
 	BodyLockMultiWrite_Destroy :: proc(ioLock: ^BodyLockMultiWrite) ---
-	BodyLockMultiWrite_GetBody :: proc(ioLock: ^BodyLockMultiWrite, bodyIndex: c.uint32_t) -> ^Body ---
 
-	//-------------------------------------------------------------------------------------------------
-	// MotionProperties
-	//-------------------------------------------------------------------------------------------------
-	MotionProperties_GetAllowedDOFs :: proc(properties: ^MotionProperties) -> AllowedDOFs ---
-	MotionProperties_SetLinearDamping :: proc(properties: ^MotionProperties, damping: c.float) ---
-	MotionProperties_GetLinearDamping :: proc(properties: ^MotionProperties) -> c.float ---
-	MotionProperties_SetAngularDamping :: proc(properties: ^MotionProperties, damping: c.float) ---
-	MotionProperties_GetAngularDamping :: proc(properties: ^MotionProperties) -> c.float ---
-	MotionProperties_SetMassProperties :: proc(properties: ^MotionProperties, allowedDOFs: AllowedDOFs, massProperties: ^MassProperties) ---
-	MotionProperties_GetInverseMassUnchecked :: proc(properties: ^MotionProperties) -> c.float ---
-	MotionProperties_SetInverseMass :: proc(properties: ^MotionProperties, inverseMass: c.float) ---
-	MotionProperties_GetInverseInertiaDiagonal :: proc(properties: ^MotionProperties, result: ^Vec3) ---
-	MotionProperties_GetInertiaRotation :: proc(properties: ^MotionProperties, result: ^Quat) ---
-	MotionProperties_SetInverseInertia :: proc(properties: ^MotionProperties, diagonal: ^Vec3, rot: ^Quat) ---
-	MotionProperties_ScaleToMass :: proc(properties: ^MotionProperties, mass: c.float) ---
+	@(link_name = "JPH_BodyLockMultiWrite_GetBody")
+	BodyLockMultiWrite_GetBody :: proc(ioLock: ^BodyLockMultiWrite, bodyIndex: u32) -> ^Body ---
 
-	//-------------------------------------------------------------------------------------------------
-	// MassProperties
-	//-------------------------------------------------------------------------------------------------
-	MassProperties_DecomposePrincipalMomentsOfInertia :: proc(properties: ^MassProperties, rotation: ^Matrix4x4, diagonal: ^Vec3) ---
-	MassProperties_ScaleToMass :: proc(properties: ^MassProperties, mass: c.float) ---
-	MassProperties_GetEquivalentSolidBoxSize :: proc(mass: c.float, inertiaDiagonal: ^Vec3, result: ^Vec3) ---
+	@(link_name = "JPH_MotionProperties_GetAllowedDOFs")
+	MotionProperties_GetAllowedDOFs :: proc(properties: [^]MotionProperties) -> AllowedDOFs ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CollideShapeSettings
-	//-------------------------------------------------------------------------------------------------
-	CollideShapeSettings_Init :: proc(settings: ^CollideShapeSettings) ---
+	@(link_name = "JPH_MotionProperties_SetLinearDamping")
+	MotionProperties_SetLinearDamping :: proc(properties: [^]MotionProperties, damping: f32) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ShapeCastSettings
-	//-------------------------------------------------------------------------------------------------
-	ShapeCastSettings_Init :: proc(settings: ^ShapeCastSettings) ---
+	@(link_name = "JPH_MotionProperties_GetLinearDamping")
+	MotionProperties_GetLinearDamping :: proc(properties: [^]MotionProperties) -> f32 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BroadPhaseQuery
-	//-------------------------------------------------------------------------------------------------
-	BroadPhaseQuery_CastRay :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, callback: RayCastBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> c.bool ---
-	BroadPhaseQuery_CastRay2 :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, collectorType: CollisionCollectorType, callback: RayCastBodyResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> c.bool ---
-	BroadPhaseQuery_CollideAABox :: proc(query: ^BroadPhaseQuery, box: ^AABox, callback: CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> c.bool ---
-	BroadPhaseQuery_CollideSphere :: proc(query: ^BroadPhaseQuery, center: ^Vec3, radius: c.float, callback: CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> c.bool ---
-	BroadPhaseQuery_CollidePoint :: proc(query: ^BroadPhaseQuery, point: ^Vec3, callback: CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> c.bool ---
+	@(link_name = "JPH_MotionProperties_SetAngularDamping")
+	MotionProperties_SetAngularDamping :: proc(properties: [^]MotionProperties, damping: f32) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// NarrowPhaseQuery
-	//-------------------------------------------------------------------------------------------------
-	NarrowPhaseQuery_CastRay :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, hit: ^RayCastResult, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter) -> c.bool ---
-	NarrowPhaseQuery_CastRay2 :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, callback: CastRayCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CastRay3 :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, collectorType: CollisionCollectorType, callback: CastRayResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CollidePoint :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, callback: CollidePointCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CollidePoint2 :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, collectorType: CollisionCollectorType, callback: CollidePointResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CollideShape :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMatrix4x4, settings: ^CollideShapeSettings, baseOffset: ^RVec3, callback: CollideShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CollideShape2 :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMatrix4x4, settings: ^CollideShapeSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: CollideShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CastShape :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMatrix4x4, direction: ^Vec3, settings: ^ShapeCastSettings, baseOffset: ^RVec3, callback: CastShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	NarrowPhaseQuery_CastShape2 :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMatrix4x4, direction: ^Vec3, settings: ^ShapeCastSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: CastShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
+	@(link_name = "JPH_MotionProperties_GetAngularDamping")
+	MotionProperties_GetAngularDamping :: proc(properties: [^]MotionProperties) -> f32 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// Body
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_MotionProperties_SetMassProperties")
+	MotionProperties_SetMassProperties :: proc(properties: [^]MotionProperties, allowedDOFs: AllowedDOFs, massProperties: [^]MassProperties) ---
+
+	@(link_name = "JPH_MotionProperties_GetInverseMassUnchecked")
+	MotionProperties_GetInverseMassUnchecked :: proc(properties: [^]MotionProperties) -> f32 ---
+
+	@(link_name = "JPH_MotionProperties_SetInverseMass")
+	MotionProperties_SetInverseMass :: proc(properties: [^]MotionProperties, inverseMass: f32) ---
+
+	@(link_name = "JPH_MotionProperties_GetInverseInertiaDiagonal")
+	MotionProperties_GetInverseInertiaDiagonal :: proc(properties: [^]MotionProperties, result: ^Vec3) ---
+
+	@(link_name = "JPH_MotionProperties_GetInertiaRotation")
+	MotionProperties_GetInertiaRotation :: proc(properties: [^]MotionProperties, result: ^Quat) ---
+
+	@(link_name = "JPH_MotionProperties_SetInverseInertia")
+	MotionProperties_SetInverseInertia :: proc(properties: [^]MotionProperties, diagonal: ^Vec3, rot: ^Quat) ---
+
+	@(link_name = "JPH_MotionProperties_ScaleToMass")
+	MotionProperties_ScaleToMass :: proc(properties: [^]MotionProperties, mass: f32) ---
+
+	@(link_name = "JPH_RayCast_GetPointOnRay")
+	RayCast_GetPointOnRay :: proc(origin: ^Vec3, direction: ^Vec3, fraction: f32, result: ^Vec3) ---
+
+	@(link_name = "JPH_RRayCast_GetPointOnRay")
+	RRayCast_GetPointOnRay :: proc(origin: ^RVec3, direction: ^Vec3, fraction: f32, result: ^RVec3) ---
+
+	@(link_name = "JPH_MassProperties_DecomposePrincipalMomentsOfInertia")
+	MassProperties_DecomposePrincipalMomentsOfInertia :: proc(properties: [^]MassProperties, rotation: ^Matrix4x4, diagonal: ^Vec3) ---
+
+	@(link_name = "JPH_MassProperties_ScaleToMass")
+	MassProperties_ScaleToMass :: proc(properties: [^]MassProperties, mass: f32) ---
+
+	@(link_name = "JPH_MassProperties_GetEquivalentSolidBoxSize")
+	MassProperties_GetEquivalentSolidBoxSize :: proc(mass: f32, inertiaDiagonal: ^Vec3, result: ^Vec3) ---
+
+	@(link_name = "JPH_CollideShapeSettings_Init")
+	CollideShapeSettings_Init :: proc(settings: [^]CollideShapeSettings) ---
+
+	@(link_name = "JPH_ShapeCastSettings_Init")
+	ShapeCastSettings_Init :: proc(settings: [^]ShapeCastSettings) ---
+
+	@(link_name = "JPH_BroadPhaseQuery_CastRay")
+	BroadPhaseQuery_CastRay :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, callback: ^RayCastBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> b8 ---
+
+	@(link_name = "JPH_BroadPhaseQuery_CastRay2")
+	BroadPhaseQuery_CastRay2 :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, collectorType: CollisionCollectorType, callback: ^RayCastBodyResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> b8 ---
+
+	@(link_name = "JPH_BroadPhaseQuery_CollideAABox")
+	BroadPhaseQuery_CollideAABox :: proc(query: ^BroadPhaseQuery, box: ^AABox, callback: ^CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> b8 ---
+
+	@(link_name = "JPH_BroadPhaseQuery_CollideSphere")
+	BroadPhaseQuery_CollideSphere :: proc(query: ^BroadPhaseQuery, center: ^Vec3, radius: f32, callback: ^CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> b8 ---
+
+	@(link_name = "JPH_BroadPhaseQuery_CollidePoint")
+	BroadPhaseQuery_CollidePoint :: proc(query: ^BroadPhaseQuery, point: ^Vec3, callback: ^CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CastRay")
+	NarrowPhaseQuery_CastRay :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, hit: ^RayCastResult, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CastRay2")
+	NarrowPhaseQuery_CastRay2 :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: [^]RayCastSettings, callback: ^CastRayCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CastRay3")
+	NarrowPhaseQuery_CastRay3 :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: [^]RayCastSettings, collectorType: CollisionCollectorType, callback: ^CastRayResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CollidePoint")
+	NarrowPhaseQuery_CollidePoint :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, callback: ^CollidePointCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CollidePoint2")
+	NarrowPhaseQuery_CollidePoint2 :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, collectorType: CollisionCollectorType, callback: ^CollidePointResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CollideShape")
+	NarrowPhaseQuery_CollideShape :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMatrix4x4, settings: [^]CollideShapeSettings, baseOffset: ^RVec3, callback: ^CollideShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CollideShape2")
+	NarrowPhaseQuery_CollideShape2 :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMatrix4x4, settings: [^]CollideShapeSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: ^CollideShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CastShape")
+	NarrowPhaseQuery_CastShape :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMatrix4x4, direction: ^Vec3, settings: [^]ShapeCastSettings, baseOffset: ^RVec3, callback: ^CastShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_NarrowPhaseQuery_CastShape2")
+	NarrowPhaseQuery_CastShape2 :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMatrix4x4, direction: ^Vec3, settings: [^]ShapeCastSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: ^CastShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_Body_GetID")
 	Body_GetID :: proc(body: ^Body) -> BodyID ---
+
+	@(link_name = "JPH_Body_GetBodyType")
 	Body_GetBodyType :: proc(body: ^Body) -> BodyType ---
-	Body_IsRigidBody :: proc(body: ^Body) -> c.bool ---
-	Body_IsSoftBody :: proc(body: ^Body) -> c.bool ---
-	Body_IsActive :: proc(body: ^Body) -> c.bool ---
-	Body_IsStatic :: proc(body: ^Body) -> c.bool ---
-	Body_IsKinematic :: proc(body: ^Body) -> c.bool ---
-	Body_IsDynamic :: proc(body: ^Body) -> c.bool ---
-	Body_CanBeKinematicOrDynamic :: proc(body: ^Body) -> c.bool ---
-	Body_SetIsSensor :: proc(body: ^Body, value: c.bool) ---
-	Body_IsSensor :: proc(body: ^Body) -> c.bool ---
-	Body_SetCollideKinematicVsNonDynamic :: proc(body: ^Body, value: c.bool) ---
-	Body_GetCollideKinematicVsNonDynamic :: proc(body: ^Body) -> c.bool ---
-	Body_SetUseManifoldReduction :: proc(body: ^Body, value: c.bool) ---
-	Body_GetUseManifoldReduction :: proc(body: ^Body) -> c.bool ---
-	Body_GetUseManifoldReductionWithBody :: proc(body: ^Body, other: ^Body) -> c.bool ---
-	Body_SetApplyGyroscopicForce :: proc(body: ^Body, value: c.bool) ---
-	Body_GetApplyGyroscopicForce :: proc(body: ^Body) -> c.bool ---
-	Body_SetEnhancedInternalEdgeRemoval :: proc(body: ^Body, value: c.bool) ---
-	Body_GetEnhancedInternalEdgeRemoval :: proc(body: ^Body) -> c.bool ---
-	Body_GetEnhancedInternalEdgeRemovalWithBody :: proc(body: ^Body, other: ^Body) -> c.bool ---
+
+	@(link_name = "JPH_Body_IsRigidBody")
+	Body_IsRigidBody :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_IsSoftBody")
+	Body_IsSoftBody :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_IsActive")
+	Body_IsActive :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_IsStatic")
+	Body_IsStatic :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_IsKinematic")
+	Body_IsKinematic :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_IsDynamic")
+	Body_IsDynamic :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_CanBeKinematicOrDynamic")
+	Body_CanBeKinematicOrDynamic :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_SetIsSensor")
+	Body_SetIsSensor :: proc(body: ^Body, value: b8) ---
+
+	@(link_name = "JPH_Body_IsSensor")
+	Body_IsSensor :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_SetCollideKinematicVsNonDynamic")
+	Body_SetCollideKinematicVsNonDynamic :: proc(body: ^Body, value: b8) ---
+
+	@(link_name = "JPH_Body_GetCollideKinematicVsNonDynamic")
+	Body_GetCollideKinematicVsNonDynamic :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_SetUseManifoldReduction")
+	Body_SetUseManifoldReduction :: proc(body: ^Body, value: b8) ---
+
+	@(link_name = "JPH_Body_GetUseManifoldReduction")
+	Body_GetUseManifoldReduction :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_GetUseManifoldReductionWithBody")
+	Body_GetUseManifoldReductionWithBody :: proc(body: ^Body, other: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_SetApplyGyroscopicForce")
+	Body_SetApplyGyroscopicForce :: proc(body: ^Body, value: b8) ---
+
+	@(link_name = "JPH_Body_GetApplyGyroscopicForce")
+	Body_GetApplyGyroscopicForce :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_SetEnhancedInternalEdgeRemoval")
+	Body_SetEnhancedInternalEdgeRemoval :: proc(body: ^Body, value: b8) ---
+
+	@(link_name = "JPH_Body_GetEnhancedInternalEdgeRemoval")
+	Body_GetEnhancedInternalEdgeRemoval :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_GetEnhancedInternalEdgeRemovalWithBody")
+	Body_GetEnhancedInternalEdgeRemovalWithBody :: proc(body: ^Body, other: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_GetMotionType")
 	Body_GetMotionType :: proc(body: ^Body) -> MotionType ---
+
+	@(link_name = "JPH_Body_SetMotionType")
 	Body_SetMotionType :: proc(body: ^Body, motionType: MotionType) ---
+
+	@(link_name = "JPH_Body_GetBroadPhaseLayer")
 	Body_GetBroadPhaseLayer :: proc(body: ^Body) -> BroadPhaseLayer ---
+
+	@(link_name = "JPH_Body_GetObjectLayer")
 	Body_GetObjectLayer :: proc(body: ^Body) -> ObjectLayer ---
-	Body_GetAllowSleeping :: proc(body: ^Body) -> c.bool ---
-	Body_SetAllowSleeping :: proc(body: ^Body, allowSleeping: c.bool) ---
+
+	@(link_name = "JPH_Body_GetAllowSleeping")
+	Body_GetAllowSleeping :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_SetAllowSleeping")
+	Body_SetAllowSleeping :: proc(body: ^Body, allowSleeping: b8) ---
+
+	@(link_name = "JPH_Body_ResetSleepTimer")
 	Body_ResetSleepTimer :: proc(body: ^Body) ---
-	Body_GetFriction :: proc(body: ^Body) -> c.float ---
-	Body_SetFriction :: proc(body: ^Body, friction: c.float) ---
-	Body_GetRestitution :: proc(body: ^Body) -> c.float ---
-	Body_SetRestitution :: proc(body: ^Body, restitution: c.float) ---
+
+	@(link_name = "JPH_Body_GetFriction")
+	Body_GetFriction :: proc(body: ^Body) -> f32 ---
+
+	@(link_name = "JPH_Body_SetFriction")
+	Body_SetFriction :: proc(body: ^Body, friction: f32) ---
+
+	@(link_name = "JPH_Body_GetRestitution")
+	Body_GetRestitution :: proc(body: ^Body) -> f32 ---
+
+	@(link_name = "JPH_Body_SetRestitution")
+	Body_SetRestitution :: proc(body: ^Body, restitution: f32) ---
+
+	@(link_name = "JPH_Body_GetLinearVelocity")
 	Body_GetLinearVelocity :: proc(body: ^Body, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_SetLinearVelocity")
 	Body_SetLinearVelocity :: proc(body: ^Body, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_SetLinearVelocityClamped")
 	Body_SetLinearVelocityClamped :: proc(body: ^Body, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_GetAngularVelocity")
 	Body_GetAngularVelocity :: proc(body: ^Body, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_SetAngularVelocity")
 	Body_SetAngularVelocity :: proc(body: ^Body, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_SetAngularVelocityClamped")
 	Body_SetAngularVelocityClamped :: proc(body: ^Body, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_GetPointVelocityCOM")
 	Body_GetPointVelocityCOM :: proc(body: ^Body, pointRelativeToCOM: ^Vec3, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_GetPointVelocity")
 	Body_GetPointVelocity :: proc(body: ^Body, point: ^RVec3, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_Body_AddForce")
 	Body_AddForce :: proc(body: ^Body, force: ^Vec3) ---
+
+	@(link_name = "JPH_Body_AddForceAtPosition")
 	Body_AddForceAtPosition :: proc(body: ^Body, force: ^Vec3, position: ^RVec3) ---
+
+	@(link_name = "JPH_Body_AddTorque")
 	Body_AddTorque :: proc(body: ^Body, force: ^Vec3) ---
+
+	@(link_name = "JPH_Body_GetAccumulatedForce")
 	Body_GetAccumulatedForce :: proc(body: ^Body, force: ^Vec3) ---
+
+	@(link_name = "JPH_Body_GetAccumulatedTorque")
 	Body_GetAccumulatedTorque :: proc(body: ^Body, force: ^Vec3) ---
+
+	@(link_name = "JPH_Body_ResetForce")
 	Body_ResetForce :: proc(body: ^Body) ---
+
+	@(link_name = "JPH_Body_ResetTorque")
 	Body_ResetTorque :: proc(body: ^Body) ---
+
+	@(link_name = "JPH_Body_ResetMotion")
 	Body_ResetMotion :: proc(body: ^Body) ---
+
+	@(link_name = "JPH_Body_GetInverseInertia")
 	Body_GetInverseInertia :: proc(body: ^Body, result: ^Matrix4x4) ---
+
+	@(link_name = "JPH_Body_AddImpulse")
 	Body_AddImpulse :: proc(body: ^Body, impulse: ^Vec3) ---
+
+	@(link_name = "JPH_Body_AddImpulseAtPosition")
 	Body_AddImpulseAtPosition :: proc(body: ^Body, impulse: ^Vec3, position: ^RVec3) ---
+
+	@(link_name = "JPH_Body_AddAngularImpulse")
 	Body_AddAngularImpulse :: proc(body: ^Body, angularImpulse: ^Vec3) ---
-	Body_MoveKinematic :: proc(body: ^Body, targetPosition: ^RVec3, targetRotation: ^Quat, deltaTime: c.float) ---
-	Body_ApplyBuoyancyImpulse :: proc(body: ^Body, surfacePosition: ^RVec3, surfaceNormal: ^Vec3, buoyancy: c.float, linearDrag: c.float, angularDrag: c.float, fluidVelocity: ^Vec3, gravity: ^Vec3, deltaTime: c.float) -> c.bool ---
-	Body_IsInBroadPhase :: proc(body: ^Body) -> c.bool ---
-	Body_IsCollisionCacheInvalid :: proc(body: ^Body) -> c.bool ---
+
+	@(link_name = "JPH_Body_MoveKinematic")
+	Body_MoveKinematic :: proc(body: ^Body, targetPosition: ^RVec3, targetRotation: ^Quat, deltaTime: f32) ---
+
+	@(link_name = "JPH_Body_ApplyBuoyancyImpulse")
+	Body_ApplyBuoyancyImpulse :: proc(body: ^Body, surfacePosition: ^RVec3, surfaceNormal: ^Vec3, buoyancy: f32, linearDrag: f32, angularDrag: f32, fluidVelocity: ^Vec3, gravity: ^Vec3, deltaTime: f32) -> b8 ---
+
+	@(link_name = "JPH_Body_IsInBroadPhase")
+	Body_IsInBroadPhase :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_IsCollisionCacheInvalid")
+	Body_IsCollisionCacheInvalid :: proc(body: ^Body) -> b8 ---
+
+	@(link_name = "JPH_Body_GetShape")
 	Body_GetShape :: proc(body: ^Body) -> ^Shape ---
+
+	@(link_name = "JPH_Body_GetPosition")
 	Body_GetPosition :: proc(body: ^Body, result: ^RVec3) ---
+
+	@(link_name = "JPH_Body_GetRotation")
 	Body_GetRotation :: proc(body: ^Body, result: ^Quat) ---
+
+	@(link_name = "JPH_Body_GetWorldTransform")
 	Body_GetWorldTransform :: proc(body: ^Body, result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_Body_GetCenterOfMassPosition")
 	Body_GetCenterOfMassPosition :: proc(body: ^Body, result: ^RVec3) ---
+
+	@(link_name = "JPH_Body_GetCenterOfMassTransform")
 	Body_GetCenterOfMassTransform :: proc(body: ^Body, result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_Body_GetInverseCenterOfMassTransform")
 	Body_GetInverseCenterOfMassTransform :: proc(body: ^Body, result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_Body_GetWorldSpaceBounds")
 	Body_GetWorldSpaceBounds :: proc(body: ^Body, result: ^AABox) ---
+
+	@(link_name = "JPH_Body_GetWorldSpaceSurfaceNormal")
 	Body_GetWorldSpaceSurfaceNormal :: proc(body: ^Body, subShapeID: SubShapeID, position: ^RVec3, normal: ^Vec3) ---
+
+	@(link_name = "JPH_Body_GetMotionProperties")
 	Body_GetMotionProperties :: proc(body: ^Body) -> ^MotionProperties ---
+
+	@(link_name = "JPH_Body_GetMotionPropertiesUnchecked")
 	Body_GetMotionPropertiesUnchecked :: proc(body: ^Body) -> ^MotionProperties ---
-	Body_SetUserData :: proc(body: ^Body, userData: c.uint64_t) ---
-	Body_GetUserData :: proc(body: ^Body) -> c.uint64_t ---
+
+	@(link_name = "JPH_Body_SetUserData")
+	Body_SetUserData :: proc(body: ^Body, userData: u64) ---
+
+	@(link_name = "JPH_Body_GetUserData")
+	Body_GetUserData :: proc(body: ^Body) -> u64 ---
+
+	@(link_name = "JPH_Body_GetFixedToWorldBody")
 	Body_GetFixedToWorldBody :: proc() -> ^Body ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BroadPhaseLayerFilter
-	//-------------------------------------------------------------------------------------------------
-	BroadPhaseLayerFilter_Create :: proc(procs: BroadPhaseLayerFilter_Procs, userData: rawptr) -> ^BroadPhaseLayerFilter ---
+	@(link_name = "JPH_BroadPhaseLayerFilter_SetProcs")
+	BroadPhaseLayerFilter_SetProcs :: proc(procs: [^]BroadPhaseLayerFilter_Procs) ---
+
+	@(link_name = "JPH_BroadPhaseLayerFilter_Create")
+	BroadPhaseLayerFilter_Create :: proc(userData: rawptr) -> ^BroadPhaseLayerFilter ---
+
+	@(link_name = "JPH_BroadPhaseLayerFilter_Destroy")
 	BroadPhaseLayerFilter_Destroy :: proc(filter: ^BroadPhaseLayerFilter) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ObjectLayerFilter
-	//-------------------------------------------------------------------------------------------------
-	ObjectLayerFilter_Create :: proc(procs: ObjectLayerFilter_Procs, userData: rawptr) -> ^ObjectLayerFilter ---
+	@(link_name = "JPH_ObjectLayerFilter_SetProcs")
+	ObjectLayerFilter_SetProcs :: proc(procs: [^]ObjectLayerFilter_Procs) ---
+
+	@(link_name = "JPH_ObjectLayerFilter_Create")
+	ObjectLayerFilter_Create :: proc(userData: rawptr) -> ^ObjectLayerFilter ---
+
+	@(link_name = "JPH_ObjectLayerFilter_Destroy")
 	ObjectLayerFilter_Destroy :: proc(filter: ^ObjectLayerFilter) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyFilter
-	//-------------------------------------------------------------------------------------------------
-	BodyFilter_Create :: proc(procs: BodyFilter_Procs, userData: rawptr) -> ^BodyFilter ---
+	@(link_name = "JPH_BodyFilter_SetProcs")
+	BodyFilter_SetProcs :: proc(procs: [^]BodyFilter_Procs) ---
+
+	@(link_name = "JPH_BodyFilter_Create")
+	BodyFilter_Create :: proc(userData: rawptr) -> ^BodyFilter ---
+
+	@(link_name = "JPH_BodyFilter_Destroy")
 	BodyFilter_Destroy :: proc(filter: ^BodyFilter) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ShapeFilter
-	//-------------------------------------------------------------------------------------------------
-	ShapeFilter_Create :: proc(procs: ShapeFilter_Procs, userData: rawptr) -> ^ShapeFilter ---
+	@(link_name = "JPH_ShapeFilter_SetProcs")
+	ShapeFilter_SetProcs :: proc(procs: [^]ShapeFilter_Procs) ---
+
+	@(link_name = "JPH_ShapeFilter_Create")
+	ShapeFilter_Create :: proc(userData: rawptr) -> ^ShapeFilter ---
+
+	@(link_name = "JPH_ShapeFilter_Destroy")
 	ShapeFilter_Destroy :: proc(filter: ^ShapeFilter) ---
+
+	@(link_name = "JPH_ShapeFilter_GetBodyID2")
 	ShapeFilter_GetBodyID2 :: proc(filter: ^ShapeFilter) -> BodyID ---
+
+	@(link_name = "JPH_ShapeFilter_SetBodyID2")
 	ShapeFilter_SetBodyID2 :: proc(filter: ^ShapeFilter, id: BodyID) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ContactListener
-	//-------------------------------------------------------------------------------------------------
-	ContactListener_Create :: proc(procs: ContactListener_Procs, userData: rawptr) -> ^ContactListener ---
+	@(link_name = "JPH_SimShapeFilter_SetProcs")
+	SimShapeFilter_SetProcs :: proc(procs: [^]SimShapeFilter_Procs) ---
+
+	@(link_name = "JPH_SimShapeFilter_Create")
+	SimShapeFilter_Create :: proc(userData: rawptr) -> ^SimShapeFilter ---
+
+	@(link_name = "JPH_SimShapeFilter_Destroy")
+	SimShapeFilter_Destroy :: proc(filter: ^SimShapeFilter) ---
+
+	@(link_name = "JPH_ContactListener_SetProcs")
+	ContactListener_SetProcs :: proc(procs: [^]ContactListener_Procs) ---
+
+	@(link_name = "JPH_ContactListener_Create")
+	ContactListener_Create :: proc(userData: rawptr) -> ^ContactListener ---
+
+	@(link_name = "JPH_ContactListener_Destroy")
 	ContactListener_Destroy :: proc(listener: ^ContactListener) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyActivationListener
-	//-------------------------------------------------------------------------------------------------
-	BodyActivationListener_Create :: proc(procs: BodyActivationListener_Procs, userData: rawptr) -> ^BodyActivationListener ---
+	@(link_name = "JPH_BodyActivationListener_SetProcs")
+	BodyActivationListener_SetProcs :: proc(procs: [^]BodyActivationListener_Procs) ---
+
+	@(link_name = "JPH_BodyActivationListener_Create")
+	BodyActivationListener_Create :: proc(userData: rawptr) -> ^BodyActivationListener ---
+
+	@(link_name = "JPH_BodyActivationListener_Destroy")
 	BodyActivationListener_Destroy :: proc(listener: ^BodyActivationListener) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// BodyDrawFilter
-	//-------------------------------------------------------------------------------------------------
-	BodyDrawFilter_Create :: proc(procs: BodyDrawFilter_Procs, userData: rawptr) -> ^BodyDrawFilter ---
+	@(link_name = "JPH_BodyDrawFilter_SetProcs")
+	BodyDrawFilter_SetProcs :: proc(procs: [^]BodyDrawFilter_Procs) ---
+
+	@(link_name = "JPH_BodyDrawFilter_Create")
+	BodyDrawFilter_Create :: proc(userData: rawptr) -> ^BodyDrawFilter ---
+
+	@(link_name = "JPH_BodyDrawFilter_Destroy")
 	BodyDrawFilter_Destroy :: proc(filter: ^BodyDrawFilter) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ContactManifold
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_ContactManifold_GetWorldSpaceNormal")
 	ContactManifold_GetWorldSpaceNormal :: proc(manifold: ^ContactManifold, result: ^Vec3) ---
-	ContactManifold_GetPenetrationDepth :: proc(manifold: ^ContactManifold) -> c.float ---
+
+	@(link_name = "JPH_ContactManifold_GetPenetrationDepth")
+	ContactManifold_GetPenetrationDepth :: proc(manifold: ^ContactManifold) -> f32 ---
+
+	@(link_name = "JPH_ContactManifold_GetSubShapeID1")
 	ContactManifold_GetSubShapeID1 :: proc(manifold: ^ContactManifold) -> SubShapeID ---
+
+	@(link_name = "JPH_ContactManifold_GetSubShapeID2")
 	ContactManifold_GetSubShapeID2 :: proc(manifold: ^ContactManifold) -> SubShapeID ---
-	ContactManifold_GetPointCount :: proc(manifold: ^ContactManifold) -> c.uint32_t ---
-	ContactManifold_GetWorldSpaceContactPointOn1 :: proc(manifold: ^ContactManifold, index: c.uint32_t, result: ^RVec3) ---
-	ContactManifold_GetWorldSpaceContactPointOn2 :: proc(manifold: ^ContactManifold, index: c.uint32_t, result: ^RVec3) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// ContactSettings
-	//-------------------------------------------------------------------------------------------------
-	ContactSettings_GetFriction :: proc(settings: ^ContactSettings) -> c.float ---
-	ContactSettings_SetFriction :: proc(settings: ^ContactSettings, friction: c.float) ---
-	ContactSettings_GetRestitution :: proc(settings: ^ContactSettings) -> c.float ---
-	ContactSettings_SetRestitution :: proc(settings: ^ContactSettings, restitution: c.float) ---
-	ContactSettings_GetInvMassScale1 :: proc(settings: ^ContactSettings) -> c.float ---
-	ContactSettings_SetInvMassScale1 :: proc(settings: ^ContactSettings, scale: c.float) ---
-	ContactSettings_GetInvInertiaScale1 :: proc(settings: ^ContactSettings) -> c.float ---
-	ContactSettings_SetInvInertiaScale1 :: proc(settings: ^ContactSettings, scale: c.float) ---
-	ContactSettings_GetInvMassScale2 :: proc(settings: ^ContactSettings) -> c.float ---
-	ContactSettings_SetInvMassScale2 :: proc(settings: ^ContactSettings, scale: c.float) ---
-	ContactSettings_GetInvInertiaScale2 :: proc(settings: ^ContactSettings) -> c.float ---
-	ContactSettings_SetInvInertiaScale2 :: proc(settings: ^ContactSettings, scale: c.float) ---
-	ContactSettings_GetIsSensor :: proc(settings: ^ContactSettings) -> c.bool ---
-	ContactSettings_SetIsSensor :: proc(settings: ^ContactSettings, sensor: c.bool) ---
-	ContactSettings_GetRelativeLinearSurfaceVelocity :: proc(settings: ^ContactSettings, result: ^Vec3) ---
-	ContactSettings_SetRelativeLinearSurfaceVelocity :: proc(settings: ^ContactSettings, velocity: ^Vec3) ---
-	ContactSettings_GetRelativeAngularSurfaceVelocity :: proc(settings: ^ContactSettings, result: ^Vec3) ---
-	ContactSettings_SetRelativeAngularSurfaceVelocity :: proc(settings: ^ContactSettings, velocity: ^Vec3) ---
+	@(link_name = "JPH_ContactManifold_GetPointCount")
+	ContactManifold_GetPointCount :: proc(manifold: ^ContactManifold) -> u32 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CharacterBase
-	//-------------------------------------------------------------------------------------------------
+	@(link_name = "JPH_ContactManifold_GetWorldSpaceContactPointOn1")
+	ContactManifold_GetWorldSpaceContactPointOn1 :: proc(manifold: ^ContactManifold, index: u32, result: ^RVec3) ---
+
+	@(link_name = "JPH_ContactManifold_GetWorldSpaceContactPointOn2")
+	ContactManifold_GetWorldSpaceContactPointOn2 :: proc(manifold: ^ContactManifold, index: u32, result: ^RVec3) ---
+
+	@(link_name = "JPH_ContactSettings_GetFriction")
+	ContactSettings_GetFriction :: proc(settings: [^]ContactSettings) -> f32 ---
+
+	@(link_name = "JPH_ContactSettings_SetFriction")
+	ContactSettings_SetFriction :: proc(settings: [^]ContactSettings, friction: f32) ---
+
+	@(link_name = "JPH_ContactSettings_GetRestitution")
+	ContactSettings_GetRestitution :: proc(settings: [^]ContactSettings) -> f32 ---
+
+	@(link_name = "JPH_ContactSettings_SetRestitution")
+	ContactSettings_SetRestitution :: proc(settings: [^]ContactSettings, restitution: f32) ---
+
+	@(link_name = "JPH_ContactSettings_GetInvMassScale1")
+	ContactSettings_GetInvMassScale1 :: proc(settings: [^]ContactSettings) -> f32 ---
+
+	@(link_name = "JPH_ContactSettings_SetInvMassScale1")
+	ContactSettings_SetInvMassScale1 :: proc(settings: [^]ContactSettings, scale: f32) ---
+
+	@(link_name = "JPH_ContactSettings_GetInvInertiaScale1")
+	ContactSettings_GetInvInertiaScale1 :: proc(settings: [^]ContactSettings) -> f32 ---
+
+	@(link_name = "JPH_ContactSettings_SetInvInertiaScale1")
+	ContactSettings_SetInvInertiaScale1 :: proc(settings: [^]ContactSettings, scale: f32) ---
+
+	@(link_name = "JPH_ContactSettings_GetInvMassScale2")
+	ContactSettings_GetInvMassScale2 :: proc(settings: [^]ContactSettings) -> f32 ---
+
+	@(link_name = "JPH_ContactSettings_SetInvMassScale2")
+	ContactSettings_SetInvMassScale2 :: proc(settings: [^]ContactSettings, scale: f32) ---
+
+	@(link_name = "JPH_ContactSettings_GetInvInertiaScale2")
+	ContactSettings_GetInvInertiaScale2 :: proc(settings: [^]ContactSettings) -> f32 ---
+
+	@(link_name = "JPH_ContactSettings_SetInvInertiaScale2")
+	ContactSettings_SetInvInertiaScale2 :: proc(settings: [^]ContactSettings, scale: f32) ---
+
+	@(link_name = "JPH_ContactSettings_GetIsSensor")
+	ContactSettings_GetIsSensor :: proc(settings: [^]ContactSettings) -> b8 ---
+
+	@(link_name = "JPH_ContactSettings_SetIsSensor")
+	ContactSettings_SetIsSensor :: proc(settings: [^]ContactSettings, sensor: b8) ---
+
+	@(link_name = "JPH_ContactSettings_GetRelativeLinearSurfaceVelocity")
+	ContactSettings_GetRelativeLinearSurfaceVelocity :: proc(settings: [^]ContactSettings, result: ^Vec3) ---
+
+	@(link_name = "JPH_ContactSettings_SetRelativeLinearSurfaceVelocity")
+	ContactSettings_SetRelativeLinearSurfaceVelocity :: proc(settings: [^]ContactSettings, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_ContactSettings_GetRelativeAngularSurfaceVelocity")
+	ContactSettings_GetRelativeAngularSurfaceVelocity :: proc(settings: [^]ContactSettings, result: ^Vec3) ---
+
+	@(link_name = "JPH_ContactSettings_SetRelativeAngularSurfaceVelocity")
+	ContactSettings_SetRelativeAngularSurfaceVelocity :: proc(settings: [^]ContactSettings, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterBase_Destroy")
 	CharacterBase_Destroy :: proc(character: ^CharacterBase) ---
-	CharacterBase_GetCosMaxSlopeAngle :: proc(character: ^CharacterBase) -> c.float ---
-	CharacterBase_SetMaxSlopeAngle :: proc(character: ^CharacterBase, maxSlopeAngle: c.float) ---
+
+	@(link_name = "JPH_CharacterBase_GetCosMaxSlopeAngle")
+	CharacterBase_GetCosMaxSlopeAngle :: proc(character: ^CharacterBase) -> f32 ---
+
+	@(link_name = "JPH_CharacterBase_SetMaxSlopeAngle")
+	CharacterBase_SetMaxSlopeAngle :: proc(character: ^CharacterBase, maxSlopeAngle: f32) ---
+
+	@(link_name = "JPH_CharacterBase_GetUp")
 	CharacterBase_GetUp :: proc(character: ^CharacterBase, result: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterBase_SetUp")
 	CharacterBase_SetUp :: proc(character: ^CharacterBase, value: ^Vec3) ---
-	CharacterBase_IsSlopeTooSteep :: proc(character: ^CharacterBase, value: ^Vec3) -> c.bool ---
+
+	@(link_name = "JPH_CharacterBase_IsSlopeTooSteep")
+	CharacterBase_IsSlopeTooSteep :: proc(character: ^CharacterBase, value: ^Vec3) -> b8 ---
+
+	@(link_name = "JPH_CharacterBase_GetShape")
 	CharacterBase_GetShape :: proc(character: ^CharacterBase) -> ^Shape ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundState")
 	CharacterBase_GetGroundState :: proc(character: ^CharacterBase) -> GroundState ---
-	CharacterBase_IsSupported :: proc(character: ^CharacterBase) -> c.bool ---
+
+	@(link_name = "JPH_CharacterBase_IsSupported")
+	CharacterBase_IsSupported :: proc(character: ^CharacterBase) -> b8 ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundPosition")
 	CharacterBase_GetGroundPosition :: proc(character: ^CharacterBase, position: ^RVec3) ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundNormal")
 	CharacterBase_GetGroundNormal :: proc(character: ^CharacterBase, normal: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundVelocity")
 	CharacterBase_GetGroundVelocity :: proc(character: ^CharacterBase, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundMaterial")
 	CharacterBase_GetGroundMaterial :: proc(character: ^CharacterBase) -> ^PhysicsMaterial ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundBodyId")
 	CharacterBase_GetGroundBodyId :: proc(character: ^CharacterBase) -> BodyID ---
+
+	@(link_name = "JPH_CharacterBase_GetGroundSubShapeId")
 	CharacterBase_GetGroundSubShapeId :: proc(character: ^CharacterBase) -> SubShapeID ---
-	CharacterBase_GetGroundUserData :: proc(character: ^CharacterBase) -> c.uint64_t ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CharacterSettings
-	//-------------------------------------------------------------------------------------------------
-	CharacterSettings_Init :: proc(settings: ^CharacterSettings) ---
+	@(link_name = "JPH_CharacterBase_GetGroundUserData")
+	CharacterBase_GetGroundUserData :: proc(character: ^CharacterBase) -> u64 ---
 
-	//-------------------------------------------------------------------------------------------------
-	// Character
-	//-------------------------------------------------------------------------------------------------
-	Character_Create :: proc(settings: ^CharacterSettings, position: ^RVec3, rotation: ^Quat, userData: c.uint64_t, system: ^PhysicsSystem) -> ^Character ---
-	Character_AddToPhysicsSystem :: proc(character: ^Character, activationMode: Activation, lockBodies: c.bool) ---
-	Character_RemoveFromPhysicsSystem :: proc(character: ^Character, lockBodies: c.bool) ---
-	Character_Activate :: proc(character: ^Character, lockBodies: c.bool) ---
-	Character_PostSimulation :: proc(character: ^Character, maxSeparationDistance: c.float, lockBodies: c.bool) ---
-	Character_SetLinearAndAngularVelocity :: proc(character: ^Character, linearVelocity: ^Vec3, angularVelocity: ^Vec3, lockBodies: c.bool) ---
+	@(link_name = "JPH_CharacterSettings_Init")
+	CharacterSettings_Init :: proc(settings: [^]CharacterSettings) ---
+
+	@(link_name = "JPH_Character_Create")
+	Character_Create :: proc(settings: [^]CharacterSettings, position: ^RVec3, rotation: ^Quat, userData: u64, system: ^PhysicsSystem) -> ^Character ---
+
+	@(link_name = "JPH_Character_AddToPhysicsSystem")
+	Character_AddToPhysicsSystem :: proc(character: ^Character, activationMode: Activation, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_RemoveFromPhysicsSystem")
+	Character_RemoveFromPhysicsSystem :: proc(character: ^Character, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_Activate")
+	Character_Activate :: proc(character: ^Character, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_PostSimulation")
+	Character_PostSimulation :: proc(character: ^Character, maxSeparationDistance: f32, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_SetLinearAndAngularVelocity")
+	Character_SetLinearAndAngularVelocity :: proc(character: ^Character, linearVelocity: ^Vec3, angularVelocity: ^Vec3, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetLinearVelocity")
 	Character_GetLinearVelocity :: proc(character: ^Character, result: ^Vec3) ---
-	Character_SetLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: c.bool) ---
-	Character_AddLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: c.bool) ---
-	Character_AddImpulse :: proc(character: ^Character, value: ^Vec3, lockBodies: c.bool) ---
+
+	@(link_name = "JPH_Character_SetLinearVelocity")
+	Character_SetLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_AddLinearVelocity")
+	Character_AddLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_AddImpulse")
+	Character_AddImpulse :: proc(character: ^Character, value: ^Vec3, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetBodyID")
 	Character_GetBodyID :: proc(character: ^Character) -> BodyID ---
-	Character_GetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, lockBodies: c.bool) ---
-	Character_SetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, activationMode: Activation, lockBodies: c.bool) ---
-	Character_GetPosition :: proc(character: ^Character, position: ^RVec3, lockBodies: c.bool) ---
-	Character_SetPosition :: proc(character: ^Character, position: ^RVec3, activationMode: Activation, lockBodies: c.bool) ---
-	Character_GetRotation :: proc(character: ^Character, rotation: ^Quat, lockBodies: c.bool) ---
-	Character_SetRotation :: proc(character: ^Character, rotation: ^Quat, activationMode: Activation, lockBodies: c.bool) ---
-	Character_GetCenterOfMassPosition :: proc(character: ^Character, result: ^RVec3, lockBodies: c.bool) ---
-	Character_GetWorldTransform :: proc(character: ^Character, result: ^RMatrix4x4, lockBodies: c.bool) ---
+
+	@(link_name = "JPH_Character_GetPositionAndRotation")
+	Character_GetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_SetPositionAndRotation")
+	Character_SetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, activationMode: Activation, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetPosition")
+	Character_GetPosition :: proc(character: ^Character, position: ^RVec3, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_SetPosition")
+	Character_SetPosition :: proc(character: ^Character, position: ^RVec3, activationMode: Activation, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetRotation")
+	Character_GetRotation :: proc(character: ^Character, rotation: ^Quat, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_SetRotation")
+	Character_SetRotation :: proc(character: ^Character, rotation: ^Quat, activationMode: Activation, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetCenterOfMassPosition")
+	Character_GetCenterOfMassPosition :: proc(character: ^Character, result: ^RVec3, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetWorldTransform")
+	Character_GetWorldTransform :: proc(character: ^Character, result: ^RMatrix4x4, lockBodies: b8) ---
+
+	@(link_name = "JPH_Character_GetLayer")
 	Character_GetLayer :: proc(character: ^Character) -> ObjectLayer ---
-	Character_SetLayer :: proc(character: ^Character, value: ObjectLayer, lockBodies: c.bool) ---
-	Character_SetShape :: proc(character: ^Character, shape: ^Shape, maxPenetrationDepth: c.float, lockBodies: c.bool) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CharacterVirtualSettings
-	//-------------------------------------------------------------------------------------------------
-	CharacterVirtualSettings_Init :: proc(settings: ^CharacterVirtualSettings) ---
+	@(link_name = "JPH_Character_SetLayer")
+	Character_SetLayer :: proc(character: ^Character, value: ObjectLayer, lockBodies: b8) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CharacterVirtual
-	//-------------------------------------------------------------------------------------------------
-	CharacterVirtual_Create :: proc(settings: ^CharacterVirtualSettings, position: ^RVec3, rotation: ^Quat, userData: c.uint64_t, system: ^PhysicsSystem) -> ^CharacterVirtual ---
+	@(link_name = "JPH_Character_SetShape")
+	Character_SetShape :: proc(character: ^Character, shape: ^Shape, maxPenetrationDepth: f32, lockBodies: b8) ---
+
+	@(link_name = "JPH_CharacterVirtualSettings_Init")
+	CharacterVirtualSettings_Init :: proc(settings: [^]CharacterVirtualSettings) ---
+
+	@(link_name = "JPH_CharacterVirtual_Create")
+	CharacterVirtual_Create :: proc(settings: [^]CharacterVirtualSettings, position: ^RVec3, rotation: ^Quat, userData: u64, system: ^PhysicsSystem) -> ^CharacterVirtual ---
+
+	@(link_name = "JPH_CharacterVirtual_GetID")
 	CharacterVirtual_GetID :: proc(character: ^CharacterVirtual) -> CharacterID ---
-	CharacterVirtual_SetListener :: proc(character: ^CharacterVirtual, listener: ^CharacterContactListener) ---
-	CharacterVirtual_SetCharacterVsCharacterCollision :: proc(character: ^CharacterVirtual, characterVsCharacterCollision: ^CharacterVsCharacterCollision) ---
-	CharacterVirtual_GetLinearVelocity :: proc(character: ^CharacterVirtual, velocity: ^Vec3) ---
-	CharacterVirtual_SetLinearVelocity :: proc(character: ^CharacterVirtual, velocity: ^Vec3) ---
-	CharacterVirtual_GetPosition :: proc(character: ^CharacterVirtual, position: ^RVec3) ---
-	CharacterVirtual_SetPosition :: proc(character: ^CharacterVirtual, position: ^RVec3) ---
-	CharacterVirtual_GetRotation :: proc(character: ^CharacterVirtual, rotation: ^Quat) ---
-	CharacterVirtual_SetRotation :: proc(character: ^CharacterVirtual, rotation: ^Quat) ---
-	CharacterVirtual_GetWorldTransform :: proc(character: ^CharacterVirtual, result: ^RMatrix4x4) ---
-	CharacterVirtual_GetCenterOfMassTransform :: proc(character: ^CharacterVirtual, result: ^RMatrix4x4) ---
-	CharacterVirtual_GetMass :: proc(character: ^CharacterVirtual) -> c.float ---
-	CharacterVirtual_SetMass :: proc(character: ^CharacterVirtual, value: c.float) ---
-	CharacterVirtual_GetMaxStrength :: proc(character: ^CharacterVirtual) -> c.float ---
-	CharacterVirtual_SetMaxStrength :: proc(character: ^CharacterVirtual, value: c.float) ---
-	CharacterVirtual_GetPenetrationRecoverySpeed :: proc(character: ^CharacterVirtual) -> c.float ---
-	CharacterVirtual_SetPenetrationRecoverySpeed :: proc(character: ^CharacterVirtual, value: c.float) ---
-	CharacterVirtual_GetEnhancedInternalEdgeRemoval :: proc(character: ^CharacterVirtual) -> c.bool ---
-	CharacterVirtual_SetEnhancedInternalEdgeRemoval :: proc(character: ^CharacterVirtual, value: c.bool) ---
-	CharacterVirtual_GetCharacterPadding :: proc(character: ^CharacterVirtual) -> c.float ---
-	CharacterVirtual_GetMaxNumHits :: proc(character: ^CharacterVirtual) -> c.uint32_t ---
-	CharacterVirtual_SetMaxNumHits :: proc(character: ^CharacterVirtual, value: c.uint32_t) ---
-	CharacterVirtual_GetHitReductionCosMaxAngle :: proc(character: ^CharacterVirtual) -> c.float ---
-	CharacterVirtual_SetHitReductionCosMaxAngle :: proc(character: ^CharacterVirtual, value: c.float) ---
-	CharacterVirtual_GetMaxHitsExceeded :: proc(character: ^CharacterVirtual) -> c.bool ---
-	CharacterVirtual_GetShapeOffset :: proc(character: ^CharacterVirtual, result: ^Vec3) ---
-	CharacterVirtual_SetShapeOffset :: proc(character: ^CharacterVirtual, value: ^Vec3) ---
-	CharacterVirtual_GetUserData :: proc(character: ^CharacterVirtual) -> c.uint64_t ---
-	CharacterVirtual_SetUserData :: proc(character: ^CharacterVirtual, value: c.uint64_t) ---
-	CharacterVirtual_GetInnerBodyID :: proc(character: ^CharacterVirtual) -> BodyID ---
-	CharacterVirtual_CancelVelocityTowardsSteepSlopes :: proc(character: ^CharacterVirtual, desiredVelocity: ^Vec3, velocity: ^Vec3) ---
-	CharacterVirtual_StartTrackingContactChanges :: proc(character: ^CharacterVirtual) ---
-	CharacterVirtual_FinishTrackingContactChanges :: proc(Character: ^CharacterVirtual) ---
-	CharacterVirtual_Update :: proc(character: ^CharacterVirtual, deltaTime: c.float, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) ---
-	CharacterVirtual_ExtendedUpdate :: proc(character: ^CharacterVirtual, deltaTime: c.float, settings: ^ExtendedUpdateSettings, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) ---
-	CharacterVirtual_RefreshContacts :: proc(character: ^CharacterVirtual, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) ---
-	CharacterVirtual_CanWalkStairs :: proc(character: ^CharacterVirtual, linearVelocity: ^Vec3) -> c.bool ---
-	CharacterVirtual_WalkStairs :: proc(character: ^CharacterVirtual, deltaTime: c.float, stepUp: ^Vec3, stepForward: ^Vec3, stepForwardTest: ^Vec3, stepDownExtra: ^Vec3, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	CharacterVirtual_StickToFloor :: proc(character: ^CharacterVirtual, stepDown: ^Vec3, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	CharacterVirtual_UpdateGroundVelocity :: proc(character: ^CharacterVirtual) ---
-	CharacterVirtual_SetShape :: proc(character: ^CharacterVirtual, shape: ^Shape, maxPenetrationDepth: c.float, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> c.bool ---
-	CharacterVirtual_SetInnerBodyShape :: proc(character: ^CharacterVirtual, shape: ^Shape) ---
-	CharacterVirtual_GetNumContacts :: proc(character: ^CharacterVirtual) -> c.uint32_t ---
-	CharacterVirtual_HasCollidedWithBody :: proc(character: ^CharacterVirtual, body: BodyID) -> c.bool ---
-	CharacterVirtual_HasCollidedWith :: proc(character: ^CharacterVirtual, other: ^CharacterID) -> c.bool ---
-	CharacterVirtual_HasCollidedWithCharacter :: proc(character: ^CharacterVirtual, other: ^CharacterVirtual) -> c.bool ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CharacterContactListener
-	//-------------------------------------------------------------------------------------------------
-	CharacterContactListener_Create :: proc(procs: CharacterContactListener_Procs, userData: rawptr) -> ^CharacterContactListener ---
+	@(link_name = "JPH_CharacterVirtual_SetListener")
+	CharacterVirtual_SetListener :: proc(character: ^CharacterVirtual, listener: ^CharacterContactListener) ---
+
+	@(link_name = "JPH_CharacterVirtual_SetCharacterVsCharacterCollision")
+	CharacterVirtual_SetCharacterVsCharacterCollision :: proc(character: ^CharacterVirtual, characterVsCharacterCollision: ^CharacterVsCharacterCollision) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetLinearVelocity")
+	CharacterVirtual_GetLinearVelocity :: proc(character: ^CharacterVirtual, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_SetLinearVelocity")
+	CharacterVirtual_SetLinearVelocity :: proc(character: ^CharacterVirtual, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetPosition")
+	CharacterVirtual_GetPosition :: proc(character: ^CharacterVirtual, position: ^RVec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_SetPosition")
+	CharacterVirtual_SetPosition :: proc(character: ^CharacterVirtual, position: ^RVec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetRotation")
+	CharacterVirtual_GetRotation :: proc(character: ^CharacterVirtual, rotation: ^Quat) ---
+
+	@(link_name = "JPH_CharacterVirtual_SetRotation")
+	CharacterVirtual_SetRotation :: proc(character: ^CharacterVirtual, rotation: ^Quat) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetWorldTransform")
+	CharacterVirtual_GetWorldTransform :: proc(character: ^CharacterVirtual, result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetCenterOfMassTransform")
+	CharacterVirtual_GetCenterOfMassTransform :: proc(character: ^CharacterVirtual, result: ^RMatrix4x4) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetMass")
+	CharacterVirtual_GetMass :: proc(character: ^CharacterVirtual) -> f32 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetMass")
+	CharacterVirtual_SetMass :: proc(character: ^CharacterVirtual, value: f32) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetMaxStrength")
+	CharacterVirtual_GetMaxStrength :: proc(character: ^CharacterVirtual) -> f32 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetMaxStrength")
+	CharacterVirtual_SetMaxStrength :: proc(character: ^CharacterVirtual, value: f32) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetPenetrationRecoverySpeed")
+	CharacterVirtual_GetPenetrationRecoverySpeed :: proc(character: ^CharacterVirtual) -> f32 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetPenetrationRecoverySpeed")
+	CharacterVirtual_SetPenetrationRecoverySpeed :: proc(character: ^CharacterVirtual, value: f32) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetEnhancedInternalEdgeRemoval")
+	CharacterVirtual_GetEnhancedInternalEdgeRemoval :: proc(character: ^CharacterVirtual) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetEnhancedInternalEdgeRemoval")
+	CharacterVirtual_SetEnhancedInternalEdgeRemoval :: proc(character: ^CharacterVirtual, value: b8) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetCharacterPadding")
+	CharacterVirtual_GetCharacterPadding :: proc(character: ^CharacterVirtual) -> f32 ---
+
+	@(link_name = "JPH_CharacterVirtual_GetMaxNumHits")
+	CharacterVirtual_GetMaxNumHits :: proc(character: ^CharacterVirtual) -> u32 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetMaxNumHits")
+	CharacterVirtual_SetMaxNumHits :: proc(character: ^CharacterVirtual, value: u32) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetHitReductionCosMaxAngle")
+	CharacterVirtual_GetHitReductionCosMaxAngle :: proc(character: ^CharacterVirtual) -> f32 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetHitReductionCosMaxAngle")
+	CharacterVirtual_SetHitReductionCosMaxAngle :: proc(character: ^CharacterVirtual, value: f32) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetMaxHitsExceeded")
+	CharacterVirtual_GetMaxHitsExceeded :: proc(character: ^CharacterVirtual) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_GetShapeOffset")
+	CharacterVirtual_GetShapeOffset :: proc(character: ^CharacterVirtual, result: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_SetShapeOffset")
+	CharacterVirtual_SetShapeOffset :: proc(character: ^CharacterVirtual, value: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetUserData")
+	CharacterVirtual_GetUserData :: proc(character: ^CharacterVirtual) -> u64 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetUserData")
+	CharacterVirtual_SetUserData :: proc(character: ^CharacterVirtual, value: u64) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetInnerBodyID")
+	CharacterVirtual_GetInnerBodyID :: proc(character: ^CharacterVirtual) -> BodyID ---
+
+	@(link_name = "JPH_CharacterVirtual_CancelVelocityTowardsSteepSlopes")
+	CharacterVirtual_CancelVelocityTowardsSteepSlopes :: proc(character: ^CharacterVirtual, desiredVelocity: ^Vec3, velocity: ^Vec3) ---
+
+	@(link_name = "JPH_CharacterVirtual_StartTrackingContactChanges")
+	CharacterVirtual_StartTrackingContactChanges :: proc(character: ^CharacterVirtual) ---
+
+	@(link_name = "JPH_CharacterVirtual_FinishTrackingContactChanges")
+	CharacterVirtual_FinishTrackingContactChanges :: proc(character: ^CharacterVirtual) ---
+
+	@(link_name = "JPH_CharacterVirtual_Update")
+	CharacterVirtual_Update :: proc(character: ^CharacterVirtual, deltaTime: f32, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) ---
+
+	@(link_name = "JPH_CharacterVirtual_ExtendedUpdate")
+	CharacterVirtual_ExtendedUpdate :: proc(character: ^CharacterVirtual, deltaTime: f32, settings: [^]ExtendedUpdateSettings, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) ---
+
+	@(link_name = "JPH_CharacterVirtual_RefreshContacts")
+	CharacterVirtual_RefreshContacts :: proc(character: ^CharacterVirtual, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) ---
+
+	@(link_name = "JPH_CharacterVirtual_CanWalkStairs")
+	CharacterVirtual_CanWalkStairs :: proc(character: ^CharacterVirtual, linearVelocity: ^Vec3) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_WalkStairs")
+	CharacterVirtual_WalkStairs :: proc(character: ^CharacterVirtual, deltaTime: f32, stepUp: ^Vec3, stepForward: ^Vec3, stepForwardTest: ^Vec3, stepDownExtra: ^Vec3, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_StickToFloor")
+	CharacterVirtual_StickToFloor :: proc(character: ^CharacterVirtual, stepDown: ^Vec3, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_UpdateGroundVelocity")
+	CharacterVirtual_UpdateGroundVelocity :: proc(character: ^CharacterVirtual) ---
+
+	@(link_name = "JPH_CharacterVirtual_SetShape")
+	CharacterVirtual_SetShape :: proc(character: ^CharacterVirtual, shape: ^Shape, maxPenetrationDepth: f32, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_SetInnerBodyShape")
+	CharacterVirtual_SetInnerBodyShape :: proc(character: ^CharacterVirtual, shape: ^Shape) ---
+
+	@(link_name = "JPH_CharacterVirtual_GetNumActiveContacts")
+	CharacterVirtual_GetNumActiveContacts :: proc(character: ^CharacterVirtual) -> u32 ---
+
+	@(link_name = "JPH_CharacterVirtual_GetActiveContact")
+	CharacterVirtual_GetActiveContact :: proc(character: ^CharacterVirtual, index: u32, result: ^CharacterVirtualContact) ---
+
+	@(link_name = "JPH_CharacterVirtual_HasCollidedWithBody")
+	CharacterVirtual_HasCollidedWithBody :: proc(character: ^CharacterVirtual, body: BodyID) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_HasCollidedWith")
+	CharacterVirtual_HasCollidedWith :: proc(character: ^CharacterVirtual, other: CharacterID) -> b8 ---
+
+	@(link_name = "JPH_CharacterVirtual_HasCollidedWithCharacter")
+	CharacterVirtual_HasCollidedWithCharacter :: proc(character: ^CharacterVirtual, other: ^CharacterVirtual) -> b8 ---
+
+	@(link_name = "JPH_CharacterContactListener_SetProcs")
+	CharacterContactListener_SetProcs :: proc(procs: [^]CharacterContactListener_Procs) ---
+
+	@(link_name = "JPH_CharacterContactListener_Create")
+	CharacterContactListener_Create :: proc(userData: rawptr) -> ^CharacterContactListener ---
+
+	@(link_name = "JPH_CharacterContactListener_Destroy")
 	CharacterContactListener_Destroy :: proc(listener: ^CharacterContactListener) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// CharacterVsCharacterCollision
-	//-------------------------------------------------------------------------------JPH_------------------
-	CharacterVsCharacterCollision_Create :: proc(procs: CharacterVsCharacterCollision_Procs, userData: rawptr) -> ^CharacterVsCharacterCollision ---
+	@(link_name = "JPH_CharacterVsCharacterCollision_SetProcs")
+	CharacterVsCharacterCollision_SetProcs :: proc(procs: [^]CharacterVsCharacterCollision_Procs) ---
+
+	@(link_name = "JPH_CharacterVsCharacterCollision_Create")
+	CharacterVsCharacterCollision_Create :: proc(userData: rawptr) -> ^CharacterVsCharacterCollision ---
+
+	@(link_name = "JPH_CharacterVsCharacterCollision_CreateSimple")
 	CharacterVsCharacterCollision_CreateSimple :: proc() -> ^CharacterVsCharacterCollision ---
+
+	@(link_name = "JPH_CharacterVsCharacterCollisionSimple_AddCharacter")
 	CharacterVsCharacterCollisionSimple_AddCharacter :: proc(characterVsCharacter: ^CharacterVsCharacterCollision, character: ^CharacterVirtual) ---
+
+	@(link_name = "JPH_CharacterVsCharacterCollisionSimple_RemoveCharacter")
 	CharacterVsCharacterCollisionSimple_RemoveCharacter :: proc(characterVsCharacter: ^CharacterVsCharacterCollision, character: ^CharacterVirtual) ---
+
+	@(link_name = "JPH_CharacterVsCharacterCollision_Destroy")
 	CharacterVsCharacterCollision_Destroy :: proc(listener: ^CharacterVsCharacterCollision) ---
 
-	//-------------------------------------------------------------------------------------------------
-	// DebugRenderer
-	//-------------------------------------------------------------------------------------------------
-	DebugRenderer_Create :: proc(procs: DebugRenderer_Procs, userData: rawptr) -> ^DebugRenderer ---
+	@(link_name = "JPH_CollisionDispatch_CollideShapeVsShape")
+	CollisionDispatch_CollideShapeVsShape :: proc(shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, scale2: ^Vec3, centerOfMassTransform1: ^Matrix4x4, centerOfMassTransform2: ^Matrix4x4, collideShapeSettings: [^]CollideShapeSettings, callback: ^CollideShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_CollisionDispatch_CastShapeVsShapeLocalSpace")
+	CollisionDispatch_CastShapeVsShapeLocalSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1InShape2LocalSpace: ^Vec3, scale2: ^Vec3, centerOfMassTransform1InShape2LocalSpace: ^Matrix4x4, centerOfMassWorldTransform2: ^Matrix4x4, shapeCastSettings: [^]ShapeCastSettings, callback: ^CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_CollisionDispatch_CastShapeVsShapeWorldSpace")
+	CollisionDispatch_CastShapeVsShapeWorldSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, inScale2: ^Vec3, centerOfMassWorldTransform1: ^Matrix4x4, centerOfMassWorldTransform2: ^Matrix4x4, shapeCastSettings: [^]ShapeCastSettings, callback: ^CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> b8 ---
+
+	@(link_name = "JPH_DebugRenderer_SetProcs")
+	DebugRenderer_SetProcs :: proc(procs: [^]DebugRenderer_Procs) ---
+
+	@(link_name = "JPH_DebugRenderer_Create")
+	DebugRenderer_Create :: proc(userData: rawptr) -> ^DebugRenderer ---
+
+	@(link_name = "JPH_DebugRenderer_Destroy")
 	DebugRenderer_Destroy :: proc(renderer: ^DebugRenderer) ---
+
+	@(link_name = "JPH_DebugRenderer_NextFrame")
 	DebugRenderer_NextFrame :: proc(renderer: ^DebugRenderer) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawLine")
 	DebugRenderer_DrawLine :: proc(renderer: ^DebugRenderer, from: ^RVec3, to: ^RVec3, color: Color) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawWireBox")
 	DebugRenderer_DrawWireBox :: proc(renderer: ^DebugRenderer, box: ^AABox, color: Color) ---
-	DebugRenderer_DrawWireBox2 :: proc(renderer: ^DebugRenderer, mat: ^RMatrix4x4, box: ^AABox, color: Color) ---
-	DebugRenderer_DrawMarker :: proc(renderer: ^DebugRenderer, position: ^RVec3, color: Color, size: c.float) ---
-	DebugRenderer_DrawArrow :: proc(renderer: ^DebugRenderer, from: ^RVec3, to: ^RVec3, color: Color, size: c.float) ---
-	DebugRenderer_DrawCoordinateSystem :: proc(renderer: ^DebugRenderer, mat: ^RMatrix4x4, size: c.float) ---
-	DebugRenderer_DrawPlane :: proc(renderer: ^DebugRenderer, point: ^RVec3, normal: ^Vec3, color: Color, size: c.float) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawWireBox2")
+	DebugRenderer_DrawWireBox2 :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, box: ^AABox, color: Color) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawMarker")
+	DebugRenderer_DrawMarker :: proc(renderer: ^DebugRenderer, position: ^RVec3, color: Color, size: f32) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawArrow")
+	DebugRenderer_DrawArrow :: proc(renderer: ^DebugRenderer, from: ^RVec3, to: ^RVec3, color: Color, size: f32) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawCoordinateSystem")
+	DebugRenderer_DrawCoordinateSystem :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, size: f32) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawPlane")
+	DebugRenderer_DrawPlane :: proc(renderer: ^DebugRenderer, point: ^RVec3, normal: ^Vec3, color: Color, size: f32) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawWireTriangle")
 	DebugRenderer_DrawWireTriangle :: proc(renderer: ^DebugRenderer, v1: ^RVec3, v2: ^RVec3, v3: ^RVec3, color: Color) ---
-	DebugRenderer_DrawWireSphere :: proc(renderer: ^DebugRenderer, center: ^RVec3, radius: c.float, color: Color, level: c.int) ---
-	DebugRenderer_DrawWireUnitSphere :: proc(renderer: ^DebugRenderer, mat: ^RMatrix4x4, color: Color, level: c.int) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawWireSphere")
+	DebugRenderer_DrawWireSphere :: proc(renderer: ^DebugRenderer, center: ^RVec3, radius: f32, color: Color, level: i32) ---
+
+	@(link_name = "JPH_DebugRenderer_DrawWireUnitSphere")
+	DebugRenderer_DrawWireUnitSphere :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, color: Color, level: i32) ---
+
+	@(link_name = "JPH_Skeleton_Create")
+	Skeleton_Create :: proc() -> ^Skeleton ---
+
+	@(link_name = "JPH_Skeleton_Destroy")
+	Skeleton_Destroy :: proc(skeleton: ^Skeleton) ---
+
+	@(link_name = "JPH_Skeleton_AddJoint")
+	Skeleton_AddJoint :: proc(skeleton: ^Skeleton, name: cstring) -> u32 ---
+
+	@(link_name = "JPH_Skeleton_AddJoint2")
+	Skeleton_AddJoint2 :: proc(skeleton: ^Skeleton, name: cstring, parentIndex: i32) -> u32 ---
+
+	@(link_name = "JPH_Skeleton_AddJoint3")
+	Skeleton_AddJoint3 :: proc(skeleton: ^Skeleton, name: cstring, parentName: cstring) -> u32 ---
+
+	@(link_name = "JPH_Skeleton_GetJointCount")
+	Skeleton_GetJointCount :: proc(skeleton: ^Skeleton) -> i32 ---
+
+	@(link_name = "JPH_Skeleton_GetJoint")
+	Skeleton_GetJoint :: proc(skeleton: ^Skeleton, index: i32, joint: ^SkeletonJoint) ---
+
+	@(link_name = "JPH_Skeleton_GetJointIndex")
+	Skeleton_GetJointIndex :: proc(skeleton: ^Skeleton, name: cstring) -> i32 ---
+
+	@(link_name = "JPH_Skeleton_CalculateParentJointIndices")
+	Skeleton_CalculateParentJointIndices :: proc(skeleton: ^Skeleton) ---
+
+	@(link_name = "JPH_Skeleton_AreJointsCorrectlyOrdered")
+	Skeleton_AreJointsCorrectlyOrdered :: proc(skeleton: ^Skeleton) -> b8 ---
+
+	@(link_name = "JPH_RagdollSettings_Create")
+	RagdollSettings_Create :: proc() -> ^RagdollSettings ---
+
+	@(link_name = "JPH_RagdollSettings_Destroy")
+	RagdollSettings_Destroy :: proc(settings: [^]RagdollSettings) ---
+
+	@(link_name = "JPH_RagdollSettings_GetSkeleton")
+	RagdollSettings_GetSkeleton :: proc(character: ^RagdollSettings) -> ^Skeleton ---
+
+	@(link_name = "JPH_RagdollSettings_SetSkeleton")
+	RagdollSettings_SetSkeleton :: proc(character: ^RagdollSettings, skeleton: ^Skeleton) ---
+
+	@(link_name = "JPH_RagdollSettings_Stabilize")
+	RagdollSettings_Stabilize :: proc(settings: [^]RagdollSettings) -> b8 ---
+
+	@(link_name = "JPH_RagdollSettings_DisableParentChildCollisions")
+	RagdollSettings_DisableParentChildCollisions :: proc(settings: [^]RagdollSettings, jointMatrices: [^]Matrix4x4, minSeparationDistance: f32) ---
+
+	@(link_name = "JPH_RagdollSettings_CalculateBodyIndexToConstraintIndex")
+	RagdollSettings_CalculateBodyIndexToConstraintIndex :: proc(settings: [^]RagdollSettings) ---
+
+	@(link_name = "JPH_RagdollSettings_GetConstraintIndexForBodyIndex")
+	RagdollSettings_GetConstraintIndexForBodyIndex :: proc(settings: [^]RagdollSettings, bodyIndex: i32) -> i32 ---
+
+	@(link_name = "JPH_RagdollSettings_CalculateConstraintIndexToBodyIdxPair")
+	RagdollSettings_CalculateConstraintIndexToBodyIdxPair :: proc(settings: [^]RagdollSettings) ---
+
+	@(link_name = "JPH_RagdollSettings_CreateRagdoll")
+	RagdollSettings_CreateRagdoll :: proc(settings: [^]RagdollSettings, system: ^PhysicsSystem, collisionGroup: CollisionGroupID, userData: u64) -> ^Ragdoll ---
+
+	@(link_name = "JPH_Ragdoll_Destroy")
+	Ragdoll_Destroy :: proc(ragdoll: ^Ragdoll) ---
+
+	@(link_name = "JPH_Ragdoll_AddToPhysicsSystem")
+	Ragdoll_AddToPhysicsSystem :: proc(ragdoll: ^Ragdoll, activationMode: Activation, lockBodies: b8) ---
+
+	@(link_name = "JPH_Ragdoll_RemoveFromPhysicsSystem")
+	Ragdoll_RemoveFromPhysicsSystem :: proc(ragdoll: ^Ragdoll, lockBodies: b8) ---
+
+	@(link_name = "JPH_Ragdoll_Activate")
+	Ragdoll_Activate :: proc(ragdoll: ^Ragdoll, lockBodies: b8) ---
+
+	@(link_name = "JPH_Ragdoll_IsActive")
+	Ragdoll_IsActive :: proc(ragdoll: ^Ragdoll, lockBodies: b8) -> b8 ---
+
+	@(link_name = "JPH_Ragdoll_ResetWarmStart")
+	Ragdoll_ResetWarmStart :: proc(ragdoll: ^Ragdoll) ---
+
+	@(link_name = "JPH_EstimateCollisionResponse")
+	EstimateCollisionResponse :: proc(body1: ^Body, body2: ^Body, manifold: ^ContactManifold, combinedFriction: f32, combinedRestitution: f32, minVelocityForRestitution: f32, numIterations: u32, result: ^CollisionEstimationResult) ---
+
 }
 
-@(test)
-hello_world :: proc(t: ^testing.T) {
-	OBJECT_LAYER_NON_MOVING: ObjectLayer = 0
-	OBJECT_LAYER_MOVING: ObjectLayer = 1
-	OBJECT_LAYER_NUM :: 2
+when (ODIN_OS == .Windows) {
 
-	BROAD_PHASE_LAYER_NON_MOVING: BroadPhaseLayer = 0
-	BROAD_PHASE_LAYER_MOVING: BroadPhaseLayer = 1
-	BROAD_PHASE_LAYER_NUM :: 2
+	API_CALL :: `__cdecl`
 
-	ok := Init()
-	defer Shutdown()
-	assert(ok, "Failed to init JoltPhysics")
-
-	SetTraceHandler(proc "c" (mssage: cstring) {
-		context = runtime.default_context()
-		fmt.printfln("Trace: %v", mssage)
-	})
-
-	job_system := JobSystemThreadPool_Create(nil)
-	defer JobSystem_Destroy(job_system)
-
-	object_layer_pair_filter := ObjectLayerPairFilterTable_Create(OBJECT_LAYER_NUM)
-	ObjectLayerPairFilterTable_EnableCollision(
-		object_layer_pair_filter,
-		OBJECT_LAYER_MOVING,
-		OBJECT_LAYER_MOVING,
-	)
-	ObjectLayerPairFilterTable_EnableCollision(
-		object_layer_pair_filter,
-		OBJECT_LAYER_MOVING,
-		OBJECT_LAYER_NON_MOVING,
-	)
-
-	broad_phase_layer_interface_table := BroadPhaseLayerInterfaceTable_Create(
-		OBJECT_LAYER_NUM,
-		BROAD_PHASE_LAYER_NUM,
-	)
-	BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer(
-		broad_phase_layer_interface_table,
-		OBJECT_LAYER_NON_MOVING,
-		BROAD_PHASE_LAYER_NON_MOVING,
-	)
-	BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer(
-		broad_phase_layer_interface_table,
-		OBJECT_LAYER_MOVING,
-		BROAD_PHASE_LAYER_MOVING,
-	)
-
-	object_vs_broad_phase_layer_filter := ObjectVsBroadPhaseLayerFilterTable_Create(
-		broad_phase_layer_interface_table,
-		BROAD_PHASE_LAYER_NUM,
-		object_layer_pair_filter,
-		OBJECT_LAYER_NUM,
-	)
-
-	physics_system_settings := PhysicsSystemSettings {
-		maxBodies                     = 1024,
-		numBodyMutexes                = 0,
-		maxBodyPairs                  = 1024,
-		maxContactConstraints         = 1024,
-		broadPhaseLayerInterface      = broad_phase_layer_interface_table,
-		objectLayerPairFilter         = object_layer_pair_filter,
-		objectVsBroadPhaseLayerFilter = object_vs_broad_phase_layer_filter,
+	PhysicsUpdateError :: enum i32 {
+		PhysicsUpdateError_None                   = 0,
+		PhysicsUpdateError_ManifoldCacheFull      = 1,
+		PhysicsUpdateError_BodyPairCacheFull      = 2,
+		PhysicsUpdateError_ContactConstraintsFull = 4,
+		_JPH_PhysicsUpdateError_Count             = 5,
+		_JPH_PhysicsUpdateError_Force32           = 2147483647,
 	}
-	physics_system := PhysicsSystem_Create(&physics_system_settings)
-	defer PhysicsSystem_Destroy(physics_system)
-
-	my_contact_listener_procs: ContactListener_Procs
-	my_contact_listener_procs.OnContactValidate =
-	proc "c" (
-		userData: rawptr,
-		body1: ^Body,
-		body2: ^Body,
-		baseOffset: ^RVec3,
-		collisionResult: ^CollideShapeResult,
-	) -> ValidateResult {
-		context = runtime.default_context()
-		fmt.println("[ContactListener] Contact validate callback")
-		return .AcceptAllContactsForThisBodyPair
+	BodyType :: enum i32 {
+		BodyType_Rigid        = 0,
+		BodyType_Soft         = 1,
+		_JPH_BodyType_Count   = 2,
+		_JPH_BodyType_Force32 = 2147483647,
 	}
-	my_contact_listener_procs.OnContactAdded =
-	proc "c" (
-		userData: rawptr,
-		body1: ^Body,
-		body2: ^Body,
-		manifold: ^ContactManifold,
-		settings: ^ContactSettings,
-	) {
-		context = runtime.default_context()
-		fmt.println("[ContactListener] A contact was added")
+	MotionType :: enum i32 {
+		MotionType_Static       = 0,
+		MotionType_Kinematic    = 1,
+		MotionType_Dynamic      = 2,
+		_JPH_MotionType_Count   = 3,
+		_JPH_MotionType_Force32 = 2147483647,
 	}
-	my_contact_listener_procs.OnContactPersisted =
-	proc "c" (
-		userData: rawptr,
-		body1: ^Body,
-		body2: ^Body,
-		manifold: ^ContactManifold,
-		settings: ^ContactSettings,
-	) {
-		context = runtime.default_context()
-		fmt.println("[ContactListener] A contact was persisted")
+	Activation :: enum i32 {
+		Activation_Activate     = 0,
+		Activation_DontActivate = 1,
+		_JPH_Activation_Count   = 2,
+		_JPH_Activation_Force32 = 2147483647,
 	}
-	my_contact_listener_procs.OnContactRemoved =
-	proc "c" (userData: rawptr, subShapePair: ^SubShapeIDPair) {
-		context = runtime.default_context()
-		fmt.println("[ContactListener] A contact was removed")
+	ValidateResult :: enum i32 {
+		ValidateResult_AcceptAllContactsForThisBodyPair = 0,
+		ValidateResult_AcceptContact                    = 1,
+		ValidateResult_RejectContact                    = 2,
+		ValidateResult_RejectAllContactsForThisBodyPair = 3,
+		_JPH_ValidateResult_Count                       = 4,
+		_JPH_ValidateResult_Force32                     = 2147483647,
+	}
+	ShapeType :: enum i32 {
+		ShapeType_Convex       = 0,
+		ShapeType_Compound     = 1,
+		ShapeType_Decorated    = 2,
+		ShapeType_Mesh         = 3,
+		ShapeType_HeightField  = 4,
+		ShapeType_SoftBody     = 5,
+		ShapeType_User1        = 6,
+		ShapeType_User2        = 7,
+		ShapeType_User3        = 8,
+		ShapeType_User4        = 9,
+		_JPH_ShapeType_Count   = 10,
+		_JPH_ShapeType_Force32 = 2147483647,
+	}
+	ShapeSubType :: enum i32 {
+		ShapeSubType_Sphere             = 0,
+		ShapeSubType_Box                = 1,
+		ShapeSubType_Triangle           = 2,
+		ShapeSubType_Capsule            = 3,
+		ShapeSubType_TaperedCapsule     = 4,
+		ShapeSubType_Cylinder           = 5,
+		ShapeSubType_ConvexHull         = 6,
+		ShapeSubType_StaticCompound     = 7,
+		ShapeSubType_MutableCompound    = 8,
+		ShapeSubType_RotatedTranslated  = 9,
+		ShapeSubType_Scaled             = 10,
+		ShapeSubType_OffsetCenterOfMass = 11,
+		ShapeSubType_Mesh               = 12,
+		ShapeSubType_HeightField        = 13,
+		ShapeSubType_SoftBody           = 14,
+		_JPH_ShapeSubType_Count         = 15,
+		_JPH_ShapeSubType_Force32       = 2147483647,
+	}
+	ConstraintType :: enum i32 {
+		ConstraintType_Constraint        = 0,
+		ConstraintType_TwoBodyConstraint = 1,
+		_JPH_ConstraintType_Count        = 2,
+		_JPH_ConstraintType_Force32      = 2147483647,
+	}
+	ConstraintSubType :: enum i32 {
+		ConstraintSubType_Fixed         = 0,
+		ConstraintSubType_Point         = 1,
+		ConstraintSubType_Hinge         = 2,
+		ConstraintSubType_Slider        = 3,
+		ConstraintSubType_Distance      = 4,
+		ConstraintSubType_Cone          = 5,
+		ConstraintSubType_SwingTwist    = 6,
+		ConstraintSubType_SixDOF        = 7,
+		ConstraintSubType_Path          = 8,
+		ConstraintSubType_Vehicle       = 9,
+		ConstraintSubType_RackAndPinion = 10,
+		ConstraintSubType_Gear          = 11,
+		ConstraintSubType_Pulley        = 12,
+		ConstraintSubType_User1         = 13,
+		ConstraintSubType_User2         = 14,
+		ConstraintSubType_User3         = 15,
+		ConstraintSubType_User4         = 16,
+		_JPH_ConstraintSubType_Count    = 17,
+		_JPH_ConstraintSubType_Force32  = 2147483647,
+	}
+	ConstraintSpace :: enum i32 {
+		ConstraintSpace_LocalToBodyCOM = 0,
+		ConstraintSpace_WorldSpace     = 1,
+		_JPH_ConstraintSpace_Count     = 2,
+		_JPH_ConstraintSpace_Force32   = 2147483647,
+	}
+	MotionQuality :: enum i32 {
+		MotionQuality_Discrete     = 0,
+		MotionQuality_LinearCast   = 1,
+		_JPH_MotionQuality_Count   = 2,
+		_JPH_MotionQuality_Force32 = 2147483647,
+	}
+	OverrideMassProperties :: enum i32 {
+		OverrideMassProperties_CalculateMassAndInertia = 0,
+		OverrideMassProperties_CalculateInertia        = 1,
+		OverrideMassProperties_MassAndInertiaProvided  = 2,
+		_JPH_JPH_OverrideMassProperties_Count          = 3,
+		_JPH_JPH_OverrideMassProperties_Force32        = 2147483647,
+	}
+	AllowedDOFs :: enum i32 {
+		AllowedDOFs_All          = 63,
+		AllowedDOFs_TranslationX = 1,
+		AllowedDOFs_TranslationY = 2,
+		AllowedDOFs_TranslationZ = 4,
+		AllowedDOFs_RotationX    = 8,
+		AllowedDOFs_RotationY    = 16,
+		AllowedDOFs_RotationZ    = 32,
+		AllowedDOFs_Plane2D      = 35,
+		_JPH_AllowedDOFs_Count   = 36,
+		_JPH_AllowedDOFs_Force32 = 2147483647,
+	}
+	GroundState :: enum i32 {
+		GroundState_OnGround      = 0,
+		GroundState_OnSteepGround = 1,
+		GroundState_NotSupported  = 2,
+		GroundState_InAir         = 3,
+		_JPH_GroundState_Count    = 4,
+		_JPH_GroundState_Force32  = 2147483647,
+	}
+	BackFaceMode :: enum i32 {
+		BackFaceMode_IgnoreBackFaces      = 0,
+		BackFaceMode_CollideWithBackFaces = 1,
+		_JPH_BackFaceMode_Count           = 2,
+		_JPH_BackFaceMode_Force32         = 2147483647,
+	}
+	ActiveEdgeMode :: enum i32 {
+		ActiveEdgeMode_CollideOnlyWithActive = 0,
+		ActiveEdgeMode_CollideWithAll        = 1,
+		_JPH_ActiveEdgeMode_Count            = 2,
+		_JPH_ActiveEdgeMode_Force32          = 2147483647,
+	}
+	CollectFacesMode :: enum i32 {
+		CollectFacesMode_CollectFaces = 0,
+		CollectFacesMode_NoFaces      = 1,
+		_JPH_CollectFacesMode_Count   = 2,
+		_JPH_CollectFacesMode_Force32 = 2147483647,
+	}
+	MotorState :: enum i32 {
+		MotorState_Off          = 0,
+		MotorState_Velocity     = 1,
+		MotorState_Position     = 2,
+		_JPH_MotorState_Count   = 3,
+		_JPH_MotorState_Force32 = 2147483647,
+	}
+	CollisionCollectorType :: enum i32 {
+		CollisionCollectorType_AllHit       = 0,
+		CollisionCollectorType_AllHitSorted = 1,
+		CollisionCollectorType_ClosestHit   = 2,
+		CollisionCollectorType_AnyHit       = 3,
+		_JPH_CollisionCollectorType_Count   = 4,
+		_JPH_CollisionCollectorType_Force32 = 2147483647,
+	}
+	SwingType :: enum i32 {
+		SwingType_Cone         = 0,
+		SwingType_Pyramid      = 1,
+		_JPH_SwingType_Count   = 2,
+		_JPH_SwingType_Force32 = 2147483647,
+	}
+	SixDOFConstraintAxis :: enum i32 {
+		SixDOFConstraintAxis_TranslationX        = 0,
+		SixDOFConstraintAxis_TranslationY        = 1,
+		SixDOFConstraintAxis_TranslationZ        = 2,
+		SixDOFConstraintAxis_RotationX           = 3,
+		SixDOFConstraintAxis_RotationY           = 4,
+		SixDOFConstraintAxis_RotationZ           = 5,
+		_JPH_SixDOFConstraintAxis_Num            = 6,
+		_JPH_SixDOFConstraintAxis_NumTranslation = 3,
+		_JPH_SixDOFConstraintAxis_Force32        = 2147483647,
+	}
+	SpringMode :: enum i32 {
+		SpringMode_FrequencyAndDamping = 0,
+		SpringMode_StiffnessAndDamping = 1,
+		_JPH_SpringMode_Count          = 2,
+		_JPH_SpringMode_Force32        = 2147483647,
+	}
+	SoftBodyConstraintColor :: enum i32 {
+		SoftBodyConstraintColor_ConstraintType  = 0,
+		SoftBodyConstraintColor_ConstraintGroup = 1,
+		SoftBodyConstraintColor_ConstraintOrder = 2,
+		_JPH_SoftBodyConstraintColor_Count      = 3,
+		_JPH_SoftBodyConstraintColor_Force32    = 2147483647,
+	}
+	BodyManager_ShapeColor :: enum i32 {
+		BodyManager_ShapeColor_InstanceColor   = 0,
+		BodyManager_ShapeColor_ShapeTypeColor  = 1,
+		BodyManager_ShapeColor_MotionTypeColor = 2,
+		BodyManager_ShapeColor_SleepColor      = 3,
+		BodyManager_ShapeColor_IslandColor     = 4,
+		BodyManager_ShapeColor_MaterialColor   = 5,
+		_JPH_BodyManager_ShapeColor_Count      = 6,
+		_JPH_BodyManager_ShapeColor_Force32    = 2147483647,
+	}
+	DebugRenderer_CastShadow :: enum i32 {
+		DebugRenderer_CastShadow_On           = 0,
+		DebugRenderer_CastShadow_Off          = 1,
+		_JPH_DebugRenderer_CastShadow_Count   = 2,
+		_JPH_DebugRenderer_CastShadow_Force32 = 2147483647,
+	}
+	DebugRenderer_DrawMode :: enum i32 {
+		DebugRenderer_DrawMode_Solid        = 0,
+		DebugRenderer_DrawMode_Wireframe    = 1,
+		_JPH_DebugRenderer_DrawMode_Count   = 2,
+		_JPH_DebugRenderer_DrawMode_Force32 = 2147483647,
+	}
+	Mesh_Shape_BuildQuality :: enum i32 {
+		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
+		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
+		_JPH_Mesh_Shape_BuildQuality_Count              = 2,
+		_JPH_Mesh_Shape_BuildQuality_Force32            = 2147483647,
 	}
 
-	my_contact_listener := ContactListener_Create(my_contact_listener_procs, nil)
-	defer ContactListener_Destroy(my_contact_listener)
+} else {
 
-	PhysicsSystem_SetContactListener(physics_system, my_contact_listener)
-
-	my_activation_listener_proc: BodyActivationListener_Procs
-	my_activation_listener_proc.OnBodyActivated =
-	proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: c.uint64_t) {
-		context = runtime.default_context()
-		fmt.println("[BodyActivationListener] A body got activated")
+	PhysicsUpdateError :: enum u32 {
+		PhysicsUpdateError_None                   = 0,
+		PhysicsUpdateError_ManifoldCacheFull      = 1,
+		PhysicsUpdateError_BodyPairCacheFull      = 2,
+		PhysicsUpdateError_ContactConstraintsFull = 4,
+		_JPH_PhysicsUpdateError_Count             = 5,
+		_JPH_PhysicsUpdateError_Force32           = 2147483647,
 	}
-	my_activation_listener_proc.OnBodyDeactivated =
-	proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: c.uint64_t) {
-		context = runtime.default_context()
-		fmt.println("[BodyActivationListener] A body went to sleep")
+	BodyType :: enum u32 {
+		BodyType_Rigid        = 0,
+		BodyType_Soft         = 1,
+		_JPH_BodyType_Count   = 2,
+		_JPH_BodyType_Force32 = 2147483647,
 	}
-
-	my_activation_listener := BodyActivationListener_Create(my_activation_listener_proc, nil)
-	defer BodyActivationListener_Destroy(my_activation_listener)
-
-	PhysicsSystem_SetBodyActivationListener(physics_system, my_activation_listener)
-
-	body_interface := PhysicsSystem_GetBodyInterface(physics_system)
-
-	//--------------------------------------------------------------------------------------------------
-	// Hello World
-	//--------------------------------------------------------------------------------------------------
-
-	floor_id: BodyID
-	{
-		box_half_extents := [3]f32{100, 1, 100}
-		floor_shape := BoxShape_Create(&box_half_extents, DEFAULT_CONVEX_RADIUS)
-
-		floor_position := [3]f32{0, -1, 0}
-		floor_settings := BodyCreationSettings_Create3(
-			cast(^Shape)floor_shape,
-			&floor_position,
-			nil,
-			.Static,
-			OBJECT_LAYER_NON_MOVING,
-		)
-		defer BodyCreationSettings_Destroy(floor_settings)
-
-		floor_id = BodyInterface_CreateAndAddBody(body_interface, floor_settings, .DontActivate)
+	MotionType :: enum u32 {
+		MotionType_Static       = 0,
+		MotionType_Kinematic    = 1,
+		MotionType_Dynamic      = 2,
+		_JPH_MotionType_Count   = 3,
+		_JPH_MotionType_Force32 = 2147483647,
 	}
-	defer BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
-
-	sphere_id: BodyID
-	{
-		sphere_shape := SphereShape_Create(0.5)
-
-		sphere_position := [3]f32{0, 2, 0}
-		sphere_settings := BodyCreationSettings_Create3(
-			cast(^Shape)sphere_shape,
-			&sphere_position,
-			nil,
-			.Dynamic,
-			OBJECT_LAYER_MOVING,
-		)
-		defer BodyCreationSettings_Destroy(sphere_settings)
-
-		sphere_id = BodyInterface_CreateAndAddBody(body_interface, sphere_settings, .Activate)
+	Activation :: enum u32 {
+		Activation_Activate     = 0,
+		Activation_DontActivate = 1,
+		_JPH_Activation_Count   = 2,
+		_JPH_Activation_Force32 = 2147483647,
 	}
-	defer BodyInterface_RemoveAndDestroyBody(body_interface, sphere_id)
-
-	sphere_linear_velocity := [3]f32{0, -5, 0}
-	BodyInterface_SetLinearVelocity(body_interface, sphere_id, &sphere_linear_velocity)
-
-	test_vel: [3]f32
-	BodyInterface_GetLinearVelocity(body_interface, sphere_id, &test_vel)
-	testing.expect_value(t, test_vel, sphere_linear_velocity)
-
-	delta_time: f32 = 1.0 / 60.0
-
-	PhysicsSystem_OptimizeBroadPhase(physics_system)
-
-	step := 0
-	sphere_active := true
-	for sphere_active {
-		step += 1
-
-		position: [3]f32
-		velocity: [3]f32
-
-		BodyInterface_GetCenterOfMassPosition(body_interface, sphere_id, &position)
-		BodyInterface_GetLinearVelocity(body_interface, sphere_id, &velocity)
-
-		fmt.printfln("Step %d: Position = (%v), Velocity = (%v)", step, position, velocity)
-
-		PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
-
-		sphere_active = BodyInterface_IsActive(body_interface, sphere_id)
+	ValidateResult :: enum u32 {
+		ValidateResult_AcceptAllContactsForThisBodyPair = 0,
+		ValidateResult_AcceptContact                    = 1,
+		ValidateResult_RejectContact                    = 2,
+		ValidateResult_RejectAllContactsForThisBodyPair = 3,
+		_JPH_ValidateResult_Count                       = 4,
+		_JPH_ValidateResult_Force32                     = 2147483647,
 	}
-	testing.expect_value(t, sphere_active, false)
+	ShapeType :: enum u32 {
+		ShapeType_Convex       = 0,
+		ShapeType_Compound     = 1,
+		ShapeType_Decorated    = 2,
+		ShapeType_Mesh         = 3,
+		ShapeType_HeightField  = 4,
+		ShapeType_SoftBody     = 5,
+		ShapeType_User1        = 6,
+		ShapeType_User2        = 7,
+		ShapeType_User3        = 8,
+		ShapeType_User4        = 9,
+		_JPH_ShapeType_Count   = 10,
+		_JPH_ShapeType_Force32 = 2147483647,
+	}
+	ShapeSubType :: enum u32 {
+		ShapeSubType_Sphere             = 0,
+		ShapeSubType_Box                = 1,
+		ShapeSubType_Triangle           = 2,
+		ShapeSubType_Capsule            = 3,
+		ShapeSubType_TaperedCapsule     = 4,
+		ShapeSubType_Cylinder           = 5,
+		ShapeSubType_ConvexHull         = 6,
+		ShapeSubType_StaticCompound     = 7,
+		ShapeSubType_MutableCompound    = 8,
+		ShapeSubType_RotatedTranslated  = 9,
+		ShapeSubType_Scaled             = 10,
+		ShapeSubType_OffsetCenterOfMass = 11,
+		ShapeSubType_Mesh               = 12,
+		ShapeSubType_HeightField        = 13,
+		ShapeSubType_SoftBody           = 14,
+		_JPH_ShapeSubType_Count         = 15,
+		_JPH_ShapeSubType_Force32       = 2147483647,
+	}
+	ConstraintType :: enum u32 {
+		ConstraintType_Constraint        = 0,
+		ConstraintType_TwoBodyConstraint = 1,
+		_JPH_ConstraintType_Count        = 2,
+		_JPH_ConstraintType_Force32      = 2147483647,
+	}
+	ConstraintSubType :: enum u32 {
+		ConstraintSubType_Fixed         = 0,
+		ConstraintSubType_Point         = 1,
+		ConstraintSubType_Hinge         = 2,
+		ConstraintSubType_Slider        = 3,
+		ConstraintSubType_Distance      = 4,
+		ConstraintSubType_Cone          = 5,
+		ConstraintSubType_SwingTwist    = 6,
+		ConstraintSubType_SixDOF        = 7,
+		ConstraintSubType_Path          = 8,
+		ConstraintSubType_Vehicle       = 9,
+		ConstraintSubType_RackAndPinion = 10,
+		ConstraintSubType_Gear          = 11,
+		ConstraintSubType_Pulley        = 12,
+		ConstraintSubType_User1         = 13,
+		ConstraintSubType_User2         = 14,
+		ConstraintSubType_User3         = 15,
+		ConstraintSubType_User4         = 16,
+		_JPH_ConstraintSubType_Count    = 17,
+		_JPH_ConstraintSubType_Force32  = 2147483647,
+	}
+	ConstraintSpace :: enum u32 {
+		ConstraintSpace_LocalToBodyCOM = 0,
+		ConstraintSpace_WorldSpace     = 1,
+		_JPH_ConstraintSpace_Count     = 2,
+		_JPH_ConstraintSpace_Force32   = 2147483647,
+	}
+	MotionQuality :: enum u32 {
+		MotionQuality_Discrete     = 0,
+		MotionQuality_LinearCast   = 1,
+		_JPH_MotionQuality_Count   = 2,
+		_JPH_MotionQuality_Force32 = 2147483647,
+	}
+	OverrideMassProperties :: enum u32 {
+		OverrideMassProperties_CalculateMassAndInertia = 0,
+		OverrideMassProperties_CalculateInertia        = 1,
+		OverrideMassProperties_MassAndInertiaProvided  = 2,
+		_JPH_JPH_OverrideMassProperties_Count          = 3,
+		_JPH_JPH_OverrideMassProperties_Force32        = 2147483647,
+	}
+	AllowedDOFs :: enum u32 {
+		AllowedDOFs_All          = 63,
+		AllowedDOFs_TranslationX = 1,
+		AllowedDOFs_TranslationY = 2,
+		AllowedDOFs_TranslationZ = 4,
+		AllowedDOFs_RotationX    = 8,
+		AllowedDOFs_RotationY    = 16,
+		AllowedDOFs_RotationZ    = 32,
+		AllowedDOFs_Plane2D      = 35,
+		_JPH_AllowedDOFs_Count   = 36,
+		_JPH_AllowedDOFs_Force32 = 2147483647,
+	}
+	GroundState :: enum u32 {
+		GroundState_OnGround      = 0,
+		GroundState_OnSteepGround = 1,
+		GroundState_NotSupported  = 2,
+		GroundState_InAir         = 3,
+		_JPH_GroundState_Count    = 4,
+		_JPH_GroundState_Force32  = 2147483647,
+	}
+	BackFaceMode :: enum u32 {
+		BackFaceMode_IgnoreBackFaces      = 0,
+		BackFaceMode_CollideWithBackFaces = 1,
+		_JPH_BackFaceMode_Count           = 2,
+		_JPH_BackFaceMode_Force32         = 2147483647,
+	}
+	ActiveEdgeMode :: enum u32 {
+		ActiveEdgeMode_CollideOnlyWithActive = 0,
+		ActiveEdgeMode_CollideWithAll        = 1,
+		_JPH_ActiveEdgeMode_Count            = 2,
+		_JPH_ActiveEdgeMode_Force32          = 2147483647,
+	}
+	CollectFacesMode :: enum u32 {
+		CollectFacesMode_CollectFaces = 0,
+		CollectFacesMode_NoFaces      = 1,
+		_JPH_CollectFacesMode_Count   = 2,
+		_JPH_CollectFacesMode_Force32 = 2147483647,
+	}
+	MotorState :: enum u32 {
+		MotorState_Off          = 0,
+		MotorState_Velocity     = 1,
+		MotorState_Position     = 2,
+		_JPH_MotorState_Count   = 3,
+		_JPH_MotorState_Force32 = 2147483647,
+	}
+	CollisionCollectorType :: enum u32 {
+		CollisionCollectorType_AllHit       = 0,
+		CollisionCollectorType_AllHitSorted = 1,
+		CollisionCollectorType_ClosestHit   = 2,
+		CollisionCollectorType_AnyHit       = 3,
+		_JPH_CollisionCollectorType_Count   = 4,
+		_JPH_CollisionCollectorType_Force32 = 2147483647,
+	}
+	SwingType :: enum u32 {
+		SwingType_Cone         = 0,
+		SwingType_Pyramid      = 1,
+		_JPH_SwingType_Count   = 2,
+		_JPH_SwingType_Force32 = 2147483647,
+	}
+	SixDOFConstraintAxis :: enum u32 {
+		SixDOFConstraintAxis_TranslationX        = 0,
+		SixDOFConstraintAxis_TranslationY        = 1,
+		SixDOFConstraintAxis_TranslationZ        = 2,
+		SixDOFConstraintAxis_RotationX           = 3,
+		SixDOFConstraintAxis_RotationY           = 4,
+		SixDOFConstraintAxis_RotationZ           = 5,
+		_JPH_SixDOFConstraintAxis_Num            = 6,
+		_JPH_SixDOFConstraintAxis_NumTranslation = 3,
+		_JPH_SixDOFConstraintAxis_Force32        = 2147483647,
+	}
+	SpringMode :: enum u32 {
+		SpringMode_FrequencyAndDamping = 0,
+		SpringMode_StiffnessAndDamping = 1,
+		_JPH_SpringMode_Count          = 2,
+		_JPH_SpringMode_Force32        = 2147483647,
+	}
+	SoftBodyConstraintColor :: enum u32 {
+		SoftBodyConstraintColor_ConstraintType  = 0,
+		SoftBodyConstraintColor_ConstraintGroup = 1,
+		SoftBodyConstraintColor_ConstraintOrder = 2,
+		_JPH_SoftBodyConstraintColor_Count      = 3,
+		_JPH_SoftBodyConstraintColor_Force32    = 2147483647,
+	}
+	BodyManager_ShapeColor :: enum u32 {
+		BodyManager_ShapeColor_InstanceColor   = 0,
+		BodyManager_ShapeColor_ShapeTypeColor  = 1,
+		BodyManager_ShapeColor_MotionTypeColor = 2,
+		BodyManager_ShapeColor_SleepColor      = 3,
+		BodyManager_ShapeColor_IslandColor     = 4,
+		BodyManager_ShapeColor_MaterialColor   = 5,
+		_JPH_BodyManager_ShapeColor_Count      = 6,
+		_JPH_BodyManager_ShapeColor_Force32    = 2147483647,
+	}
+	DebugRenderer_CastShadow :: enum u32 {
+		DebugRenderer_CastShadow_On           = 0,
+		DebugRenderer_CastShadow_Off          = 1,
+		_JPH_DebugRenderer_CastShadow_Count   = 2,
+		_JPH_DebugRenderer_CastShadow_Force32 = 2147483647,
+	}
+	DebugRenderer_DrawMode :: enum u32 {
+		DebugRenderer_DrawMode_Solid        = 0,
+		DebugRenderer_DrawMode_Wireframe    = 1,
+		_JPH_DebugRenderer_DrawMode_Count   = 2,
+		_JPH_DebugRenderer_DrawMode_Force32 = 2147483647,
+	}
+	Mesh_Shape_BuildQuality :: enum u32 {
+		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
+		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
+		_JPH_Mesh_Shape_BuildQuality_Count              = 2,
+		_JPH_Mesh_Shape_BuildQuality_Force32            = 2147483647,
+	}
+}
+
+when (ODIN_OS == .Linux) {
+	foreign import jolt_runic "joltc-zig/zig-out/lib/linux/libjoltc.so"
+} else when (ODIN_OS == .Windows) {
+	foreign import jolt_runic "joltc-zig/zig-out/lib/windows/joltc.lib"
+} else {
+	foreign import jolt_runic "joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib"
 }
