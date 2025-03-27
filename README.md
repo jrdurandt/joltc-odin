@@ -36,3 +36,6 @@ This is a bit of a stress test as doing dynamic collisions of thousands of objec
 Only tested on Linux (Pop!_OS 22.04).
 Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
 Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too 😉
+
+## Manual bindings
+For the old manual bindings, please see branch `backups/manual-bind`
