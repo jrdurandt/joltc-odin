@@ -21,8 +21,12 @@ print("Copy shared library to root")
 os.chdir(root)
 SYSTEM = platform.system()
 if SYSTEM == "Linux":
-    shutil.copyfile("joltc-zig/zig-out/lib/libjoltc.so", "libjoltc.so")
+    shutil.copyfile("joltc-zig/zig-out/lib/linux/libjoltc.so", "libjoltc.so")
 elif SYSTEM == "Window":
-    shutil.copyfile("joltc-zig/zig-out/lib/joltc.dll", "joltc.dll")
+    shutil.copyfile("joltc-zig/zig-out/lib/windows/joltc.dll", "joltc.dll")
 elif SYSTEM == "Darwin":
-    shutil.copyfile("joltc-zig/zig-out/lib/libjoltc.dynlib", "libjoltc.dynlib")
+    ARCH = platform.architecture()
+    if ARCH == "x86_64":
+        shutil.copyfile("joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dynlib", "libjoltc.dynlib")
+    elif ARCH == "aarch64":
+        shutil.copyfile("joltc-zig/zig-out/lib/macos_aarch64/libjoltc.dynlib", "libjoltc.dynlib")
