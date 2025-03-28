@@ -21,10 +21,6 @@ from:
       JPH_Quat: "#Extern quaternion128"
       JPH_Matrix4x4: "#Float32 #Attr Arr 4 Arr 4 #AttrEnd"
     constants:
-      JPH_DEFAULT_COLLISION_TOLERANCE: "0.0001 #Untyped"
-      JPH_DEFAULT_PENETRATION_TOLERANCE: "0.0001 #Untyped"
-      JPH_DEFAULT_CONVEX_RADIUS: "0.05 #Untyped"
-      JPH_CAPSULE_PROJECTION_SLOP: "0.02 #Untyped"
       JPH_MAX_PHYSICS_JOBS: "2048 #Untyped"
       JPH_MAX_PHYSICS_BARRIERS: "2048 #Untyped"
 to:

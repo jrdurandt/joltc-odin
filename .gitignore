@@ -5,3 +5,5 @@ jolt-odin
 *.so
 *.dll
 *.dynlib
+
+runic

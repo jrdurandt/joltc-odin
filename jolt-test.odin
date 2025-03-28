@@ -16,7 +16,7 @@ hello_world :: proc(t: ^testing.T) {
 
 	ok := Init()
 	defer Shutdown()
-	assert(ok == true, "Failed to init JoltPhysics")
+	assert(ok, "Failed to init JoltPhysics")
 
 	SetTraceHandler(proc "c" (mssage: cstring) {
 		context = runtime.default_context()

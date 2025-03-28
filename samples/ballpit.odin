@@ -31,7 +31,7 @@ build_wall :: proc(
 	size := size
 	position := position
 
-	wall_shape := jlt.BoxShape_Create(&size, jlt.DEFAULT_CONVEX_RADIUS)
+	wall_shape := jlt.BoxShape_Create(&size)
 
 	floor_settings := jlt.BodyCreationSettings_Create3(
 		cast(^jlt.Shape)wall_shape,
@@ -101,7 +101,7 @@ main :: proc() {
 	//Setup physics
 	ok := jlt.Init()
 	defer jlt.Shutdown()
-	assert(ok == true, "Failed to init JoltPhysics")
+	assert(ok, "Failed to init JoltPhysics")
 
 	job_system := jlt.JobSystemThreadPool_Create(nil)
 	defer jlt.JobSystem_Destroy(job_system)
@@ -159,7 +159,7 @@ main :: proc() {
 	//Setup static objects (floor and walls)
 	floor_id: jlt.BodyID
 	{
-		floor_shape := jlt.BoxShape_Create(&{25, 0.5, 25}, jlt.DEFAULT_CONVEX_RADIUS)
+		floor_shape := jlt.BoxShape_Create(&{25, 0.5, 25})
 
 		floor_settings := jlt.BodyCreationSettings_Create3(
 			cast(^jlt.Shape)floor_shape,
