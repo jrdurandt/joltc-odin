@@ -5,10 +5,10 @@ platforms:
   - Macos x86_64
 from:
   language: c
-  headers: joltc-zig/zig-out/include/joltc.h
-  shared.linux: joltc-zig/zig-out/lib/linux/libjoltc.so
-  shared.windows: joltc-zig/zig-out/lib/windows/joltc.lib
-  shared.macos.x86_64: joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib
+  headers: zig-out/include/joltc.h
+  shared.linux: ./libjoltc.so
+  shared.windows: ./joltc.lib
+  shared.macos.x86_64: ./libjoltc.dylib
   ignore:
     constants:
       - JOLT_C_H_

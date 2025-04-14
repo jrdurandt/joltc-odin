@@ -1,0 +1,18 @@
+.{
+    .name = .jolt_odin,
+    .version = "0.0.0",
+    .fingerprint = 0x72c784c714f23c6e, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.14.0",
+    .dependencies = .{
+        .joltc_zig = .{
+            .url = "git+https://github.com/jrdurandt/joltc-zig#a87a626fd15b462a6f345c3b37d4bdf3dc87b8f0",
+            .hash = "joltc_zig-0.1.2-Mq-cAc0mAACon0ROwJRoCMqaQ-xNvS3AQ4jKugFetwbP",
+        },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

@@ -7,3 +7,6 @@ jolt-odin
 *.dynlib
 
 runic
+
+.zig-cache/
+zig-out/

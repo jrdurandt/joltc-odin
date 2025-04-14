@@ -1,5 +1,4 @@
 package jolt
-
 DEFAULT_COLLISION_TOLERANCE :: 1.0e-4
 DEFAULT_PENETRATION_TOLERANCE :: 1.0e-4
 DEFAULT_CONVEX_RADIUS :: 0.05
@@ -20,7 +19,7 @@ Plane :: struct {
 	normal:   Vec3,
 	distance: f32,
 }
-Matrix4x4 :: matrix[4, 4]f32
+Matrix4x4 :: matrix[4,4]f32
 RVec3 :: Vec3
 RMatrix4x4 :: Matrix4x4
 Color :: u32
@@ -1730,7 +1729,7 @@ foreign jolt_runic {
 	EstimateCollisionResponse :: proc(body1: ^Body, body2: ^Body, manifold: ^ContactManifold, combinedFriction: f32, combinedRestitution: f32, minVelocityForRestitution: f32, numIterations: u32, result: ^CollisionEstimationResult) ---
 }
 when (ODIN_OS == .Linux) {
-	foreign import jolt_runic "joltc-zig/zig-out/lib/linux/libjoltc.so"
+	foreign import jolt_runic "libjoltc.so"
 }
 when (ODIN_OS == .Windows) {
 	API_CALL :: `__cdecl`
@@ -1741,13 +1740,13 @@ when (ODIN_OS == .Windows) {
 		PhysicsUpdateError_ContactConstraintsFull = 4,
 	}
 	BodyType :: enum i32 {
-		BodyType_Rigid = 0,
-		BodyType_Soft  = 1,
+		BodyType_Rigid        = 0,
+		BodyType_Soft         = 1,
 	}
 	MotionType :: enum i32 {
-		MotionType_Static    = 0,
-		MotionType_Kinematic = 1,
-		MotionType_Dynamic   = 2,
+		MotionType_Static       = 0,
+		MotionType_Kinematic    = 1,
+		MotionType_Dynamic      = 2,
 	}
 	Activation :: enum i32 {
 		Activation_Activate     = 0,
@@ -1760,16 +1759,16 @@ when (ODIN_OS == .Windows) {
 		ValidateResult_RejectAllContactsForThisBodyPair = 3,
 	}
 	ShapeType :: enum i32 {
-		ShapeType_Convex      = 0,
-		ShapeType_Compound    = 1,
-		ShapeType_Decorated   = 2,
-		ShapeType_Mesh        = 3,
-		ShapeType_HeightField = 4,
-		ShapeType_SoftBody    = 5,
-		ShapeType_User1       = 6,
-		ShapeType_User2       = 7,
-		ShapeType_User3       = 8,
-		ShapeType_User4       = 9,
+		ShapeType_Convex       = 0,
+		ShapeType_Compound     = 1,
+		ShapeType_Decorated    = 2,
+		ShapeType_Mesh         = 3,
+		ShapeType_HeightField  = 4,
+		ShapeType_SoftBody     = 5,
+		ShapeType_User1        = 6,
+		ShapeType_User2        = 7,
+		ShapeType_User3        = 8,
+		ShapeType_User4        = 9,
 	}
 	ShapeSubType :: enum i32 {
 		ShapeSubType_Sphere             = 0,
@@ -1816,8 +1815,8 @@ when (ODIN_OS == .Windows) {
 		ConstraintSpace_WorldSpace     = 1,
 	}
 	MotionQuality :: enum i32 {
-		MotionQuality_Discrete   = 0,
-		MotionQuality_LinearCast = 1,
+		MotionQuality_Discrete     = 0,
+		MotionQuality_LinearCast   = 1,
 	}
 	OverrideMassProperties :: enum i32 {
 		OverrideMassProperties_CalculateMassAndInertia = 0,
@@ -1853,9 +1852,9 @@ when (ODIN_OS == .Windows) {
 		CollectFacesMode_NoFaces      = 1,
 	}
 	MotorState :: enum i32 {
-		MotorState_Off      = 0,
-		MotorState_Velocity = 1,
-		MotorState_Position = 2,
+		MotorState_Off          = 0,
+		MotorState_Velocity     = 1,
+		MotorState_Position     = 2,
 	}
 	CollisionCollectorType :: enum i32 {
 		CollisionCollectorType_AllHit       = 0,
@@ -1864,8 +1863,8 @@ when (ODIN_OS == .Windows) {
 		CollisionCollectorType_AnyHit       = 3,
 	}
 	SwingType :: enum i32 {
-		SwingType_Cone    = 0,
-		SwingType_Pyramid = 1,
+		SwingType_Cone         = 0,
+		SwingType_Pyramid      = 1,
 	}
 	SixDOFConstraintAxis :: enum i32 {
 		SixDOFConstraintAxis_TranslationX        = 0,
@@ -1895,21 +1894,21 @@ when (ODIN_OS == .Windows) {
 		BodyManager_ShapeColor_MaterialColor   = 5,
 	}
 	DebugRenderer_CastShadow :: enum i32 {
-		DebugRenderer_CastShadow_On  = 0,
-		DebugRenderer_CastShadow_Off = 1,
+		DebugRenderer_CastShadow_On           = 0,
+		DebugRenderer_CastShadow_Off          = 1,
 	}
 	DebugRenderer_DrawMode :: enum i32 {
-		DebugRenderer_DrawMode_Solid     = 0,
-		DebugRenderer_DrawMode_Wireframe = 1,
+		DebugRenderer_DrawMode_Solid        = 0,
+		DebugRenderer_DrawMode_Wireframe    = 1,
 	}
 	Mesh_Shape_BuildQuality :: enum i32 {
 		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
 		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
 	}
-	foreign import jolt_runic "joltc-zig/zig-out/lib/windows/joltc.lib"
+	foreign import jolt_runic "joltc.lib"
 }
 when (ODIN_OS == .Darwin) {
-	foreign import jolt_runic "joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib"
+	foreign import jolt_runic "libjoltc.dylib"
 }
 when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 	PhysicsUpdateError :: enum u32 {
@@ -1919,13 +1918,13 @@ when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 		PhysicsUpdateError_ContactConstraintsFull = 4,
 	}
 	BodyType :: enum u32 {
-		BodyType_Rigid = 0,
-		BodyType_Soft  = 1,
+		BodyType_Rigid        = 0,
+		BodyType_Soft         = 1,
 	}
 	MotionType :: enum u32 {
-		MotionType_Static    = 0,
-		MotionType_Kinematic = 1,
-		MotionType_Dynamic   = 2,
+		MotionType_Static       = 0,
+		MotionType_Kinematic    = 1,
+		MotionType_Dynamic      = 2,
 	}
 	Activation :: enum u32 {
 		Activation_Activate     = 0,
@@ -1938,16 +1937,16 @@ when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 		ValidateResult_RejectAllContactsForThisBodyPair = 3,
 	}
 	ShapeType :: enum u32 {
-		ShapeType_Convex      = 0,
-		ShapeType_Compound    = 1,
-		ShapeType_Decorated   = 2,
-		ShapeType_Mesh        = 3,
-		ShapeType_HeightField = 4,
-		ShapeType_SoftBody    = 5,
-		ShapeType_User1       = 6,
-		ShapeType_User2       = 7,
-		ShapeType_User3       = 8,
-		ShapeType_User4       = 9,
+		ShapeType_Convex       = 0,
+		ShapeType_Compound     = 1,
+		ShapeType_Decorated    = 2,
+		ShapeType_Mesh         = 3,
+		ShapeType_HeightField  = 4,
+		ShapeType_SoftBody     = 5,
+		ShapeType_User1        = 6,
+		ShapeType_User2        = 7,
+		ShapeType_User3        = 8,
+		ShapeType_User4        = 9,
 	}
 	ShapeSubType :: enum u32 {
 		ShapeSubType_Sphere             = 0,
@@ -1994,8 +1993,8 @@ when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 		ConstraintSpace_WorldSpace     = 1,
 	}
 	MotionQuality :: enum u32 {
-		MotionQuality_Discrete   = 0,
-		MotionQuality_LinearCast = 1,
+		MotionQuality_Discrete     = 0,
+		MotionQuality_LinearCast   = 1,
 	}
 	OverrideMassProperties :: enum u32 {
 		OverrideMassProperties_CalculateMassAndInertia = 0,
@@ -2031,9 +2030,9 @@ when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 		CollectFacesMode_NoFaces      = 1,
 	}
 	MotorState :: enum u32 {
-		MotorState_Off      = 0,
-		MotorState_Velocity = 1,
-		MotorState_Position = 2,
+		MotorState_Off          = 0,
+		MotorState_Velocity     = 1,
+		MotorState_Position     = 2,
 	}
 	CollisionCollectorType :: enum u32 {
 		CollisionCollectorType_AllHit       = 0,
@@ -2042,8 +2041,8 @@ when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 		CollisionCollectorType_AnyHit       = 3,
 	}
 	SwingType :: enum u32 {
-		SwingType_Cone    = 0,
-		SwingType_Pyramid = 1,
+		SwingType_Cone         = 0,
+		SwingType_Pyramid      = 1,
 	}
 	SixDOFConstraintAxis :: enum u32 {
 		SixDOFConstraintAxis_TranslationX        = 0,
@@ -2073,12 +2072,12 @@ when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 		BodyManager_ShapeColor_MaterialColor   = 5,
 	}
 	DebugRenderer_CastShadow :: enum u32 {
-		DebugRenderer_CastShadow_On  = 0,
-		DebugRenderer_CastShadow_Off = 1,
+		DebugRenderer_CastShadow_On           = 0,
+		DebugRenderer_CastShadow_Off          = 1,
 	}
 	DebugRenderer_DrawMode :: enum u32 {
-		DebugRenderer_DrawMode_Solid     = 0,
-		DebugRenderer_DrawMode_Wireframe = 1,
+		DebugRenderer_DrawMode_Solid        = 0,
+		DebugRenderer_DrawMode_Wireframe    = 1,
 	}
 	Mesh_Shape_BuildQuality :: enum u32 {
 		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
