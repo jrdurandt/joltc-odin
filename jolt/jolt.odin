@@ -1729,7 +1729,7 @@ foreign jolt_runic {
 	EstimateCollisionResponse :: proc(body1: ^Body, body2: ^Body, manifold: ^ContactManifold, combinedFriction: f32, combinedRestitution: f32, minVelocityForRestitution: f32, numIterations: u32, result: ^CollisionEstimationResult) ---
 }
 when (ODIN_OS == .Linux) {
-	foreign import jolt_runic "libjoltc.so"
+	foreign import jolt_runic "../libjoltc.so"
 }
 when (ODIN_OS == .Windows) {
 	API_CALL :: `__cdecl`
@@ -1905,10 +1905,10 @@ when (ODIN_OS == .Windows) {
 		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
 		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
 	}
-	foreign import jolt_runic "joltc.dll"
+	foreign import jolt_runic "../joltc.dll"
 }
 when (ODIN_OS == .Darwin) {
-	foreign import jolt_runic "libjoltc.dylib"
+	foreign import jolt_runic "../libjoltc.dylib"
 }
 when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 	PhysicsUpdateError :: enum u32 {

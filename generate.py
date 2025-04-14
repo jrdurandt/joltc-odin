@@ -5,7 +5,7 @@ import platform
 
 # TODO: Move all of this into zig
 
-JOLT_FILE = "jolt.odin"
+JOLT_FILE = "source/jolt.odin"
 RUNE_FILE = "rune.yml"
 
 def execute(cmd):

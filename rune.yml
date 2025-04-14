@@ -26,7 +26,7 @@ from:
 to:
   language: odin
   package: jolt
-  out: jolt.odin
+  out: jolt/jolt.odin
   trim_prefix:
     functions: JPH_
     types: JPH_

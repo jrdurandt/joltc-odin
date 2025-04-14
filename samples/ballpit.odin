@@ -6,7 +6,7 @@ import "core:math/rand"
 import "core:mem"
 import "core:strings"
 
-import jlt ".."
+import jlt "../jolt"
 import rl "vendor:raylib"
 
 OBJECT_LAYER_NON_MOVING: jlt.ObjectLayer = 0
