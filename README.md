@@ -15,7 +15,18 @@ Requires:
 - zig (0.14.0)
 - odin (duh 🙃)
 
-`python build.py` Will download git dependencies, run zig build to build for your current platform and copy the resultant shared lib to the root this application.
+`zig build` will pull the latest joltc-zig dependency and build for your current platform. It will also copy the relevant shared library to your application root.
+
+To build for a different platform:
+
+Linux: `zig build -Dtarget=x86_64-linux`
+
+Windows: `zig build -Dtarget=x86_64-windows`
+
+macOS: `zig build -Dtarget=x86_64-macos`
+
+macOS (aarch): `zig build -Dtarget=aarch64-macos`
+
 
 To use within your game, make sure it points to `jolt.odin` and the shared library is linked to your executable (put it in the same directory as your exe to make it simple). You might need to adjust the paths in `jolt-odin` to the shared library.
 
