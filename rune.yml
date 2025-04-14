@@ -7,7 +7,7 @@ from:
   language: c
   headers: zig-out/include/joltc.h
   shared.linux: ./libjoltc.so
-  shared.windows: ./joltc.lib
+  shared.windows: ./joltc.dll
   shared.macos.x86_64: ./libjoltc.dylib
   ignore:
     constants:

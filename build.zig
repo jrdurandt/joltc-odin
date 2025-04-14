@@ -13,8 +13,6 @@ pub fn build(b: *std.Build) !void {
     b.getInstallStep().dependOn(&b.addInstallArtifact(joltc.artifact("joltc"), .{
         .dest_dir = .{ .override = .{ .custom = "../" } },
     }).step);
-
-    b.installArtifact(joltc.artifact("joltc"));
 }
 
 //TODO: zig generate

@@ -33,9 +33,9 @@ Samples is a simple application using raylib to render.
 This is a bit of a stress test as doing dynamic collisions of thousands of object is difficult. I get to around 3000+ balls before the pit overflows with a stable 60fps.
 
 ## Issues
-Only tested on Linux (Pop!_OS 22.04).
+Only tested on Linux (Ubuntu 24.04).
 Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
-Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too 😉
+Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too, will do so in future, just trying to get a stable, unsable and easily updateable binding running first.
 
 ## Manual bindings
 For the old manual bindings, please see branch `backups/manual-bind`

@@ -1905,7 +1905,7 @@ when (ODIN_OS == .Windows) {
 		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
 		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
 	}
-	foreign import jolt_runic "joltc.lib"
+	foreign import jolt_runic "joltc.dll"
 }
 when (ODIN_OS == .Darwin) {
 	foreign import jolt_runic "libjoltc.dylib"
