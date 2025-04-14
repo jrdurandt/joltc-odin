@@ -8,7 +8,7 @@ MAX_PHYSICS_JOBS :: 2048
 MAX_PHYSICS_BARRIERS :: 2048
 BodyID :: u32
 SubShapeID :: u32
-ObjectLayer :: u16
+ObjectLayer :: u32
 BroadPhaseLayer :: u8
 CollisionGroupID :: u32
 CollisionSubGroupID :: u32
@@ -307,9 +307,12 @@ GearConstraintSettings :: struct {
 	hingeAxis2: Vec3,
 	ratio:      f32,
 }
-BodyLockInterface :: struct #packed {}
-SharedMutex :: struct #packed {}
-Body :: struct #packed {}
+BodyLockInterface :: struct #packed {
+}
+SharedMutex :: struct #packed {
+}
+Body :: struct #packed {
+}
 BodyLockRead :: struct {
 	lockInterface: ^BodyLockInterface,
 	mutex:         ^SharedMutex,
@@ -328,7 +331,8 @@ ExtendedUpdateSettings :: struct {
 	walkStairsCosAngleForwardContact: f32,
 	walkStairsStepDownExtra:          Vec3,
 }
-Shape :: struct #packed {}
+Shape :: struct #packed {
+}
 CharacterBaseSettings :: struct {
 	up:                          Vec3,
 	supportingVolume:            Plane,
@@ -368,8 +372,10 @@ CharacterContactSettings :: struct {
 	canPushCharacter:   bool,
 	canReceiveImpulses: bool,
 }
-CharacterVirtual :: struct #packed {}
-PhysicsMaterial :: struct #packed {}
+CharacterVirtual :: struct #packed {
+}
+PhysicsMaterial :: struct #packed {
+}
 CharacterVirtualContact :: struct {
 	hash:             u64,
 	bodyB:            BodyID,
@@ -417,9 +423,12 @@ JobSystemConfig :: struct {
 	maxConcurrency: u32,
 	maxBarriers:    u32,
 }
-BroadPhaseLayerInterface :: struct #packed {}
-ObjectLayerPairFilter :: struct #packed {}
-ObjectVsBroadPhaseLayerFilter :: struct #packed {}
+BroadPhaseLayerInterface :: struct #packed {
+}
+ObjectLayerPairFilter :: struct #packed {
+}
+ObjectVsBroadPhaseLayerFilter :: struct #packed {
+}
 PhysicsSystemSettings :: struct {
 	maxBodies:                     u32,
 	numBodyMutexes:                u32,
@@ -507,8 +516,10 @@ OnContactValidate_func_ptr_anon_7 :: #type proc "c" (
 	baseOffset: ^RVec3,
 	collisionResult: ^CollideShapeResult,
 ) -> ValidateResult
-ContactManifold :: struct #packed {}
-ContactSettings :: struct #packed {}
+ContactManifold :: struct #packed {
+}
+ContactSettings :: struct #packed {
+}
 OnContactAdded_func_ptr_anon_8 :: #type proc "c" (
 	userData: rawptr,
 	body1: ^Body,
@@ -705,83 +716,160 @@ SkeletonJoint :: struct {
 	parentName:       cstring,
 	parentJointIndex: i32,
 }
-BroadPhaseLayerFilter :: struct #packed {}
-ObjectLayerFilter :: struct #packed {}
-BodyFilter :: struct #packed {}
-ShapeFilter :: struct #packed {}
-SimShapeFilter :: struct #packed {}
-PhysicsSystem :: struct #packed {}
-ShapeSettings :: struct #packed {}
-ConvexShapeSettings :: struct #packed {}
-SphereShapeSettings :: struct #packed {}
-BoxShapeSettings :: struct #packed {}
-PlaneShapeSettings :: struct #packed {}
-TriangleShapeSettings :: struct #packed {}
-CapsuleShapeSettings :: struct #packed {}
-TaperedCapsuleShapeSettings :: struct #packed {}
-CylinderShapeSettings :: struct #packed {}
-TaperedCylinderShapeSettings :: struct #packed {}
-ConvexHullShapeSettings :: struct #packed {}
-CompoundShapeSettings :: struct #packed {}
-StaticCompoundShapeSettings :: struct #packed {}
-MutableCompoundShapeSettings :: struct #packed {}
-MeshShapeSettings :: struct #packed {}
-HeightFieldShapeSettings :: struct #packed {}
-RotatedTranslatedShapeSettings :: struct #packed {}
-ScaledShapeSettings :: struct #packed {}
-OffsetCenterOfMassShapeSettings :: struct #packed {}
-EmptyShapeSettings :: struct #packed {}
-ConvexShape :: struct #packed {}
-SphereShape :: struct #packed {}
-BoxShape :: struct #packed {}
-PlaneShape :: struct #packed {}
-CapsuleShape :: struct #packed {}
-CylinderShape :: struct #packed {}
-TaperedCylinderShape :: struct #packed {}
-TriangleShape :: struct #packed {}
-TaperedCapsuleShape :: struct #packed {}
-ConvexHullShape :: struct #packed {}
-CompoundShape :: struct #packed {}
-StaticCompoundShape :: struct #packed {}
-MutableCompoundShape :: struct #packed {}
-MeshShape :: struct #packed {}
-HeightFieldShape :: struct #packed {}
-DecoratedShape :: struct #packed {}
-RotatedTranslatedShape :: struct #packed {}
-ScaledShape :: struct #packed {}
-OffsetCenterOfMassShape :: struct #packed {}
-EmptyShape :: struct #packed {}
-BodyCreationSettings :: struct #packed {}
-SoftBodyCreationSettings :: struct #packed {}
-BodyInterface :: struct #packed {}
-BroadPhaseQuery :: struct #packed {}
-NarrowPhaseQuery :: struct #packed {}
-MotionProperties :: struct #packed {}
-ContactListener :: struct #packed {}
-BodyActivationListener :: struct #packed {}
-BodyDrawFilter :: struct #packed {}
-DebugRenderer :: struct #packed {}
-Constraint :: struct #packed {}
-TwoBodyConstraint :: struct #packed {}
-FixedConstraint :: struct #packed {}
-DistanceConstraint :: struct #packed {}
-PointConstraint :: struct #packed {}
-HingeConstraint :: struct #packed {}
-SliderConstraint :: struct #packed {}
-ConeConstraint :: struct #packed {}
-SwingTwistConstraint :: struct #packed {}
-SixDOFConstraint :: struct #packed {}
-GearConstraint :: struct #packed {}
-CharacterBase :: struct #packed {}
-Character :: struct #packed {}
-CharacterContactListener :: struct #packed {}
-CharacterVsCharacterCollision :: struct #packed {}
-Skeleton :: struct #packed {}
-RagdollSettings :: struct #packed {}
-Ragdoll :: struct #packed {}
-BodyLockMultiRead :: struct #packed {}
-BodyLockMultiWrite :: struct #packed {}
-JobSystem :: struct #packed {}
+BroadPhaseLayerFilter :: struct #packed {
+}
+ObjectLayerFilter :: struct #packed {
+}
+BodyFilter :: struct #packed {
+}
+ShapeFilter :: struct #packed {
+}
+SimShapeFilter :: struct #packed {
+}
+PhysicsSystem :: struct #packed {
+}
+ShapeSettings :: struct #packed {
+}
+ConvexShapeSettings :: struct #packed {
+}
+SphereShapeSettings :: struct #packed {
+}
+BoxShapeSettings :: struct #packed {
+}
+PlaneShapeSettings :: struct #packed {
+}
+TriangleShapeSettings :: struct #packed {
+}
+CapsuleShapeSettings :: struct #packed {
+}
+TaperedCapsuleShapeSettings :: struct #packed {
+}
+CylinderShapeSettings :: struct #packed {
+}
+TaperedCylinderShapeSettings :: struct #packed {
+}
+ConvexHullShapeSettings :: struct #packed {
+}
+CompoundShapeSettings :: struct #packed {
+}
+StaticCompoundShapeSettings :: struct #packed {
+}
+MutableCompoundShapeSettings :: struct #packed {
+}
+MeshShapeSettings :: struct #packed {
+}
+HeightFieldShapeSettings :: struct #packed {
+}
+RotatedTranslatedShapeSettings :: struct #packed {
+}
+ScaledShapeSettings :: struct #packed {
+}
+OffsetCenterOfMassShapeSettings :: struct #packed {
+}
+EmptyShapeSettings :: struct #packed {
+}
+ConvexShape :: struct #packed {
+}
+SphereShape :: struct #packed {
+}
+BoxShape :: struct #packed {
+}
+PlaneShape :: struct #packed {
+}
+CapsuleShape :: struct #packed {
+}
+CylinderShape :: struct #packed {
+}
+TaperedCylinderShape :: struct #packed {
+}
+TriangleShape :: struct #packed {
+}
+TaperedCapsuleShape :: struct #packed {
+}
+ConvexHullShape :: struct #packed {
+}
+CompoundShape :: struct #packed {
+}
+StaticCompoundShape :: struct #packed {
+}
+MutableCompoundShape :: struct #packed {
+}
+MeshShape :: struct #packed {
+}
+HeightFieldShape :: struct #packed {
+}
+DecoratedShape :: struct #packed {
+}
+RotatedTranslatedShape :: struct #packed {
+}
+ScaledShape :: struct #packed {
+}
+OffsetCenterOfMassShape :: struct #packed {
+}
+EmptyShape :: struct #packed {
+}
+BodyCreationSettings :: struct #packed {
+}
+SoftBodyCreationSettings :: struct #packed {
+}
+BodyInterface :: struct #packed {
+}
+BroadPhaseQuery :: struct #packed {
+}
+NarrowPhaseQuery :: struct #packed {
+}
+MotionProperties :: struct #packed {
+}
+ContactListener :: struct #packed {
+}
+BodyActivationListener :: struct #packed {
+}
+BodyDrawFilter :: struct #packed {
+}
+DebugRenderer :: struct #packed {
+}
+Constraint :: struct #packed {
+}
+TwoBodyConstraint :: struct #packed {
+}
+FixedConstraint :: struct #packed {
+}
+DistanceConstraint :: struct #packed {
+}
+PointConstraint :: struct #packed {
+}
+HingeConstraint :: struct #packed {
+}
+SliderConstraint :: struct #packed {
+}
+ConeConstraint :: struct #packed {
+}
+SwingTwistConstraint :: struct #packed {
+}
+SixDOFConstraint :: struct #packed {
+}
+GearConstraint :: struct #packed {
+}
+CharacterBase :: struct #packed {
+}
+Character :: struct #packed {
+}
+CharacterContactListener :: struct #packed {
+}
+CharacterVsCharacterCollision :: struct #packed {
+}
+Skeleton :: struct #packed {
+}
+RagdollSettings :: struct #packed {
+}
+Ragdoll :: struct #packed {
+}
+BodyLockMultiRead :: struct #packed {
+}
+BodyLockMultiWrite :: struct #packed {
+}
+JobSystem :: struct #packed {
+}
 @(default_calling_convention = "c", link_prefix = "JPH_")
 foreign jolt_runic {
 	JobSystemThreadPool_Create :: proc(config: ^JobSystemThreadPoolConfig) -> ^JobSystem ---
@@ -1590,6 +1678,7 @@ foreign jolt_runic {
 	DebugRenderer_Create :: proc(userData: rawptr) -> ^DebugRenderer ---
 	DebugRenderer_Destroy :: proc(renderer: ^DebugRenderer) ---
 	DebugRenderer_NextFrame :: proc(renderer: ^DebugRenderer) ---
+	DebugRenderer_SetCameraPos :: proc(renderer: ^DebugRenderer, position: ^RVec3) ---
 	DebugRenderer_DrawLine :: proc(renderer: ^DebugRenderer, from: ^RVec3, to: ^RVec3, color: Color) ---
 	DebugRenderer_DrawWireBox :: proc(renderer: ^DebugRenderer, box: ^AABox, color: Color) ---
 	DebugRenderer_DrawWireBox2 :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, box: ^AABox, color: Color) ---
@@ -1600,6 +1689,18 @@ foreign jolt_runic {
 	DebugRenderer_DrawWireTriangle :: proc(renderer: ^DebugRenderer, v1: ^RVec3, v2: ^RVec3, v3: ^RVec3, color: Color) ---
 	DebugRenderer_DrawWireSphere :: proc(renderer: ^DebugRenderer, center: ^RVec3, radius: f32, color: Color, level: i32) ---
 	DebugRenderer_DrawWireUnitSphere :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, color: Color, level: i32) ---
+	DebugRenderer_DrawTriangle :: proc(renderer: ^DebugRenderer, v1: ^RVec3, v2: ^RVec3, v3: ^RVec3, color: Color, castShadow: DebugRenderer_CastShadow) ---
+	DebugRenderer_DrawBox :: proc(renderer: ^DebugRenderer, box: ^AABox, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawBox2 :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, box: ^AABox, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawSphere :: proc(renderer: ^DebugRenderer, center: ^RVec3, radius: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawUnitSphere :: proc(renderer: ^DebugRenderer, matrix_p: RMatrix4x4, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawCapsule :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, halfHeightOfCylinder: f32, radius: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawCylinder :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, halfHeight: f32, radius: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawOpenCone :: proc(renderer: ^DebugRenderer, top: ^RVec3, axis: [^]Vec3, perpendicular: ^Vec3, halfAngle: f32, length: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawSwingConeLimits :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, swingYHalfAngle: f32, swingZHalfAngle: f32, edgeLength: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawSwingPyramidLimits :: proc(renderer: ^DebugRenderer, matrix_p: ^RMatrix4x4, minSwingYAngle: f32, maxSwingYAngle: f32, minSwingZAngle: f32, maxSwingZAngle: f32, edgeLength: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawPie :: proc(renderer: ^DebugRenderer, center: ^RVec3, radius: f32, normal: ^Vec3, axis: [^]Vec3, minAngle: f32, maxAngle: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+	DebugRenderer_DrawTaperedCylinder :: proc(renderer: ^DebugRenderer, inMatrix: ^RMatrix4x4, top: f32, bottom: f32, topRadius: f32, bottomRadius: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
 	Skeleton_Create :: proc() -> ^Skeleton ---
 	Skeleton_Destroy :: proc(skeleton: ^Skeleton) ---
 	Skeleton_AddJoint :: proc(skeleton: ^Skeleton, name: cstring) -> u32 ---
@@ -1627,6 +1728,9 @@ foreign jolt_runic {
 	Ragdoll_IsActive :: proc(ragdoll: ^Ragdoll, lockBodies: bool) -> bool ---
 	Ragdoll_ResetWarmStart :: proc(ragdoll: ^Ragdoll) ---
 	EstimateCollisionResponse :: proc(body1: ^Body, body2: ^Body, manifold: ^ContactManifold, combinedFriction: f32, combinedRestitution: f32, minVelocityForRestitution: f32, numIterations: u32, result: ^CollisionEstimationResult) ---
+}
+when (ODIN_OS == .Linux) {
+	foreign import jolt_runic "joltc-zig/zig-out/lib/linux/libjoltc.so"
 }
 when (ODIN_OS == .Windows) {
 	API_CALL :: `__cdecl`
@@ -1802,7 +1906,12 @@ when (ODIN_OS == .Windows) {
 		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
 		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
 	}
-} else {
+	foreign import jolt_runic "joltc-zig/zig-out/lib/windows/joltc.lib"
+}
+when (ODIN_OS == .Darwin) {
+	foreign import jolt_runic "joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib"
+}
+when (ODIN_OS == .Linux) || (ODIN_OS == .Darwin) {
 	PhysicsUpdateError :: enum u32 {
 		PhysicsUpdateError_None                   = 0,
 		PhysicsUpdateError_ManifoldCacheFull      = 1,
@@ -1975,11 +2084,4 @@ when (ODIN_OS == .Windows) {
 		Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
 		Mesh_Shape_BuildQuality_FavorBuildSpeed         = 1,
 	}
-}
-when (ODIN_OS == .Linux) {
-	foreign import jolt_runic "joltc-zig/zig-out/lib/linux/libjoltc.so"
-} else when (ODIN_OS == .Windows) {
-	foreign import jolt_runic "joltc-zig/zig-out/lib/windows/joltc.lib"
-} else {
-	foreign import jolt_runic "joltc-zig/zig-out/lib/macos_x86_64/libjoltc.dylib"
 }

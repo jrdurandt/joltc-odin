@@ -32,4 +32,4 @@ to:
     types: JPH_
     constants: JPH_
   no_build_tag: yes
-  use_when_else: yes
+  use_when_else: no
