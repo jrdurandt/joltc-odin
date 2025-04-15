@@ -2,10 +2,9 @@ import re
 import os
 import shutil
 import platform
+import zipfile
 
-# TODO: Move all of this into zig
-
-JOLT_FILE = "source/jolt.odin"
+JOLT_FILE = "jolt/jolt.odin"
 RUNE_FILE = "rune.yml"
 
 def execute(cmd):
@@ -13,7 +12,6 @@ def execute(cmd):
     if res != 0:
         print("Failed to run cmd: " + cmd)
         exit(1)
-
 
 # Build
 print("Building...\n")
@@ -23,35 +21,33 @@ execute("zig build")
 print("Generating...\n")
 SYSTEM = platform.system()
 if SYSTEM == "Linux":
-    execute("deps/runic-x86_64.AppImage %s" % RUNE_FILE)
+    execute("runic/runic-x86_64.AppImage %s" % RUNE_FILE)
 elif SYSTEM == "Window":
-    # TODO: Need to unzip
-    pass
+    with zipfile.ZipFile("runic/runic.windows-x86_64.zip") as zip_file:
+        zip_file.extractall("runic")
 elif SYSTEM == "Darwin":
     ARCH = platform.architecture()
     if ARCH == "x86_64":
-        execute("deps/runic.macos-x86_64 %s" % RUNE_FILE)
+        execute("runic/runic.macos-x86_64 %s" % RUNE_FILE)
     elif ARCH == "aarch64":
-        execute("deps/runic.macos-arm64 %s" % RUNE_FILE)
+        execute("runic/runic.macos-arm64 %s" % RUNE_FILE)
 
 # Clean-up
 print("Cleaning up...\n")
 
-# file needs to be formatted before running this script!
+# file needs to be formatted before running cleanup
 # Requires odinfmt (from odin lsp (ols))
 execute("odinfmt %s > %s" % (JOLT_FILE, "temp.odin"))
 shutil.move("temp.odin", JOLT_FILE)
 
 # Clean-up some of the generated bindings
-# TODO: Replace this with a zig implementation during build step
-
-# Removes `(...)`
-# Removes the redundant Force32 and Count from enums
-# Replaces Matrix4x4 :: [4][4]f32 with matrix[4,4]f32
-# Adds DEFAULT_CONVEX_RADIUS to procs with convexRadius
-# Replace b8 with bool
-# Remove @(link_name = "JPH_")
-# Add link_prefix= "JPH_
+# - Removes `(...)`
+# - Removes the redundant Force32 and Count from enums
+# - Replaces Matrix4x4 :: [4][4]f32 with matrix[4,4]f32
+# - Adds DEFAULT_CONVEX_RADIUS to procs with convexRadius
+# - Replace b8 with bool
+# - Remove @(link_name = "JPH_")
+# - Add link_prefix= "JPH_
 
 line_removal_pattern = re.compile(r'_JPH_\w+_(Count|Force32)\s*=\s*\d+', re.MULTILINE)
 simple_cleanup_pattern = re.compile(r'`\(|f\)`?')

@@ -14,8 +14,3 @@ pub fn build(b: *std.Build) !void {
         .dest_dir = .{ .override = .{ .custom = "../" } },
     }).step);
 }
-
-//TODO: zig generate
-//- Download runic pre-built binaries per platform
-//- Run runic command to generate bindings
-//- Execute clean-up script

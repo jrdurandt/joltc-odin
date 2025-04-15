@@ -12,8 +12,9 @@ Binding generated with [runic](https://github.com/Samudevv/runic)
 Requires:
 - git
 - python
-- zig (0.14.0)
-- odin (duh 🙃)
+- [zig](https://ziglang.org/) (0.14.0)
+- [odin](https://odin-lang.org/)
+- [ols](https://github.com/DanielGavin/ols)
 
 `zig build` will pull the latest joltc-zig dependency and build for your current platform. It will also copy the relevant shared library to your application root.
 
@@ -26,7 +27,6 @@ Windows: `zig build -Dtarget=x86_64-windows`
 macOS: `zig build -Dtarget=x86_64-macos`
 
 macOS (aarch): `zig build -Dtarget=aarch64-macos`
-
 
 To use within your game, make sure it points to `jolt.odin` and the shared library is linked to your executable (put it in the same directory as your exe to make it simple). You might need to adjust the paths in `jolt-odin` to the shared library.
 

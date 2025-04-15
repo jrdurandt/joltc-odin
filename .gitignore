@@ -7,7 +7,5 @@ jolt-odin
 *.dylib
 *.pdb
 
-runic
-
 .zig-cache/
 zig-out/
