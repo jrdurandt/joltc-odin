@@ -8,13 +8,9 @@ Build with zig
 
 Binding generated with [runic](https://github.com/Samudevv/runic)
 
-## Usage
+## Build
 Requires:
-- git
-- python
 - [zig](https://ziglang.org/) (0.14.0)
-- [odin](https://odin-lang.org/)
-- [ols](https://github.com/DanielGavin/ols)
 
 `zig build` will pull the latest joltc-zig dependency and build for your current platform. It will also copy the relevant shared library to your application root.
 
@@ -28,10 +24,28 @@ macOS: `zig build -Dtarget=x86_64-macos`
 
 macOS (aarch): `zig build -Dtarget=aarch64-macos`
 
-To use within your game, make sure it points to `jolt.odin` and the shared library is linked to your executable (put it in the same directory as your exe to make it simple). You might need to adjust the paths in `jolt-odin` to the shared library.
-
 ## Test
 Run tests with: `odin test .`
+
+## Using
+To use within your game, make sure it points to `jolt.odin` and the shared library is linked to your executable (put it in the same directory as your exe to make it simple). You might need to adjust the paths in `jolt-odin` to the shared library.
+
+You can copy the `jolt` directory to the root of your game along with the required shared libraries (.so for Linux, .dll for Windows and .dylib for macOS).
+
+Reference the jolt library in your game (see `samples/ballpit.odin` for examples).
+
+```
+package my_game
+
+import jph "jolt"
+
+//...
+
+assert(jph.Init())
+defer jph.Shutdown()
+
+//... Setup physics and job system as required
+```
 
 ## Sample
 Run sample with `odin run samples -debug`
@@ -43,10 +57,19 @@ Samples is a simple application using raylib to render.
 
 This is a bit of a stress test as doing dynamic collisions of thousands of object is difficult. I get to around 3000+ balls before the pit overflows with a stable 60fps.
 
+## Generating
+Requires:
+- git
+- python
+- [zig](https://ziglang.org/) (0.14.0)
+- [odin](https://odin-lang.org/)
+- [ols](https://github.com/DanielGavin/ols)
+
+Run `python3 generate.py`
+This will build the lib, targeting current platform; run the runic generation for the current platform and then run format and run a clean-up.
+Output will be jolt/jolt.odin
+
 ## Issues
 Only tested on Linux (Ubuntu 24.04).
 Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
 Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too, will do so in future, just trying to get a stable, unsable and easily updateable binding running first.
-
-## Manual bindings
-For the old manual bindings, please see branch `backups/manual-bind`
