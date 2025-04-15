@@ -25,6 +25,7 @@ if SYSTEM == "Linux":
 elif SYSTEM == "Window":
     with zipfile.ZipFile("runic/runic.windows-x86_64.zip") as zip_file:
         zip_file.extractall("runic")
+        execute("runic/runic.windows-x86_64/runic.exe %s" % RUNE_FILE)
 elif SYSTEM == "Darwin":
     ARCH = platform.architecture()
     if ARCH == "x86_64":
