@@ -4,6 +4,8 @@ jolt-odin
 
 *.so
 *.dll
-*.dynlib
+*.dylib
+*.pdb
 
-runic
+.zig-cache/
+zig-out/

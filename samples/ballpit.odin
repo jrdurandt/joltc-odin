@@ -6,43 +6,43 @@ import "core:math/rand"
 import "core:mem"
 import "core:strings"
 
-import jlt ".."
+import jph "../jolt"
 import rl "vendor:raylib"
 
-OBJECT_LAYER_NON_MOVING: jlt.ObjectLayer = 0
-OBJECT_LAYER_MOVING: jlt.ObjectLayer = 1
+OBJECT_LAYER_NON_MOVING: jph.ObjectLayer = 0
+OBJECT_LAYER_MOVING: jph.ObjectLayer = 1
 OBJECT_LAYER_NUM :: 2
 
-BROAD_PHASE_LAYER_NON_MOVING: jlt.BroadPhaseLayer = 0
-BROAD_PHASE_LAYER_MOVING: jlt.BroadPhaseLayer = 1
+BROAD_PHASE_LAYER_NON_MOVING: jph.BroadPhaseLayer = 0
+BROAD_PHASE_LAYER_MOVING: jph.BroadPhaseLayer = 1
 BROAD_PHASE_LAYER_NUM :: 2
 
 Ball :: struct {
-	body_id:  jlt.BodyID,
+	body_id:  jph.BodyID,
 	selected: bool,
 }
 
 @(private)
 build_wall :: proc(
-	body_interface: ^jlt.BodyInterface,
+	body_interface: ^jph.BodyInterface,
 	size: [3]f32,
 	position: [3]f32,
-) -> jlt.BodyID {
+) -> jph.BodyID {
 	size := size
 	position := position
 
-	wall_shape := jlt.BoxShape_Create(&size)
+	wall_shape := jph.BoxShape_Create(&size)
 
-	floor_settings := jlt.BodyCreationSettings_Create3(
-		cast(^jlt.Shape)wall_shape,
+	floor_settings := jph.BodyCreationSettings_Create3(
+		cast(^jph.Shape)wall_shape,
 		&position,
 		nil,
 		.MotionType_Static,
 		OBJECT_LAYER_NON_MOVING,
 	)
-	defer jlt.BodyCreationSettings_Destroy(floor_settings)
+	defer jph.BodyCreationSettings_Destroy(floor_settings)
 
-	return jlt.BodyInterface_CreateAndAddBody(
+	return jph.BodyInterface_CreateAndAddBody(
 		body_interface,
 		floor_settings,
 		.Activation_DontActivate,
@@ -99,48 +99,48 @@ main :: proc() {
 	sphere := rl.LoadModelFromMesh(sphere_mesh)
 
 	//Setup physics
-	ok := jlt.Init()
-	defer jlt.Shutdown()
+	ok := jph.Init()
+	defer jph.Shutdown()
 	assert(ok, "Failed to init JoltPhysics")
 
-	job_system := jlt.JobSystemThreadPool_Create(nil)
-	defer jlt.JobSystem_Destroy(job_system)
+	job_system := jph.JobSystemThreadPool_Create(nil)
+	defer jph.JobSystem_Destroy(job_system)
 
-	object_layer_pair_filter := jlt.ObjectLayerPairFilterTable_Create(OBJECT_LAYER_NUM)
-	jlt.ObjectLayerPairFilterTable_EnableCollision(
+	object_layer_pair_filter := jph.ObjectLayerPairFilterTable_Create(OBJECT_LAYER_NUM)
+	jph.ObjectLayerPairFilterTable_EnableCollision(
 		object_layer_pair_filter,
 		OBJECT_LAYER_MOVING,
 		OBJECT_LAYER_MOVING,
 	)
-	jlt.ObjectLayerPairFilterTable_EnableCollision(
+	jph.ObjectLayerPairFilterTable_EnableCollision(
 		object_layer_pair_filter,
 		OBJECT_LAYER_MOVING,
 		OBJECT_LAYER_NON_MOVING,
 	)
 
-	broad_phase_layer_interface_table := jlt.BroadPhaseLayerInterfaceTable_Create(
+	broad_phase_layer_interface_table := jph.BroadPhaseLayerInterfaceTable_Create(
 		OBJECT_LAYER_NUM,
 		BROAD_PHASE_LAYER_NUM,
 	)
-	jlt.BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer(
+	jph.BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer(
 		broad_phase_layer_interface_table,
 		OBJECT_LAYER_NON_MOVING,
 		BROAD_PHASE_LAYER_NON_MOVING,
 	)
-	jlt.BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer(
+	jph.BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer(
 		broad_phase_layer_interface_table,
 		OBJECT_LAYER_MOVING,
 		BROAD_PHASE_LAYER_MOVING,
 	)
 
-	object_vs_broad_phase_layer_filter := jlt.ObjectVsBroadPhaseLayerFilterTable_Create(
+	object_vs_broad_phase_layer_filter := jph.ObjectVsBroadPhaseLayerFilterTable_Create(
 		broad_phase_layer_interface_table,
 		BROAD_PHASE_LAYER_NUM,
 		object_layer_pair_filter,
 		OBJECT_LAYER_NUM,
 	)
 
-	physics_system_settings := jlt.PhysicsSystemSettings {
+	physics_system_settings := jph.PhysicsSystemSettings {
 		maxBodies                     = 65535,
 		numBodyMutexes                = 0,
 		maxBodyPairs                  = 65535,
@@ -149,70 +149,70 @@ main :: proc() {
 		objectLayerPairFilter         = object_layer_pair_filter,
 		objectVsBroadPhaseLayerFilter = object_vs_broad_phase_layer_filter,
 	}
-	physics_system := jlt.PhysicsSystem_Create(&physics_system_settings)
-	defer jlt.PhysicsSystem_Destroy(physics_system)
+	physics_system := jph.PhysicsSystem_Create(&physics_system_settings)
+	defer jph.PhysicsSystem_Destroy(physics_system)
 
-	body_interface := jlt.PhysicsSystem_GetBodyInterface(physics_system)
+	body_interface := jph.PhysicsSystem_GetBodyInterface(physics_system)
 
-	narrow_phase_query := jlt.PhysicsSystem_GetNarrowPhaseQuery(physics_system)
+	narrow_phase_query := jph.PhysicsSystem_GetNarrowPhaseQuery(physics_system)
 
 	//Setup static objects (floor and walls)
-	floor_id: jlt.BodyID
+	floor_id: jph.BodyID
 	{
-		floor_shape := jlt.BoxShape_Create(&{25, 0.5, 25})
+		floor_shape := jph.BoxShape_Create(&{25, 0.5, 25})
 
-		floor_settings := jlt.BodyCreationSettings_Create3(
-			cast(^jlt.Shape)floor_shape,
+		floor_settings := jph.BodyCreationSettings_Create3(
+			cast(^jph.Shape)floor_shape,
 			&{0, 0, 0},
 			nil,
 			.MotionType_Static,
 			OBJECT_LAYER_NON_MOVING,
 		)
-		defer jlt.BodyCreationSettings_Destroy(floor_settings)
+		defer jph.BodyCreationSettings_Destroy(floor_settings)
 
-		jlt.BodyCreationSettings_SetRestitution(floor_settings, 0.5)
-		jlt.BodyCreationSettings_SetFriction(floor_settings, 0.5)
+		jph.BodyCreationSettings_SetRestitution(floor_settings, 0.5)
+		jph.BodyCreationSettings_SetFriction(floor_settings, 0.5)
 
-		floor_id = jlt.BodyInterface_CreateAndAddBody(
+		floor_id = jph.BodyInterface_CreateAndAddBody(
 			body_interface,
 			floor_settings,
 			.Activation_DontActivate,
 		)
 	}
-	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
+	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
 
 	wall_n := build_wall(body_interface, {25, 2.5, 0.5}, {0, 2.5, -25})
-	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, wall_n)
+	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, wall_n)
 
 	wall_s := build_wall(body_interface, {25, 2.5, 0.5}, {0, 2.5, 25})
-	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, wall_s)
+	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, wall_s)
 
 	wall_e := build_wall(body_interface, {0.5, 2.5, 25.0}, {-25, 2.5, 0})
-	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, wall_e)
+	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, wall_e)
 
 	wall_w := build_wall(body_interface, {0.5, 2.5, 25.0}, {25, 2.5, 0})
-	defer jlt.BodyInterface_RemoveAndDestroyBody(body_interface, wall_w)
+	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, wall_w)
 
-	// balls: [dynamic]jlt.BodyID
-	balls: map[jlt.BodyID]Ball
+	// balls: [dynamic]jph.BodyID
+	balls: map[jph.BodyID]Ball
 	defer {
 		for _, v in balls {
-			jlt.BodyInterface_RemoveAndDestroyBody(body_interface, v.body_id)
+			jph.BodyInterface_RemoveAndDestroyBody(body_interface, v.body_id)
 		}
 		delete(balls)
 	}
 
-	sphere_shape := jlt.SphereShape_Create(1)
+	sphere_shape := jph.SphereShape_Create(1)
 
-	jlt.PhysicsSystem_OptimizeBroadPhase(physics_system)
+	jph.PhysicsSystem_OptimizeBroadPhase(physics_system)
 
-	removed_balls: [dynamic]jlt.BodyID
+	removed_balls: [dynamic]jph.BodyID
 	defer delete(removed_balls)
 
 	ray: rl.Ray
 	for !rl.WindowShouldClose() {
 		delta_time := rl.GetFrameTime()
-		err := jlt.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
+		err := jph.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
 		assert(err == .PhysicsUpdateError_None)
 
 		if rl.IsMouseButtonDown(.RIGHT) {
@@ -225,8 +225,8 @@ main :: proc() {
 		if rl.IsMouseButtonPressed(.LEFT) {
 			ray = rl.GetScreenToWorldRay(rl.GetMousePosition(), camera)
 			direction := ray.direction * 100
-			result: jlt.RayCastResult
-			if (jlt.NarrowPhaseQuery_CastRay(
+			result: jph.RayCastResult
+			if (jph.NarrowPhaseQuery_CastRay(
 					   narrow_phase_query,
 					   &ray.position,
 					   &direction,
@@ -249,16 +249,16 @@ main :: proc() {
 				rand.float32_range(-22, 22),
 			}
 
-			sphere_settings := jlt.BodyCreationSettings_Create3(
-				cast(^jlt.Shape)sphere_shape,
+			sphere_settings := jph.BodyCreationSettings_Create3(
+				cast(^jph.Shape)sphere_shape,
 				&ball_pos,
 				nil,
 				.MotionType_Dynamic,
 				OBJECT_LAYER_MOVING,
 			)
-			defer jlt.BodyCreationSettings_Destroy(sphere_settings)
+			defer jph.BodyCreationSettings_Destroy(sphere_settings)
 
-			ball_id := jlt.BodyInterface_CreateAndAddBody(
+			ball_id := jph.BodyInterface_CreateAndAddBody(
 				body_interface,
 				sphere_settings,
 				.Activation_Activate,
@@ -295,8 +295,8 @@ main :: proc() {
 				position: [3]f32
 				rotation: quaternion128
 
-				jlt.BodyInterface_GetPosition(body_interface, ball_id, &position)
-				jlt.BodyInterface_GetRotation(body_interface, ball_id, &rotation)
+				jph.BodyInterface_GetPosition(body_interface, ball_id, &position)
+				jph.BodyInterface_GetRotation(body_interface, ball_id, &rotation)
 
 				//Kill plane
 				if position.y <= -50 {
@@ -306,7 +306,7 @@ main :: proc() {
 
 				sphere.transform = rl.QuaternionToMatrix(rotation)
 
-				is_active := jlt.BodyInterface_IsActive(body_interface, ball_id)
+				is_active := jph.BodyInterface_IsActive(body_interface, ball_id)
 				is_selected := ball.selected
 
 				rl.DrawModel(sphere, position, 1, is_active ? rl.RED : rl.GRAY)
@@ -314,7 +314,7 @@ main :: proc() {
 			}
 
 			for ball_id in removed_balls {
-				jlt.BodyInterface_RemoveAndDestroyBody(body_interface, ball_id)
+				jph.BodyInterface_RemoveAndDestroyBody(body_interface, ball_id)
 				delete_key(&balls, ball_id)
 			}
 			clear(&removed_balls)
