@@ -31,13 +31,13 @@ build_wall :: proc(
 	size := size
 	position := position
 
-	wall_shape := jph.BoxShape_Create(&size)
+	wall_shape := jph.BoxShape_Create(&size, jph.DEFAULT_CONVEX_RADIUS)
 
 	floor_settings := jph.BodyCreationSettings_Create3(
 		cast(^jph.Shape)wall_shape,
 		&position,
 		nil,
-		.MotionType_Static,
+		.JPH_MotionType_Static,
 		OBJECT_LAYER_NON_MOVING,
 	)
 	defer jph.BodyCreationSettings_Destroy(floor_settings)
@@ -45,7 +45,7 @@ build_wall :: proc(
 	return jph.BodyInterface_CreateAndAddBody(
 		body_interface,
 		floor_settings,
-		.Activation_DontActivate,
+		.JPH_Activation_DontActivate,
 	)
 }
 
@@ -159,13 +159,13 @@ main :: proc() {
 	//Setup static objects (floor and walls)
 	floor_id: jph.BodyID
 	{
-		floor_shape := jph.BoxShape_Create(&{25, 0.5, 25})
+		floor_shape := jph.BoxShape_Create(&{25, 0.5, 25}, jph.DEFAULT_CONVEX_RADIUS)
 
 		floor_settings := jph.BodyCreationSettings_Create3(
 			cast(^jph.Shape)floor_shape,
 			&{0, 0, 0},
 			nil,
-			.MotionType_Static,
+			.JPH_MotionType_Static,
 			OBJECT_LAYER_NON_MOVING,
 		)
 		defer jph.BodyCreationSettings_Destroy(floor_settings)
@@ -176,7 +176,7 @@ main :: proc() {
 		floor_id = jph.BodyInterface_CreateAndAddBody(
 			body_interface,
 			floor_settings,
-			.Activation_DontActivate,
+			.JPH_Activation_DontActivate,
 		)
 	}
 	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
@@ -213,7 +213,7 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		delta_time := rl.GetFrameTime()
 		err := jph.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
-		assert(err == .PhysicsUpdateError_None)
+		assert(err == .JPH_PhysicsUpdateError_None)
 
 		if rl.IsMouseButtonDown(.RIGHT) {
 			rl.UpdateCamera(&camera, .FREE)
@@ -253,7 +253,7 @@ main :: proc() {
 				cast(^jph.Shape)sphere_shape,
 				&ball_pos,
 				nil,
-				.MotionType_Dynamic,
+				.JPH_MotionType_Dynamic,
 				OBJECT_LAYER_MOVING,
 			)
 			defer jph.BodyCreationSettings_Destroy(sphere_settings)
@@ -261,7 +261,7 @@ main :: proc() {
 			ball_id := jph.BodyInterface_CreateAndAddBody(
 				body_interface,
 				sphere_settings,
-				.Activation_Activate,
+				.JPH_Activation_Activate,
 			)
 
 			balls[ball_id] = Ball {

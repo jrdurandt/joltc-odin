@@ -1,5 +1,7 @@
-*.bin
-*.exe
+jolt.bin
+samples.bin
+jolt.exe
+samples.exe
 jolt-odin
 
 *.so
@@ -9,3 +11,5 @@ jolt-odin
 
 .zig-cache/
 zig-out/
+
+bindgen/temp

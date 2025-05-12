@@ -1,4 +1,5 @@
 const std = @import("std");
+const run = std.process.Child.run;
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});

@@ -1,0 +1,111 @@
+inputs = [
+    "../zig-out/include/joltc.h"
+]
+
+output_folder = "temp"
+
+remove_type_prefix = "JPH_"
+remove_macro_prefix = "JPH_"
+remove_function_prefix = "JPH_"
+
+package_name = "jolt"
+
+imports_file = "imports.odin"
+
+type_overrides = {
+    "Vec3" = "[3]f32",
+    "Vec4" = "[4]f32",
+    "Quat" = "quaternion128",
+    "Matrix4x4" = "matrix[4,4]f32"
+}
+
+opaque_types = [
+    "PhysicsSystem",
+    "JobSystem",
+    "BroadPhaseLayerFilter",
+    "ObjectLayerFilter",
+    "BodyFilter",
+    "ShapeFilter",
+    "BodyInterface",
+    "BodyLockInterface",
+    "BodyLockMultiRead",
+    "BodyLockMultiWrite",
+    "BroadPhaseQuery",
+    "NarrowPhaseQuery",
+    "Shape",
+    "ConvexShape",
+    "SphereShape",
+    "BoxShape",
+    "PlaneShape",
+    "CapsuleShape",
+    "CylinderShape",
+    "TaperedCylinderShape",
+    "TriangleShape",
+    "TaperedCapsuleShape",
+    "ConvexHullShape",
+    "CompoundShape",
+    "StaticCompoundShape",
+    "MutableCompoundShape",
+    "MeshShape",
+    "HeightFieldShape",
+    "DecoratedShape",
+    "RotatedTranslatedShape",
+    "ScaledShape",
+    "OffsetCenterOfMassShape",
+    "EmptyShape",
+    "BodyCreationSettings",
+    "SoftBodyCreationSettings", 
+    "ShapeSettings",                   
+    "ConvexShapeSettings",
+    "SphereShapeSettings",
+    "BoxShapeSettings",
+    "PlaneShapeSettings",
+    "TriangleShapeSettings",
+    "CapsuleShapeSettings",
+    "TaperedCapsuleShapeSettings",
+    "CylinderShapeSettings",
+    "TaperedCylinderShapeSettings",
+    "ConvexHullShapeSettings",
+    "CompoundShapeSettings",
+    "StaticCompoundShapeSettings",
+    "MutableCompoundShapeSettings",
+    "MeshShapeSettings",
+    "HeightFieldShapeSettings",
+    "RotatedTranslatedShapeSettings",
+    "ScaledShapeSettings",
+    "OffsetCenterOfMassShapeSettings",
+    "EmptyShapeSettings",
+    "BroadPhaseLayerInterface",
+    "ObjectLayerPairFilter",
+    "ObjectVsBroadPhaseLayerFilter",
+    "CharacterVirtual",
+    "Body",
+    "ContactManifold",
+    "ContactSettings",
+    "SharedMutex",
+    "PhysicsMaterial",
+    "ContactListener",
+    "BodyActivationListener",
+    "SimShapeFilter",
+    "Constraint",    
+    "TwoBodyConstraint",
+    "FixedConstraint",
+    "DistanceConstraint",
+    "PointConstraint",
+    "HingeConstraint",
+    "SliderConstraint",
+    "ConeConstraint",
+    "SwingTwistConstraint",
+    "SixDOFConstraint",
+    "GearConstraint",
+    "DebugRenderer",
+    "MotionProperties",
+    "BodyDrawFilter",
+    "CharacterBase",
+    "Character",
+    "CharacterContactListener",
+    "CharacterVsCharacterCollision",
+    "Skeleton",
+    "Ragdoll",
+    "RagdollSettings"
+]
