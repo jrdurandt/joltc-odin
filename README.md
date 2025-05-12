@@ -6,7 +6,7 @@
 
 Build with zig
 
-Binding generated with [runic](https://github.com/Samudevv/runic)
+Binding generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
 
 ## Build
 Requires:
@@ -57,19 +57,10 @@ Samples is a simple application using raylib to render.
 
 This is a bit of a stress test as doing dynamic collisions of thousands of object is difficult. I get to around 3000+ balls before the pit overflows with a stable 60fps.
 
-## Generating
-Requires:
-- git
-- python
-- [zig](https://ziglang.org/) (0.14.0)
-- [odin](https://odin-lang.org/)
-- [ols](https://github.com/DanielGavin/ols)
-
-Run `python3 generate.py`
-This will build the lib, targeting current platform; run the runic generation for the current platform and then run format and run a clean-up.
-Output will be jolt/jolt.odin
+## Bind Gen
+TODO
 
 ## Issues
-Only tested on Linux (Ubuntu 24.04).
+Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
 Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
 Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too, will do so in future, just trying to get a stable, unsable and easily updateable binding running first.
