@@ -6,7 +6,7 @@
 
 Build with zig
 
-Binding generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
+Bindings generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
 
 ## Build
 Requires:
@@ -58,7 +58,16 @@ Samples is a simple application using raylib to render.
 This is a bit of a stress test as doing dynamic collisions of thousands of object is difficult. I get to around 3000+ balls before the pit overflows with a stable 60fps.
 
 ## Bind Gen
-TODO
+
+To generate bindings from the joltc.h
+
+1. Download and build bindgen, see: https://github.com/karl-zylinski/odin-c-bindgen
+2. Run `zig build` at least once to ensure that `zig-out/include/joltc.h` is created
+3. Run the bindgen (note: on Windows it's will be bindgen.exe and on linux/macOS it's bindgen.bin):
+`bindgen.bin bindgen`
+4. Generated bindings: `bindgen/temp/joltc.odin`
+
+Can copy the bindings as required. For this package it's copied to jolt/jolt.odin
 
 ## Issues
 Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
