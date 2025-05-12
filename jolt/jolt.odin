@@ -23,7 +23,9 @@ DEFAULT_PENETRATION_TOLERANCE :: 1.0-4 // float cDefaultPenetrationTolerance = 1
 DEFAULT_CONVEX_RADIUS :: 0.05 // float cDefaultConvexRadius = 0.05f
 CAPSULE_PROJECTION_SLOP :: 0.02 // float cCapsuleProjectionSlop = 0.02f
 MAX_PHYSICS_JOBS :: 2048 // int cMaxPhysicsJobs = 2048
-MAX_PHYSICS_BARRIERS :: 2048 // int cMaxPhysicsBarriers = 8
+MAX_PHYSICS_BARRIERS :: 8 // int cMaxPhysicsBarriers = 8
+// INVALID_COLLISION_GROUP_ID :: ~0
+// INVALID_COLLISION_SUBGROUP_ID :: ~0
 
 BodyID :: u32
 
@@ -39,6 +41,138 @@ CollisionSubGroupID :: u32
 
 CharacterID :: u32
 
+/* Forward declarations */
+BroadPhaseLayerInterface :: struct {}
+
+ObjectVsBroadPhaseLayerFilter :: struct {}
+
+ObjectLayerPairFilter :: struct {}
+
+BroadPhaseLayerFilter :: struct {}
+
+ObjectLayerFilter :: struct {}
+
+BodyFilter :: struct {}
+
+ShapeFilter :: struct {}
+
+SimShapeFilter :: struct {}
+
+PhysicsSystem :: struct {}
+
+PhysicsMaterial :: struct {}
+
+/* ShapeSettings */
+ShapeSettings :: struct {}
+
+ConvexShapeSettings :: struct {}
+
+SphereShapeSettings :: struct {}
+
+BoxShapeSettings :: struct {}
+
+PlaneShapeSettings :: struct {}
+
+TriangleShapeSettings :: struct {}
+
+CapsuleShapeSettings :: struct {}
+
+TaperedCapsuleShapeSettings :: struct {}
+
+CylinderShapeSettings :: struct {}
+
+TaperedCylinderShapeSettings :: struct {}
+
+ConvexHullShapeSettings :: struct {}
+
+CompoundShapeSettings :: struct {}
+
+StaticCompoundShapeSettings :: struct {}
+
+MutableCompoundShapeSettings :: struct {}
+
+MeshShapeSettings :: struct {}
+
+HeightFieldShapeSettings :: struct {}
+
+RotatedTranslatedShapeSettings :: struct {}
+
+ScaledShapeSettings :: struct {}
+
+OffsetCenterOfMassShapeSettings :: struct {}
+
+EmptyShapeSettings :: struct {}
+
+/* Shape */
+Shape :: struct {}
+
+ConvexShape :: struct {}
+
+SphereShape :: struct {}
+
+BoxShape :: struct {}
+
+PlaneShape :: struct {}
+
+CapsuleShape :: struct {}
+
+CylinderShape :: struct {}
+
+TaperedCylinderShape :: struct {}
+
+TriangleShape :: struct {}
+
+TaperedCapsuleShape :: struct {}
+
+ConvexHullShape :: struct {}
+
+CompoundShape :: struct {}
+
+StaticCompoundShape :: struct {}
+
+MutableCompoundShape :: struct {}
+
+MeshShape :: struct {}
+
+HeightFieldShape :: struct {}
+
+DecoratedShape :: struct {}
+
+RotatedTranslatedShape :: struct {}
+
+ScaledShape :: struct {}
+
+OffsetCenterOfMassShape :: struct {}
+
+EmptyShape :: struct {}
+
+BodyCreationSettings :: struct {}
+
+SoftBodyCreationSettings :: struct {}
+
+BodyInterface :: struct {}
+
+BodyLockInterface :: struct {}
+
+BroadPhaseQuery :: struct {}
+
+NarrowPhaseQuery :: struct {}
+
+MotionProperties :: struct {}
+
+Body :: struct {}
+
+ContactListener :: struct {}
+
+ContactManifold :: struct {}
+
+ContactSettings :: struct {}
+
+GroupFilter :: struct {}
+
+GroupFilterTable :: struct {}
+
+/* Enums */
 PhysicsUpdateError :: enum c.int {
 	JPH_PhysicsUpdateError_None = 0,
 	JPH_PhysicsUpdateError_ManifoldCacheFull = 1,
@@ -472,6 +606,12 @@ SupportingFace :: struct {
 	vertices: [32]Vec3,
 }
 
+CollisionGroup :: struct {
+	groupFilter: ^GroupFilter,
+	groupID:     CollisionGroupID,
+	subGroupID:  CollisionSubGroupID,
+}
+
 CastRayResultCallback :: proc "c" (rawptr, ^RayCastResult)
 
 RayCastBodyResultCallback :: proc "c" (rawptr, ^BroadPhaseCastResult)
@@ -495,132 +635,6 @@ CollidePointCollectorCallback :: proc "c" (rawptr, ^CollidePointResult) -> f32
 CollideShapeCollectorCallback :: proc "c" (rawptr, ^CollideShapeResult) -> f32
 
 CastShapeCollectorCallback :: proc "c" (rawptr, ^ShapeCastResult) -> f32
-
-BroadPhaseLayerInterface :: struct {}
-
-ObjectVsBroadPhaseLayerFilter :: struct {}
-
-ObjectLayerPairFilter :: struct {}
-
-BroadPhaseLayerFilter :: struct {}
-
-ObjectLayerFilter :: struct {}
-
-BodyFilter :: struct {}
-
-ShapeFilter :: struct {}
-
-SimShapeFilter :: struct {}
-
-PhysicsSystem :: struct {}
-
-PhysicsMaterial :: struct {}
-
-/* ShapeSettings */
-ShapeSettings :: struct {}
-
-ConvexShapeSettings :: struct {}
-
-SphereShapeSettings :: struct {}
-
-BoxShapeSettings :: struct {}
-
-PlaneShapeSettings :: struct {}
-
-TriangleShapeSettings :: struct {}
-
-CapsuleShapeSettings :: struct {}
-
-TaperedCapsuleShapeSettings :: struct {}
-
-CylinderShapeSettings :: struct {}
-
-TaperedCylinderShapeSettings :: struct {}
-
-ConvexHullShapeSettings :: struct {}
-
-CompoundShapeSettings :: struct {}
-
-StaticCompoundShapeSettings :: struct {}
-
-MutableCompoundShapeSettings :: struct {}
-
-MeshShapeSettings :: struct {}
-
-HeightFieldShapeSettings :: struct {}
-
-RotatedTranslatedShapeSettings :: struct {}
-
-ScaledShapeSettings :: struct {}
-
-OffsetCenterOfMassShapeSettings :: struct {}
-
-EmptyShapeSettings :: struct {}
-
-/* Shape */
-Shape :: struct {}
-
-ConvexShape :: struct {}
-
-SphereShape :: struct {}
-
-BoxShape :: struct {}
-
-PlaneShape :: struct {}
-
-CapsuleShape :: struct {}
-
-CylinderShape :: struct {}
-
-TaperedCylinderShape :: struct {}
-
-TriangleShape :: struct {}
-
-TaperedCapsuleShape :: struct {}
-
-ConvexHullShape :: struct {}
-
-CompoundShape :: struct {}
-
-StaticCompoundShape :: struct {}
-
-MutableCompoundShape :: struct {}
-
-MeshShape :: struct {}
-
-HeightFieldShape :: struct {}
-
-DecoratedShape :: struct {}
-
-RotatedTranslatedShape :: struct {}
-
-ScaledShape :: struct {}
-
-OffsetCenterOfMassShape :: struct {}
-
-EmptyShape :: struct {}
-
-BodyCreationSettings :: struct {}
-
-SoftBodyCreationSettings :: struct {}
-
-BodyInterface :: struct {}
-
-BodyLockInterface :: struct {}
-
-BroadPhaseQuery :: struct {}
-
-NarrowPhaseQuery :: struct {}
-
-MotionProperties :: struct {}
-
-Body :: struct {}
-
-ContactListener :: struct {}
-
-ContactManifold :: struct {}
-
-ContactSettings :: struct {}
 
 CollisionEstimationResultImpulse :: struct {
 	contactImpulse:   f32,
@@ -1195,6 +1209,14 @@ foreign lib {
 	PhysicsMaterial_GetDebugName  :: proc(material: ^PhysicsMaterial) -> cstring ---
 	PhysicsMaterial_GetDebugColor :: proc(material: ^PhysicsMaterial) -> u32 ---
 
+	/* GroupFilter/GroupFilterTable */
+	GroupFilter_Destroy                 :: proc(groupFilter: ^GroupFilter) ---
+	GroupFilter_CanCollide              :: proc(groupFilter: ^GroupFilter, group1: ^CollisionGroup, group2: ^CollisionGroup) -> bool ---
+	GroupFilterTable_Create             :: proc(numSubGroups: u32) -> ^GroupFilterTable ---
+	GroupFilterTable_DisableCollision   :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) ---
+	GroupFilterTable_EnableCollision    :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) ---
+	GroupFilterTable_IsCollisionEnabled :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) -> bool ---
+
 	/* ShapeSettings */
 	ShapeSettings_Destroy     :: proc(settings: ^ShapeSettings) ---
 	ShapeSettings_GetUserData :: proc(settings: ^ShapeSettings) -> u64 ---
@@ -1396,6 +1418,8 @@ foreign lib {
 	BodyCreationSettings_SetUserData                     :: proc(settings: ^BodyCreationSettings, value: u64) ---
 	BodyCreationSettings_GetObjectLayer                  :: proc(settings: ^BodyCreationSettings) -> ObjectLayer ---
 	BodyCreationSettings_SetObjectLayer                  :: proc(settings: ^BodyCreationSettings, value: ObjectLayer) ---
+	BodyCreationSettings_GetCollissionGroup              :: proc(settings: ^BodyCreationSettings, result: ^CollisionGroup) ---
+	BodyCreationSettings_SetCollissionGroup              :: proc(settings: ^BodyCreationSettings, value: ^CollisionGroup) ---
 	BodyCreationSettings_GetMotionType                   :: proc(settings: ^BodyCreationSettings) -> MotionType ---
 	BodyCreationSettings_SetMotionType                   :: proc(settings: ^BodyCreationSettings, value: MotionType) ---
 	BodyCreationSettings_GetAllowedDOFs                  :: proc(settings: ^BodyCreationSettings) -> AllowedDOFs ---
@@ -1595,6 +1619,29 @@ foreign lib {
 	SixDOFConstraint_GetTotalLambdaRotation         :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
 	SixDOFConstraint_GetTotalLambdaMotorTranslation :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
 	SixDOFConstraint_GetTotalLambdaMotorRotation    :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_GetTranslationLimitsMin        :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_GetTranslationLimitsMax        :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_GetRotationLimitsMin           :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_GetRotationLimitsMax           :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_IsFixedAxis                    :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> bool ---
+	SixDOFConstraint_IsFreeAxis                     :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> bool ---
+	SixDOFConstraint_GetLimitsSpringSettings        :: proc(constraint: ^SixDOFConstraint, result: ^SpringSettings, axis: SixDOFConstraintAxis) ---
+	SixDOFConstraint_SetLimitsSpringSettings        :: proc(constraint: ^SixDOFConstraint, settings: ^SpringSettings, axis: SixDOFConstraintAxis) ---
+	SixDOFConstraint_SetMaxFriction                 :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis, inFriction: f32) ---
+	SixDOFConstraint_GetMaxFriction                 :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> f32 ---
+	SixDOFConstraint_GetRotationInConstraintSpace   :: proc(constraint: ^SixDOFConstraint, result: ^Quat) ---
+	SixDOFConstraint_GetMotorSettings               :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis, settings: ^MotorSettings) ---
+	SixDOFConstraint_SetMotorState                  :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis, state: MotorState) ---
+	SixDOFConstraint_GetMotorState                  :: proc(constraint: ^SixDOFConstraint, axis: SixDOFConstraintAxis) -> MotorState ---
+	SixDOFConstraint_SetTargetVelocityCS            :: proc(constraint: ^SixDOFConstraint, inVelocity: ^Vec3) ---
+	SixDOFConstraint_GetTargetVelocityCS            :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_SetTargetAngularVelocityCS     :: proc(constraint: ^SixDOFConstraint, inAngularVelocity: ^Vec3) ---
+	SixDOFConstraint_GetTargetAngularVelocityCS     :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_SetTargetPositionCS            :: proc(constraint: ^SixDOFConstraint, inPosition: ^Vec3) ---
+	SixDOFConstraint_GetTargetPositionCS            :: proc(constraint: ^SixDOFConstraint, result: ^Vec3) ---
+	SixDOFConstraint_SetTargetOrientationCS         :: proc(constraint: ^SixDOFConstraint, inOrientation: ^Quat) ---
+	SixDOFConstraint_GetTargetOrientationCS         :: proc(constraint: ^SixDOFConstraint, result: ^Quat) ---
+	SixDOFConstraint_SetTargetOrientationBS         :: proc(constraint: ^SixDOFConstraint, inOrientation: ^Quat) ---
 
 	/* JPH_GearConstraint */
 	GearConstraintSettings_Init   :: proc(settings: ^GearConstraintSettings) ---
@@ -1640,6 +1687,8 @@ foreign lib {
 	BodyInterface_SetPositionAndRotationWhenChanged :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
 	BodyInterface_GetPositionAndRotation            :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat) ---
 	BodyInterface_SetPositionRotationAndVelocity    :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+	BodyInterface_GetCollissionGroup                :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^CollisionGroup) ---
+	BodyInterface_SetCollissionGroup                :: proc(interface: ^BodyInterface, bodyId: BodyID, group: ^CollisionGroup) ---
 	BodyInterface_GetShape                          :: proc(interface: ^BodyInterface, bodyId: BodyID) -> ^Shape ---
 	BodyInterface_SetShape                          :: proc(interface: ^BodyInterface, bodyId: BodyID, shape: ^Shape, updateMassProperties: bool, activationMode: Activation) ---
 	BodyInterface_NotifyShapeChanged                :: proc(interface: ^BodyInterface, bodyId: BodyID, previousCenterOfMass: ^Vec3, updateMassProperties: bool, activationMode: Activation) ---
@@ -1780,6 +1829,8 @@ foreign lib {
 	Body_SetMotionType                          :: proc(body: ^Body, motionType: MotionType) ---
 	Body_GetBroadPhaseLayer                     :: proc(body: ^Body) -> BroadPhaseLayer ---
 	Body_GetObjectLayer                         :: proc(body: ^Body) -> ObjectLayer ---
+	Body_GetCollissionGroup                     :: proc(body: ^Body, result: ^CollisionGroup) ---
+	Body_SetCollissionGroup                     :: proc(body: ^Body, value: ^CollisionGroup) ---
 	Body_GetAllowSleeping                       :: proc(body: ^Body) -> bool ---
 	Body_SetAllowSleeping                       :: proc(body: ^Body, allowSleeping: bool) ---
 	Body_ResetSleepTimer                        :: proc(body: ^Body) ---

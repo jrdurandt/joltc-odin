@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .joltc_zig = .{
-            .url = "git+https://github.com/jrdurandt/joltc-zig#a87a626fd15b462a6f345c3b37d4bdf3dc87b8f0",
-            .hash = "joltc_zig-0.1.2-Mq-cAc0mAACon0ROwJRoCMqaQ-xNvS3AQ4jKugFetwbP",
+            .url = "git+https://github.com/jrdurandt/joltc-zig#48ff47a52ed9c793c990c2e226350aaf027c5ab8",
+            .hash = "joltc_zig-0.1.3-Mq-cAc0mAAAjULR7ObDjLGnDA43wBFEtL0ZctwuWwnIS",
         },
     },
 

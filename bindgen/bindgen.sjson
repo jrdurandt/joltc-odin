@@ -26,6 +26,8 @@ opaque_types = [
     "ObjectLayerFilter",
     "BodyFilter",
     "ShapeFilter",
+    "GroupFilter",
+    "GroupFilterTable",
     "BodyInterface",
     "BodyLockInterface",
     "BodyLockMultiRead",
