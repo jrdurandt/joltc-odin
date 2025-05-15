@@ -1,15 +1,4 @@
-jolt.bin
-samples.bin
-jolt.exe
-samples.exe
-jolt-odin
-
-*.so
-*.dll
-*.dylib
-*.pdb
-
-.zig-cache/
-zig-out/
+*.exe
+*.bin
 
 bindgen/temp

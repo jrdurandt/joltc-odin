@@ -62,7 +62,7 @@ This is a bit of a stress test as doing dynamic collisions of thousands of objec
 To generate bindings from the joltc.h
 
 1. Download and build bindgen, see: https://github.com/karl-zylinski/odin-c-bindgen
-2. Run `zig build` at least once to ensure that `zig-out/include/joltc.h` is created
+2. Download the joltc.h (https://github.com/amerkoleci/joltc/blob/main/include/joltc.h) and place in project root
 3. Run the bindgen (note: on Windows it's will be bindgen.exe and on linux/macOS it's bindgen.bin):
 `bindgen.bin bindgen`
 4. Generated bindings: `bindgen/temp/joltc.odin`

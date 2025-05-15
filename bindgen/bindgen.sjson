@@ -1,5 +1,5 @@
 inputs = [
-    "../zig-out/include/joltc.h"
+    "../joltc.h"
 ]
 
 output_folder = "temp"
@@ -56,8 +56,8 @@ opaque_types = [
     "OffsetCenterOfMassShape",
     "EmptyShape",
     "BodyCreationSettings",
-    "SoftBodyCreationSettings", 
-    "ShapeSettings",                   
+    "SoftBodyCreationSettings",
+    "ShapeSettings",
     "ConvexShapeSettings",
     "SphereShapeSettings",
     "BoxShapeSettings",
@@ -89,7 +89,7 @@ opaque_types = [
     "ContactListener",
     "BodyActivationListener",
     "SimShapeFilter",
-    "Constraint",    
+    "Constraint",
     "TwoBodyConstraint",
     "FixedConstraint",
     "DistanceConstraint",
