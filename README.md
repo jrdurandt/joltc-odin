@@ -1,6 +1,7 @@
 # jolt-odin
 
-> !WIP: Many breaking changes may be expected! I am constantly learning about Odin, Zig (used for building) and JoltPhysics and trying to improve best I can. Hope these bindings will be useful to others.
+> !WIP: Many breaking changes may be expected!
+> Project structure will change rapidly till I am happy with it. Can always just yoink the generated jolt.odin if you don't care about creating the joltc shared libs yourself.
 
 [Odin](https://odin-lang.org/:) binding for [Jolt Physics](https://github.com/jrouwe/JoltPhysics) using [JoltC](https://github.com/amerkoleci/joltc)
 
@@ -9,20 +10,17 @@ Build with zig
 Bindings generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
 
 ## Build
-Requires:
-- [zig](https://ziglang.org/) (0.14.0)
 
-`zig build` will pull the latest joltc-zig dependency and build for your current platform. It will also copy the relevant shared library to your application root.
+Ensure the joltc dependency is pulled
+`git submodule init`
+`git submodule update`
 
-To build for a different platform:
+Linux: `build_linux.sh`
+Windows: `build_windows.bat` (TODO)
 
-Linux: `zig build -Dtarget=x86_64-linux`
-
-Windows: `zig build -Dtarget=x86_64-windows`
-
-macOS: `zig build -Dtarget=x86_64-macos`
-
-macOS (aarch): `zig build -Dtarget=aarch64-macos`
+Build requirements for joltc:
+Linux: CMake
+Windows: CMake, VS2022
 
 ## Test
 Run tests with: `odin test .`
@@ -62,14 +60,19 @@ This is a bit of a stress test as doing dynamic collisions of thousands of objec
 To generate bindings from the joltc.h
 
 1. Download and build bindgen, see: https://github.com/karl-zylinski/odin-c-bindgen
-2. Download the joltc.h (https://github.com/amerkoleci/joltc/blob/main/include/joltc.h) and place in project root
+2. Ensure that the joltc dependency is pulled (`git submodule init`, `git submodule update`)
 3. Run the bindgen (note: on Windows it's will be bindgen.exe and on linux/macOS it's bindgen.bin):
 `bindgen.bin bindgen`
 4. Generated bindings: `bindgen/temp/joltc.odin`
 
-Can copy the bindings as required. For this package it's copied to jolt/jolt.odin
+Can copy the bindings as required. For this package it's copied to ./jolt.odin
+
+TODO: Script to automate this bindgen
 
 ## Issues
 Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
-Leveraging Zig's cross-compile powers to build for Windows and macOS but NOT tested on those platforms.
-Please submit any issues to platform compatibility and I will look at it. I do have access to Windows and MacOS to test, just too lazy too, will do so in future, just trying to get a stable, unsable and easily updateable binding running first.
+
+## Changes:
+- Removed Zig as build dependency. I was leveriging the cross-compile but testing the Windows generated libraries causes issues. Falling back to manual build per platform to ensure it's correct.
+- Added and then removed pre-built libraries. Same issue, was using Zig to build the libraries but caused issues.
+- Removed runic as bindgen for odin-c-bindgen as it's simpler to use and produces nicer bindings

@@ -7,9 +7,9 @@ import "core:c"
 _ :: c
 
 when (ODIN_OS == .Linux) {
-	foreign import lib "../libjoltc.so"
+	foreign import lib "libjoltc.so"
 } else when (ODIN_OS == .Windows) {
-	foreign import lib "../joltc.dll"
+	foreign import lib "joltc.dll"
 }
 //TODO: macOS support (x86_64 and arm)
 

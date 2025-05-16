@@ -1,4 +1,7 @@
 *.exe
 *.bin
 
+*.so
+*.dll
+
 bindgen/temp
