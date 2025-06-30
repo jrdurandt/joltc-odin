@@ -48,6 +48,8 @@ defer jph.Shutdown()
 ## Sample
 Run sample with `odin run samples -debug`
 
+Or build with (replace .bin with .exe on Windows) `odin build samples -out:samples.bin`
+
 Samples is a simple application using raylib to render.
 - Hold down left mouse button and use WASD to control the camera.
 - Press space to toggle spawning balls.
