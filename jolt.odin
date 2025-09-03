@@ -9,8 +9,9 @@ _ :: c
 when (ODIN_OS == .Linux) {
 	foreign import lib "system:joltc"
 } else when (ODIN_OS == .Windows) {
-	foreign import lib "joltc.lib"
+	foreign import lib "joltc.dll"
 }
+
 
 JOLT_C_H_ :: 1
 
@@ -657,7 +658,7 @@ DrawSettings :: struct {
 	drawShapeColor:                BodyManager_ShapeColor, ///< Coloring scheme to use for shapes
 	drawBoundingBox:               bool, ///< Draw a bounding box per body
 	drawCenterOfMassTransform:     bool, ///< Draw the center of mass for each body
-	drawWorldTransform:            bool, ///< Draw the world transform (which can be different than the center of mass) for each body
+	drawWorldTransform:            bool, ///< Draw the world transform (which may differ from its center of mass) of each body
 	drawVelocity:                  bool, ///< Draw the velocity vector for each body
 	drawMassAndInertia:            bool, ///< Draw the mass and inertia (as the box equivalent) for each body
 	drawSleepStats:                bool, ///< Draw stats regarding the sleeping algorithm of each body
@@ -1758,8 +1759,8 @@ foreign lib {
 	BodyCreationSettings_SetUserData :: proc(settings: ^BodyCreationSettings, value: u64) ---
 	BodyCreationSettings_GetObjectLayer :: proc(settings: ^BodyCreationSettings) -> ObjectLayer ---
 	BodyCreationSettings_SetObjectLayer :: proc(settings: ^BodyCreationSettings, value: ObjectLayer) ---
-	BodyCreationSettings_GetCollissionGroup :: proc(settings: ^BodyCreationSettings, result: ^CollisionGroup) ---
-	BodyCreationSettings_SetCollissionGroup :: proc(settings: ^BodyCreationSettings, value: ^CollisionGroup) ---
+	BodyCreationSettings_GetCollisionGroup :: proc(settings: ^BodyCreationSettings, result: ^CollisionGroup) ---
+	BodyCreationSettings_SetCollisionGroup :: proc(settings: ^BodyCreationSettings, value: ^CollisionGroup) ---
 	BodyCreationSettings_GetMotionType :: proc(settings: ^BodyCreationSettings) -> MotionType ---
 	BodyCreationSettings_SetMotionType :: proc(settings: ^BodyCreationSettings, value: MotionType) ---
 	BodyCreationSettings_GetAllowedDOFs :: proc(settings: ^BodyCreationSettings) -> AllowedDOFs ---
@@ -1991,80 +1992,80 @@ foreign lib {
 	GearConstraint_GetTotalLambda :: proc(constraint: ^GearConstraint) -> f32 ---
 
 	/* BodyInterface */
-	BodyInterface_DestroyBody :: proc(interface: ^BodyInterface, bodyID: BodyID) ---
-	BodyInterface_CreateAndAddBody :: proc(interface: ^BodyInterface, settings: ^BodyCreationSettings, activationMode: Activation) -> BodyID ---
-	BodyInterface_CreateBody :: proc(interface: ^BodyInterface, settings: ^BodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateBodyWithID :: proc(interface: ^BodyInterface, bodyID: BodyID, settings: ^BodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateBodyWithoutID :: proc(interface: ^BodyInterface, settings: ^BodyCreationSettings) -> ^Body ---
-	BodyInterface_DestroyBodyWithoutID :: proc(interface: ^BodyInterface, body: ^Body) ---
-	BodyInterface_AssignBodyID :: proc(interface: ^BodyInterface, body: ^Body) -> bool ---
-	BodyInterface_AssignBodyID2 :: proc(interface: ^BodyInterface, body: ^Body, bodyID: BodyID) -> bool ---
-	BodyInterface_UnassignBodyID :: proc(interface: ^BodyInterface, bodyID: BodyID) -> ^Body ---
-	BodyInterface_CreateSoftBody :: proc(interface: ^BodyInterface, settings: ^SoftBodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateSoftBodyWithID :: proc(interface: ^BodyInterface, bodyID: BodyID, settings: ^SoftBodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateSoftBodyWithoutID :: proc(interface: ^BodyInterface, settings: ^SoftBodyCreationSettings) -> ^Body ---
-	BodyInterface_CreateAndAddSoftBody :: proc(interface: ^BodyInterface, settings: ^SoftBodyCreationSettings, activationMode: Activation) -> BodyID ---
-	BodyInterface_AddBody :: proc(interface: ^BodyInterface, bodyID: BodyID, activationMode: Activation) ---
-	BodyInterface_RemoveBody :: proc(interface: ^BodyInterface, bodyID: BodyID) ---
-	BodyInterface_RemoveAndDestroyBody :: proc(interface: ^BodyInterface, bodyID: BodyID) ---
-	BodyInterface_IsActive :: proc(interface: ^BodyInterface, bodyID: BodyID) -> bool ---
-	BodyInterface_IsAdded :: proc(interface: ^BodyInterface, bodyID: BodyID) -> bool ---
-	BodyInterface_GetBodyType :: proc(interface: ^BodyInterface, bodyID: BodyID) -> BodyType ---
-	BodyInterface_SetLinearVelocity :: proc(interface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
-	BodyInterface_GetLinearVelocity :: proc(interface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
-	BodyInterface_GetCenterOfMassPosition :: proc(interface: ^BodyInterface, bodyID: BodyID, position: ^RVec3) ---
-	BodyInterface_GetMotionType :: proc(interface: ^BodyInterface, bodyID: BodyID) -> MotionType ---
-	BodyInterface_SetMotionType :: proc(interface: ^BodyInterface, bodyID: BodyID, motionType: MotionType, activationMode: Activation) ---
-	BodyInterface_GetRestitution :: proc(interface: ^BodyInterface, bodyID: BodyID) -> f32 ---
-	BodyInterface_SetRestitution :: proc(interface: ^BodyInterface, bodyID: BodyID, restitution: f32) ---
-	BodyInterface_GetFriction :: proc(interface: ^BodyInterface, bodyID: BodyID) -> f32 ---
-	BodyInterface_SetFriction :: proc(interface: ^BodyInterface, bodyID: BodyID, friction: f32) ---
-	BodyInterface_SetPosition :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, activationMode: Activation) ---
-	BodyInterface_GetPosition :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^RVec3) ---
-	BodyInterface_SetRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, rotation: ^Quat, activationMode: Activation) ---
-	BodyInterface_GetRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^Quat) ---
-	BodyInterface_SetPositionAndRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
-	BodyInterface_SetPositionAndRotationWhenChanged :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
-	BodyInterface_GetPositionAndRotation :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat) ---
-	BodyInterface_SetPositionRotationAndVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
-	BodyInterface_GetCollissionGroup :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^CollisionGroup) ---
-	BodyInterface_SetCollissionGroup :: proc(interface: ^BodyInterface, bodyId: BodyID, group: ^CollisionGroup) ---
-	BodyInterface_GetShape :: proc(interface: ^BodyInterface, bodyId: BodyID) -> ^Shape ---
-	BodyInterface_SetShape :: proc(interface: ^BodyInterface, bodyId: BodyID, shape: ^Shape, updateMassProperties: bool, activationMode: Activation) ---
-	BodyInterface_NotifyShapeChanged :: proc(interface: ^BodyInterface, bodyId: BodyID, previousCenterOfMass: ^Vec3, updateMassProperties: bool, activationMode: Activation) ---
-	BodyInterface_ActivateBody :: proc(interface: ^BodyInterface, bodyId: BodyID) ---
-	BodyInterface_DeactivateBody :: proc(interface: ^BodyInterface, bodyId: BodyID) ---
-	BodyInterface_GetObjectLayer :: proc(interface: ^BodyInterface, bodyId: BodyID) -> ObjectLayer ---
-	BodyInterface_SetObjectLayer :: proc(interface: ^BodyInterface, bodyId: BodyID, layer: ObjectLayer) ---
-	BodyInterface_GetWorldTransform :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^RMatrix4x4) ---
-	BodyInterface_GetCenterOfMassTransform :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^RMatrix4x4) ---
-	BodyInterface_MoveKinematic :: proc(interface: ^BodyInterface, bodyId: BodyID, targetPosition: ^RVec3, targetRotation: ^Quat, deltaTime: f32) ---
-	BodyInterface_ApplyBuoyancyImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, surfacePosition: ^RVec3, surfaceNormal: ^Vec3, buoyancy: f32, linearDrag: f32, angularDrag: f32, fluidVelocity: ^Vec3, gravity: ^Vec3, deltaTime: f32) -> bool ---
-	BodyInterface_SetLinearAndAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
-	BodyInterface_GetLinearAndAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
-	BodyInterface_AddLinearVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3) ---
-	BodyInterface_AddLinearAndAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
-	BodyInterface_SetAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, angularVelocity: ^Vec3) ---
-	BodyInterface_GetAngularVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, angularVelocity: ^Vec3) ---
-	BodyInterface_GetPointVelocity :: proc(interface: ^BodyInterface, bodyId: BodyID, point: ^RVec3, velocity: ^Vec3) ---
-	BodyInterface_AddForce :: proc(interface: ^BodyInterface, bodyId: BodyID, force: ^Vec3) ---
-	BodyInterface_AddForce2 :: proc(interface: ^BodyInterface, bodyId: BodyID, force: ^Vec3, point: ^RVec3) ---
-	BodyInterface_AddTorque :: proc(interface: ^BodyInterface, bodyId: BodyID, torque: ^Vec3) ---
-	BodyInterface_AddForceAndTorque :: proc(interface: ^BodyInterface, bodyId: BodyID, force: ^Vec3, torque: ^Vec3) ---
-	BodyInterface_AddImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, impulse: ^Vec3) ---
-	BodyInterface_AddImpulse2 :: proc(interface: ^BodyInterface, bodyId: BodyID, impulse: ^Vec3, point: ^RVec3) ---
-	BodyInterface_AddAngularImpulse :: proc(interface: ^BodyInterface, bodyId: BodyID, angularImpulse: ^Vec3) ---
-	BodyInterface_SetMotionQuality :: proc(interface: ^BodyInterface, bodyId: BodyID, quality: MotionQuality) ---
-	BodyInterface_GetMotionQuality :: proc(interface: ^BodyInterface, bodyId: BodyID) -> MotionQuality ---
-	BodyInterface_GetInverseInertia :: proc(interface: ^BodyInterface, bodyId: BodyID, result: ^Matrix4x4) ---
-	BodyInterface_SetGravityFactor :: proc(interface: ^BodyInterface, bodyId: BodyID, value: f32) ---
-	BodyInterface_GetGravityFactor :: proc(interface: ^BodyInterface, bodyId: BodyID) -> f32 ---
-	BodyInterface_SetUseManifoldReduction :: proc(interface: ^BodyInterface, bodyId: BodyID, value: bool) ---
-	BodyInterface_GetUseManifoldReduction :: proc(interface: ^BodyInterface, bodyId: BodyID) -> bool ---
-	BodyInterface_SetUserData :: proc(interface: ^BodyInterface, bodyId: BodyID, inUserData: u64) ---
-	BodyInterface_GetUserData :: proc(interface: ^BodyInterface, bodyId: BodyID) -> u64 ---
-	BodyInterface_GetMaterial :: proc(interface: ^BodyInterface, bodyId: BodyID, subShapeID: SubShapeID) -> ^PhysicsMaterial ---
-	BodyInterface_InvalidateContactCache :: proc(interface: ^BodyInterface, bodyId: BodyID) ---
+	BodyInterface_DestroyBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) ---
+	BodyInterface_CreateAndAddBody :: proc(bodyInterface: ^BodyInterface, settings: ^BodyCreationSettings, activationMode: Activation) -> BodyID ---
+	BodyInterface_CreateBody :: proc(bodyInterface: ^BodyInterface, settings: ^BodyCreationSettings) -> ^Body ---
+	BodyInterface_CreateBodyWithID :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, settings: ^BodyCreationSettings) -> ^Body ---
+	BodyInterface_CreateBodyWithoutID :: proc(bodyInterface: ^BodyInterface, settings: ^BodyCreationSettings) -> ^Body ---
+	BodyInterface_DestroyBodyWithoutID :: proc(bodyInterface: ^BodyInterface, body: ^Body) ---
+	BodyInterface_AssignBodyID :: proc(bodyInterface: ^BodyInterface, body: ^Body) -> bool ---
+	BodyInterface_AssignBodyID2 :: proc(bodyInterface: ^BodyInterface, body: ^Body, bodyID: BodyID) -> bool ---
+	BodyInterface_UnassignBodyID :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> ^Body ---
+	BodyInterface_CreateSoftBody :: proc(bodyInterface: ^BodyInterface, settings: ^SoftBodyCreationSettings) -> ^Body ---
+	BodyInterface_CreateSoftBodyWithID :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, settings: ^SoftBodyCreationSettings) -> ^Body ---
+	BodyInterface_CreateSoftBodyWithoutID :: proc(bodyInterface: ^BodyInterface, settings: ^SoftBodyCreationSettings) -> ^Body ---
+	BodyInterface_CreateAndAddSoftBody :: proc(bodyInterface: ^BodyInterface, settings: ^SoftBodyCreationSettings, activationMode: Activation) -> BodyID ---
+	BodyInterface_AddBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, activationMode: Activation) ---
+	BodyInterface_RemoveBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) ---
+	BodyInterface_RemoveAndDestroyBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) ---
+	BodyInterface_IsActive :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> bool ---
+	BodyInterface_IsAdded :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> bool ---
+	BodyInterface_GetBodyType :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> BodyType ---
+	BodyInterface_SetLinearVelocity :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
+	BodyInterface_GetLinearVelocity :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
+	BodyInterface_GetCenterOfMassPosition :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, position: ^RVec3) ---
+	BodyInterface_GetMotionType :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> MotionType ---
+	BodyInterface_SetMotionType :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, motionType: MotionType, activationMode: Activation) ---
+	BodyInterface_GetRestitution :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> f32 ---
+	BodyInterface_SetRestitution :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, restitution: f32) ---
+	BodyInterface_GetFriction :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> f32 ---
+	BodyInterface_SetFriction :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, friction: f32) ---
+	BodyInterface_SetPosition :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, activationMode: Activation) ---
+	BodyInterface_GetPosition :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^RVec3) ---
+	BodyInterface_SetRotation :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, rotation: ^Quat, activationMode: Activation) ---
+	BodyInterface_GetRotation :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^Quat) ---
+	BodyInterface_SetPositionAndRotation :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
+	BodyInterface_SetPositionAndRotationWhenChanged :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, activationMode: Activation) ---
+	BodyInterface_GetPositionAndRotation :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat) ---
+	BodyInterface_SetPositionRotationAndVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, position: ^RVec3, rotation: ^Quat, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+	BodyInterface_GetCollisionGroup :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^CollisionGroup) ---
+	BodyInterface_SetCollisionGroup :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, group: ^CollisionGroup) ---
+	BodyInterface_GetShape :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> ^Shape ---
+	BodyInterface_SetShape :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, shape: ^Shape, updateMassProperties: bool, activationMode: Activation) ---
+	BodyInterface_NotifyShapeChanged :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, previousCenterOfMass: ^Vec3, updateMassProperties: bool, activationMode: Activation) ---
+	BodyInterface_ActivateBody :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) ---
+	BodyInterface_DeactivateBody :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) ---
+	BodyInterface_GetObjectLayer :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> ObjectLayer ---
+	BodyInterface_SetObjectLayer :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, layer: ObjectLayer) ---
+	BodyInterface_GetWorldTransform :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^RMatrix4x4) ---
+	BodyInterface_GetCenterOfMassTransform :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^RMatrix4x4) ---
+	BodyInterface_MoveKinematic :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, targetPosition: ^RVec3, targetRotation: ^Quat, deltaTime: f32) ---
+	BodyInterface_ApplyBuoyancyImpulse :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, surfacePosition: ^RVec3, surfaceNormal: ^Vec3, buoyancy: f32, linearDrag: f32, angularDrag: f32, fluidVelocity: ^Vec3, gravity: ^Vec3, deltaTime: f32) -> bool ---
+	BodyInterface_SetLinearAndAngularVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+	BodyInterface_GetLinearAndAngularVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+	BodyInterface_AddLinearVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3) ---
+	BodyInterface_AddLinearAndAngularVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, linearVelocity: ^Vec3, angularVelocity: ^Vec3) ---
+	BodyInterface_SetAngularVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, angularVelocity: ^Vec3) ---
+	BodyInterface_GetAngularVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, angularVelocity: ^Vec3) ---
+	BodyInterface_GetPointVelocity :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, point: ^RVec3, velocity: ^Vec3) ---
+	BodyInterface_AddForce :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, force: ^Vec3) ---
+	BodyInterface_AddForce2 :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, force: ^Vec3, point: ^RVec3) ---
+	BodyInterface_AddTorque :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, torque: ^Vec3) ---
+	BodyInterface_AddForceAndTorque :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, force: ^Vec3, torque: ^Vec3) ---
+	BodyInterface_AddImpulse :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, impulse: ^Vec3) ---
+	BodyInterface_AddImpulse2 :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, impulse: ^Vec3, point: ^RVec3) ---
+	BodyInterface_AddAngularImpulse :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, angularImpulse: ^Vec3) ---
+	BodyInterface_SetMotionQuality :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, quality: MotionQuality) ---
+	BodyInterface_GetMotionQuality :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> MotionQuality ---
+	BodyInterface_GetInverseInertia :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^Matrix4x4) ---
+	BodyInterface_SetGravityFactor :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, value: f32) ---
+	BodyInterface_GetGravityFactor :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> f32 ---
+	BodyInterface_SetUseManifoldReduction :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, value: bool) ---
+	BodyInterface_GetUseManifoldReduction :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> bool ---
+	BodyInterface_SetUserData :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, inUserData: u64) ---
+	BodyInterface_GetUserData :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> u64 ---
+	BodyInterface_GetMaterial :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, subShapeID: SubShapeID) -> ^PhysicsMaterial ---
+	BodyInterface_InvalidateContactCache :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) ---
 
 	//--------------------------------------------------------------------------------------------------
 	// JPH_BodyLockInterface
@@ -2169,8 +2170,8 @@ foreign lib {
 	Body_SetMotionType :: proc(body: ^Body, motionType: MotionType) ---
 	Body_GetBroadPhaseLayer :: proc(body: ^Body) -> BroadPhaseLayer ---
 	Body_GetObjectLayer :: proc(body: ^Body) -> ObjectLayer ---
-	Body_GetCollissionGroup :: proc(body: ^Body, result: ^CollisionGroup) ---
-	Body_SetCollissionGroup :: proc(body: ^Body, value: ^CollisionGroup) ---
+	Body_GetCollisionGroup :: proc(body: ^Body, result: ^CollisionGroup) ---
+	Body_SetCollisionGroup :: proc(body: ^Body, value: ^CollisionGroup) ---
 	Body_GetAllowSleeping :: proc(body: ^Body) -> bool ---
 	Body_SetAllowSleeping :: proc(body: ^Body, allowSleeping: bool) ---
 	Body_ResetSleepTimer :: proc(body: ^Body) ---
@@ -2550,7 +2551,7 @@ foreign lib {
 	VehicleTransmissionSettings_GetClutchStrength :: proc(settings: ^VehicleTransmissionSettings) -> f32 ---
 	VehicleTransmissionSettings_SetClutchStrength :: proc(settings: ^VehicleTransmissionSettings, value: f32) ---
 
-	/* VehicleColliionTester */
+	/* VehicleCollisionTester */
 	VehicleCollisionTester_Destroy :: proc(tester: ^VehicleCollisionTester) ---
 	VehicleCollisionTester_GetObjectLayer :: proc(tester: ^VehicleCollisionTester) -> ObjectLayer ---
 	VehicleCollisionTester_SetObjectLayer :: proc(tester: ^VehicleCollisionTester, value: ObjectLayer) ---
