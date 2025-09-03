@@ -1,7 +1,6 @@
 # jolt-odin
 
-> !WIP: Many breaking changes may be expected!
-> Project structure will change rapidly till I am happy with it. Can always just yoink the generated jolt.odin if you don't care about creating the joltc shared libs yourself.
+> Archived: Moved to https://gitlab.com/jrdurandt/jolt-odin
 
 [Odin](https://odin-lang.org/:) binding for [Jolt Physics](https://github.com/jrouwe/JoltPhysics) using [JoltC](https://github.com/amerkoleci/joltc)
 
