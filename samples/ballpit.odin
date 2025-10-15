@@ -48,16 +48,12 @@ build_wall :: proc(
 		cast(^jph.Shape)wall_shape,
 		&position,
 		nil,
-		.JPH_MotionType_Static,
+		.Static,
 		OBJECT_LAYER_NON_MOVING,
 	)
 	defer jph.BodyCreationSettings_Destroy(floor_settings)
 
-	return jph.BodyInterface_CreateAndAddBody(
-		body_interface,
-		floor_settings,
-		.JPH_Activation_DontActivate,
-	)
+	return jph.BodyInterface_CreateAndAddBody(body_interface, floor_settings, .DontActivate)
 }
 
 main :: proc() {
@@ -176,7 +172,7 @@ main :: proc() {
 			cast(^jph.Shape)floor_shape,
 			&{0, 0, 0},
 			nil,
-			.JPH_MotionType_Static,
+			.Static,
 			OBJECT_LAYER_NON_MOVING,
 		)
 		defer jph.BodyCreationSettings_Destroy(floor_settings)
@@ -187,7 +183,7 @@ main :: proc() {
 		floor_id = jph.BodyInterface_CreateAndAddBody(
 			body_interface,
 			floor_settings,
-			.JPH_Activation_DontActivate,
+			.DontActivate,
 		)
 	}
 	defer jph.BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
@@ -224,7 +220,7 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		delta_time := rl.GetFrameTime()
 		err := jph.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
-		assert(err == .JPH_PhysicsUpdateError_None)
+		assert(err == .None)
 
 		if rl.IsMouseButtonDown(.RIGHT) {
 			rl.UpdateCamera(&camera, .FREE)
@@ -264,7 +260,7 @@ main :: proc() {
 				cast(^jph.Shape)sphere_shape,
 				&ball_pos,
 				nil,
-				.JPH_MotionType_Dynamic,
+				.Dynamic,
 				OBJECT_LAYER_MOVING,
 			)
 			defer jph.BodyCreationSettings_Destroy(sphere_settings)
@@ -272,7 +268,7 @@ main :: proc() {
 			ball_id := jph.BodyInterface_CreateAndAddBody(
 				body_interface,
 				sphere_settings,
-				.JPH_Activation_Activate,
+				.Activate,
 			)
 
 			balls[ball_id] = Ball {
