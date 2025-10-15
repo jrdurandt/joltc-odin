@@ -10,7 +10,6 @@ from pathlib import Path
 
 
 def extract_enum_prefix(enum_name, value_name):
-    """Extract the prefix pattern from enum value name based on enum name."""
     # Convert enum name to expected prefix pattern
     # e.g., BodyType -> JPH_BodyType_
     expected_prefix = f"JPH_{enum_name}_"
@@ -28,7 +27,6 @@ def extract_enum_prefix(enum_name, value_name):
 
 
 def clean_enum_value(enum_name, value_name):
-    """Remove prefix and return cleaned enum value name."""
     # Skip values that start with underscore
     if value_name.startswith("_"):
         return None
@@ -42,8 +40,6 @@ def clean_enum_value(enum_name, value_name):
 
 
 def process_odin_file(input_file, output_file=None):
-    """Process the Odin file and clean up enum values."""
-
     if output_file is None:
         output_file = input_file
 
@@ -119,7 +115,6 @@ def process_odin_file(input_file, output_file=None):
 
 
 def main():
-    """Main function to handle command line arguments."""
     if len(sys.argv) < 2:
         print("Usage: python clean_enums.py <input_file> [output_file]")
         print("Example: python clean_enums.py jolt.odin")

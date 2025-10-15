@@ -16,27 +16,27 @@ args_parser = argparse.ArgumentParser(
     epilog="Credits: Jolt Physics by Jorrit Rouwe, JoltC by Amer Koleci, Odin C Bindgen by Karl Zylinski",
 )
 
-_ = args_parser.add_argument(
+args_parser.add_argument(
     "-update-joltc",
     action="store_true",
     help="Download the latest JoltC source code from GitHub (overwrites existing JoltC directory)",
 )
-_ = args_parser.add_argument(
+args_parser.add_argument(
     "-compile-joltc",
     action="store_true",
     help="Compile JoltC library for the current platform using CMake (produces .so/.dll/.dylib)",
 )
-_ = args_parser.add_argument(
+args_parser.add_argument(
     "-update-bindgen",
     action="store_true",
     help="Download the latest Odin C Bindgen tool from GitHub (required for generating Odin bindings)",
 )
-_ = args_parser.add_argument(
+args_parser.add_argument(
     "-compile-bindgen",
     action="store_true",
     help="Compile the Odin C Bindgen executable from source. Requires: Odin compiler and libclang development libraries",
 )
-_ = args_parser.add_argument(
+args_parser.add_argument(
     "-gen-bindings",
     action="store_true",
     help="Generate Odin language bindings for JoltC (produces jolt.odin file). Requires compiled bindgen tool.",
@@ -110,11 +110,11 @@ def update_joltc():
     temp_zip = "joltc-temp.zip"
     temp_folder = "joltc-temp"
     print("📥 Downloading JoltC source code from GitHub...")
-    _ = urllib.request.urlretrieve(JOLTC_ZIP_URL, temp_zip)
+    urllib.request.urlretrieve(JOLTC_ZIP_URL, temp_zip)
 
     with zipfile.ZipFile(temp_zip) as zip_file:
         zip_file.extractall(temp_folder)
-        _ = shutil.copytree(temp_folder + "/joltc-main", JOLTC_PATH)
+        shutil.copytree(temp_folder + "/joltc-main", JOLTC_PATH)
 
     os.remove(temp_zip)
     shutil.rmtree(temp_folder)
@@ -135,13 +135,13 @@ def compile_joltc():
     if IS_LINUX:
         cmd_execute('cmake -S .. -G "Unix Makefiles" %s' % flags)
         cmd_execute("make")
-        _ = shutil.copy("lib/libjoltc.so", owd)
+        shutil.copy("lib/libjoltc.so", owd)
         print("✅ Successfully built libjoltc.so")
     elif IS_WINDOWS:
         cmd_execute('cmake -S .. -G "Visual Studio 17 2022" -A x64 %s' % flags)
         cmd_execute("cmake --build . --config %s" % BUILD_CONFIG_TYPE)
-        _ = shutil.copy("bin/%s/joltc.dll" % BUILD_CONFIG_TYPE, owd)
-        _ = shutil.copy("lib/%s/joltc.lib" % BUILD_CONFIG_TYPE, owd)
+        shutil.copy("bin/%s/joltc.dll" % BUILD_CONFIG_TYPE, owd)
+        shutil.copy("lib/%s/joltc.lib" % BUILD_CONFIG_TYPE, owd)
         print("✅ Successfully built joltc.dll and joltc.lib")
     elif IS_OSX:
         print("❌ ERROR: macOS JoltC build is not yet configured in this script")
@@ -157,11 +157,11 @@ def update_bindgen():
     temp_zip = "bindgen-temp.zip"
     temp_folder = "bindgen-temp"
     print("📥 Downloading Odin C Bindgen tool from GitHub...")
-    _ = urllib.request.urlretrieve(BINDGEN_ZIP_URL, temp_zip)
+    urllib.request.urlretrieve(BINDGEN_ZIP_URL, temp_zip)
 
     with zipfile.ZipFile(temp_zip) as zip_file:
         zip_file.extractall(temp_folder)
-        _ = shutil.copytree(temp_folder + "/odin-c-bindgen-1.0", BINDGEN_PATH)
+        shutil.copytree(temp_folder + "/odin-c-bindgen-1.0", BINDGEN_PATH)
 
     os.remove(temp_zip)
     shutil.rmtree(temp_folder)
@@ -199,7 +199,7 @@ def gen_bindings():
 
     print("🧹 Cleaning enum prefixes in jolt.odin...")
 
-    _ = subprocess.run(
+    subprocess.run(
         [sys.executable, "./bindgen/clean_enums.py", "./bindgen/temp/joltc.odin"],
         capture_output=True,
         text=False,
@@ -208,7 +208,7 @@ def gen_bindings():
 
     print("✅ Enum cleaning completed successfully!")
 
-    _ = shutil.copy("./bindgen/temp/joltc.odin", "jolt.odin")
+    shutil.copy("./bindgen/temp/joltc.odin", "jolt.odin")
     print("✅ Successfully generated jolt.odin bindings file")
 
 
