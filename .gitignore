@@ -3,5 +3,8 @@
 
 *.so
 *.dll
+*.lib
 
+joltc
+odin-c-bindgen
 bindgen/temp
