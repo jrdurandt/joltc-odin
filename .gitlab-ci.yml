@@ -45,6 +45,6 @@ generate-bindings:
   # Add some helpful output
   after_script:
     - echo "📊 Pipeline summary:"
-    - echo "Branch: $CI_COMMIT_BRANCH"
-    - echo "Commit: $CI_COMMIT_SHORT_SHA"
+    - echo "Branch - $CI_COMMIT_BRANCH"
+    - echo "Commit - $CI_COMMIT_SHORT_SHA"
     - if [ -f "jolt.odin" ]; then echo "✅ jolt.odin generated successfully"; else echo "❌ jolt.odin not found"; fi
