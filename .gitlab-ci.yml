@@ -19,7 +19,7 @@ generate-bindings:
     - apt-get install -y -qq git cmake build-essential wget unzip
     # Install Odin compiler (required for bindgen compilation)
     - wget -O odin-linux-amd64.tar.gz https://github.com/odin-lang/Odin/releases/latest/download/odin-linux-amd64-dev-2025-10-05.tar.gz
-    - tar -xzf odin-linux-amd64-dev-2025-10-05.tar.gz
+    - tar -xzf odin-linux-amd64.tar.gz
     - cp -r odin-linux-amd64-nightly+2025-10-05/* /usr/local/bin/
     # Verify installations
     - python --version
