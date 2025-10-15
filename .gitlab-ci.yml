@@ -1,0 +1,50 @@
+# GitLab CI Pipeline for Jolt Odin Bindings
+# Runs binding generation when pushing to master branch
+
+stages:
+  - generate-bindings
+
+# Job to generate Odin bindings from JoltC
+generate-bindings:
+  stage: generate-bindings
+  image: python:3.9-slim
+
+  # Only run on master branch
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+
+  # Install system dependencies
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq git cmake build-essential wget unzip
+    # Install Odin compiler (required for bindgen compilation)
+    - wget -O odin-linux-amd64.tar.gz https://github.com/odin-lang/Odin/releases/latest/download/odin-linux-amd64-dev-2025-10-05.tar.gz
+    - tar -xzf odin-linux-amd64-dev-2025-10-05.tar.gz
+    - cp -r odin-linux-amd64-nightly+2025-10-05/* /usr/local/bin/
+    # Verify installations
+    - python --version
+    - cmake --version
+    - odin version
+
+  # Run the binding generation
+  script:
+    - echo "🚀 Starting Jolt Odin binding generation..."
+    - python build.py -gen-bindings
+    - echo "✅ Binding generation completed successfully!"
+
+  # Cache dependencies to speed up future builds
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - joltc/
+      - odin-c-bindgen/
+
+  # Allow job to run for up to 30 minutes (binding generation can take time)
+  timeout: 30m
+
+  # Add some helpful output
+  after_script:
+    - echo "📊 Pipeline summary:"
+    - echo "Branch: $CI_COMMIT_BRANCH"
+    - echo "Commit: $CI_COMMIT_SHORT_SHA"
+    - if [ -f "jolt.odin" ]; then echo "✅ jolt.odin generated successfully"; else echo "❌ jolt.odin not found"; fi

@@ -17,29 +17,27 @@ args_parser = argparse.ArgumentParser(
 )
 
 args_parser.add_argument(
-    "-update-joltc",
+    "-build-lib",
     action="store_true",
-    help="Download the latest JoltC source code from GitHub (overwrites existing JoltC directory)",
+    help="Build the Jolt Physics library for the current platform using CMake (produces .so/.dll/.dylib)",
 )
-args_parser.add_argument(
-    "-compile-joltc",
-    action="store_true",
-    help="Compile JoltC library for the current platform using CMake (produces .so/.dll/.dylib)",
-)
-args_parser.add_argument(
-    "-update-bindgen",
-    action="store_true",
-    help="Download the latest Odin C Bindgen tool from GitHub (required for generating Odin bindings)",
-)
-args_parser.add_argument(
-    "-compile-bindgen",
-    action="store_true",
-    help="Compile the Odin C Bindgen executable from source. Requires: Odin compiler and libclang development libraries",
-)
+
 args_parser.add_argument(
     "-gen-bindings",
     action="store_true",
     help="Generate Odin language bindings for JoltC (produces jolt.odin file). Requires compiled bindgen tool.",
+)
+
+args_parser.add_argument(
+    "-update-joltc",
+    action="store_true",
+    help="Download the latest JoltC source code from GitHub (overwrites existing JoltC directory)",
+)
+
+args_parser.add_argument(
+    "-update-bindgen",
+    action="store_true",
+    help="Download the latest Odin C Bindgen tool from GitHub (required for generating Odin bindings)",
 )
 
 args = args_parser.parse_args()
@@ -71,12 +69,15 @@ def main():
     if do_update_joltc:
         update_joltc()
 
-    do_compile_joltc = do_update_joltc or args.compile_joltc
+    do_compile_joltc = args.build_lib
+    do_gen_bindings = args.gen_bindings
+
+    if not do_compile_joltc and not do_gen_bindings:
+        print("Nothing to do. Either specify -build-lib or -gen-bindings")
+        exit(1)
 
     if do_compile_joltc:
         compile_joltc()
-
-    do_gen_bindings = args.gen_bindings
 
     if do_gen_bindings:
         do_update_bindgen = args.update_bindgen
@@ -85,12 +86,7 @@ def main():
             do_update_bindgen = True
 
         if do_update_bindgen:
-            # update_bindgen()
-            pass
-
-        do_compile_bindgen = do_update_bindgen or args.compile_bindgen
-
-        if do_compile_bindgen:
+            update_bindgen()
             compile_bindgen()
 
         gen_bindings()

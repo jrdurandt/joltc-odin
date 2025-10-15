@@ -1422,6 +1422,7 @@ foreign lib {
 	PhysicsSystem_RemoveStepListener :: proc(system: ^PhysicsSystem, listener: ^PhysicsStepListener) ---
 	PhysicsSystem_GetBodies :: proc(system: ^PhysicsSystem, ids: ^BodyID, count: u32) ---
 	PhysicsSystem_GetConstraints :: proc(system: ^PhysicsSystem, constraints: ^^Constraint, count: u32) ---
+	PhysicsSystem_ActivateBodiesInAABox :: proc(system: ^PhysicsSystem, box: ^AABox, layer: ObjectLayer) ---
 	PhysicsSystem_DrawBodies :: proc(system: ^PhysicsSystem, settings: ^DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter) ---
 	PhysicsSystem_DrawConstraints :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
 	PhysicsSystem_DrawConstraintLimits :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
@@ -1978,7 +1979,6 @@ foreign lib {
 	BodyInterface_AddBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, activationMode: Activation) ---
 	BodyInterface_RemoveBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) ---
 	BodyInterface_RemoveAndDestroyBody :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) ---
-	BodyInterface_IsActive :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> bool ---
 	BodyInterface_IsAdded :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> bool ---
 	BodyInterface_GetBodyType :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> BodyType ---
 	BodyInterface_SetLinearVelocity :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID, velocity: ^Vec3) ---
@@ -2004,7 +2004,12 @@ foreign lib {
 	BodyInterface_SetShape :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, shape: ^Shape, updateMassProperties: bool, activationMode: Activation) ---
 	BodyInterface_NotifyShapeChanged :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, previousCenterOfMass: ^Vec3, updateMassProperties: bool, activationMode: Activation) ---
 	BodyInterface_ActivateBody :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) ---
+	BodyInterface_ActivateBodies :: proc(bodyInterface: ^BodyInterface, bodyIDs: ^BodyID, count: u32) ---
+	BodyInterface_ActivateBodiesInAABox :: proc(bodyInterface: ^BodyInterface, box: ^AABox, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) ---
 	BodyInterface_DeactivateBody :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) ---
+	BodyInterface_DeactivateBodies :: proc(bodyInterface: ^BodyInterface, bodyIDs: ^BodyID, count: u32) ---
+	BodyInterface_IsActive :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) -> bool ---
+	BodyInterface_ResetSleepTimer :: proc(bodyInterface: ^BodyInterface, bodyID: BodyID) ---
 	BodyInterface_GetObjectLayer :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID) -> ObjectLayer ---
 	BodyInterface_SetObjectLayer :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, layer: ObjectLayer) ---
 	BodyInterface_GetWorldTransform :: proc(bodyInterface: ^BodyInterface, bodyId: BodyID, result: ^RMat4) ---
