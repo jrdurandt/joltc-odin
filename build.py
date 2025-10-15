@@ -106,14 +106,14 @@ def compile_joltc():
 
     os.chdir("build")
     if IS_LINUX:
-        cmd_execute("cmake .. -DJPH_SAMPLES=OFF %s" % flags)
+        cmd_execute("cmake -S .. -G \"Unix Makefiles\" %s" % flags)
         cmd_execute("make")
         shutil.copy("lib/libjoltc.so", owd)
     elif IS_WINDOWS:
-        cmd_execute("cmake -S \"./../\" -B \"vs2022_x64\" -G \"Visual Studio 17 2022\" -A x64 %s" % flags)
-        cmd_execute("cmake --build vs2022_x64 --config %s" % BUILD_CONFIG_TYPE)
-        shutil.copy("vs2022_x64/bin/%s/joltc.dll" % BUILD_CONFIG_TYPE, owd)
-        shutil.copy("vs2022_x64/lib/%s/joltc.lib" % BUILD_CONFIG_TYPE, owd)
+        cmd_execute("cmake -S .. -G \"Visual Studio 17 2022\" -A x64 %s" % flags)
+        cmd_execute("cmake --build . --config %s" % BUILD_CONFIG_TYPE)
+        shutil.copy("bin/%s/joltc.dll" % BUILD_CONFIG_TYPE, owd)
+        shutil.copy("lib/%s/joltc.lib" % BUILD_CONFIG_TYPE, owd)
     elif IS_OSX:
         print("OSX JoltC build not configured")
         exit(1)
