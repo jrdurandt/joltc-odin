@@ -13,12 +13,18 @@ package samples
 
 import "core:fmt"
 import "core:log"
+import "core:math"
 import "core:math/rand"
 import "core:mem"
 import "core:strings"
+import "core:thread"
+import "core:time"
 
 import jph ".."
 import rl "vendor:raylib"
+
+PHYSICS_UPDATES_PER_SECOND :: 1.0 / 50.0
+PHYSICS_COLLISION_SUB_STEPS :: 1
 
 OBJECT_LAYER_NON_MOVING: jph.ObjectLayer = 0
 OBJECT_LAYER_MOVING: jph.ObjectLayer = 1
@@ -33,28 +39,14 @@ Ball :: struct {
 	selected: bool,
 }
 
-@(private)
-build_wall :: proc(
-	body_interface: ^jph.BodyInterface,
-	size: [3]f32,
-	position: [3]f32,
-) -> jph.BodyID {
-	size := size
-	position := position
-
-	wall_shape := jph.BoxShape_Create(&size, jph.DEFAULT_CONVEX_RADIUS)
-
-	floor_settings := jph.BodyCreationSettings_Create3(
-		cast(^jph.Shape)wall_shape,
-		&position,
-		nil,
-		.Static,
-		OBJECT_LAYER_NON_MOVING,
-	)
-	defer jph.BodyCreationSettings_Destroy(floor_settings)
-
-	return jph.BodyInterface_CreateAndAddBody(body_interface, floor_settings, .DontActivate)
+Physics :: struct {
+	job_system: ^jph.JobSystem,
+	system:     ^jph.PhysicsSystem,
+	is_running: bool,
+	ups:        int,
 }
+
+p: ^Physics
 
 main :: proc() {
 	context.logger = log.create_console_logger(.Info)
@@ -106,12 +98,15 @@ main :: proc() {
 	sphere := rl.LoadModelFromMesh(sphere_mesh)
 
 	//Setup physics
-	ok := jph.Init()
-	defer jph.Shutdown()
-	assert(ok, "Failed to init JoltPhysics")
+	p = new(Physics)
+	defer free(p)
 
-	job_system := jph.JobSystemThreadPool_Create(nil)
-	defer jph.JobSystem_Destroy(job_system)
+	assert(jph.Init(), "Failed to init JoltPhysics")
+	defer jph.Shutdown()
+
+	p.job_system = jph.JobSystemThreadPool_Create(nil)
+	defer jph.JobSystem_Destroy(p.job_system)
+	assert(p.job_system != nil)
 
 	object_layer_pair_filter := jph.ObjectLayerPairFilterTable_Create(OBJECT_LAYER_NUM)
 	jph.ObjectLayerPairFilterTable_EnableCollision(
@@ -156,12 +151,13 @@ main :: proc() {
 		objectLayerPairFilter         = object_layer_pair_filter,
 		objectVsBroadPhaseLayerFilter = object_vs_broad_phase_layer_filter,
 	}
-	physics_system := jph.PhysicsSystem_Create(&physics_system_settings)
-	defer jph.PhysicsSystem_Destroy(physics_system)
+	p.system = jph.PhysicsSystem_Create(&physics_system_settings)
+	defer jph.PhysicsSystem_Destroy(p.system)
+	assert(p.system != nil)
 
-	body_interface := jph.PhysicsSystem_GetBodyInterface(physics_system)
+	body_interface := jph.PhysicsSystem_GetBodyInterface(p.system)
 
-	narrow_phase_query := jph.PhysicsSystem_GetNarrowPhaseQuery(physics_system)
+	narrow_phase_query := jph.PhysicsSystem_GetNarrowPhaseQuery(p.system)
 
 	//Setup static objects (floor and walls)
 	floor_id: jph.BodyID
@@ -211,17 +207,17 @@ main :: proc() {
 
 	sphere_shape := jph.SphereShape_Create(1)
 
-	jph.PhysicsSystem_OptimizeBroadPhase(physics_system)
+	jph.PhysicsSystem_OptimizeBroadPhase(p.system)
+
+	p.is_running = true
+	thread.create_and_start(physics_thread, self_cleanup = true)
+	defer p.is_running = false
 
 	removed_balls: [dynamic]jph.BodyID
 	defer delete(removed_balls)
 
 	ray: rl.Ray
 	for !rl.WindowShouldClose() {
-		delta_time := rl.GetFrameTime()
-		err := jph.PhysicsSystem_Update(physics_system, delta_time, 1, job_system)
-		assert(err == .None)
-
 		if rl.IsMouseButtonDown(.RIGHT) {
 			rl.UpdateCamera(&camera, .FREE)
 		} else if rl.IsKeyPressed(.SPACE) {
@@ -328,6 +324,7 @@ main :: proc() {
 		}
 		rl.EndMode3D()
 		rl.DrawFPS(0, 0)
+		rl.DrawText(fmt.ctprintf("%2d UPS", p.ups), 0, 20, 20, rl.GREEN)
 
 		rl.DrawText(
 			fmt.ctprintf(
@@ -336,9 +333,71 @@ main :: proc() {
 				len(balls),
 			),
 			0,
-			20,
+			40,
 			20,
 			rl.WHITE,
 		)
+	}
+}
+
+@(private)
+build_wall :: proc(
+	body_interface: ^jph.BodyInterface,
+	size: [3]f32,
+	position: [3]f32,
+) -> jph.BodyID {
+	size := size
+	position := position
+
+	wall_shape := jph.BoxShape_Create(&size, jph.DEFAULT_CONVEX_RADIUS)
+
+	floor_settings := jph.BodyCreationSettings_Create3(
+		cast(^jph.Shape)wall_shape,
+		&position,
+		nil,
+		.Static,
+		OBJECT_LAYER_NON_MOVING,
+	)
+	defer jph.BodyCreationSettings_Destroy(floor_settings)
+
+	return jph.BodyInterface_CreateAndAddBody(body_interface, floor_settings, .DontActivate)
+}
+
+@(private)
+physics_thread :: proc() {
+	ups_buff: [30]f32
+	last_time := time.now()
+	cnt: int
+	for p.is_running {
+		now_time := time.now()
+		delta := f32(time.duration_seconds(time.diff(last_time, now_time)))
+
+		if delta > PHYSICS_UPDATES_PER_SECOND {
+			last_time = now_time
+
+			err := jph.PhysicsSystem_Update(
+				p.system,
+				delta,
+				PHYSICS_COLLISION_SUB_STEPS,
+				p.job_system,
+			)
+
+			if err != .None {
+				p.is_running = false
+				log.errorf("Error updating physics system: %v", err)
+			}
+
+			i := cnt % 30
+			ups_buff[i] = delta
+
+			delta_total: f32 = 0
+			for d in ups_buff {
+				delta_total += d
+			}
+			avg_ups := delta_total / 30
+			p.ups = int(math.ceil(1.0 / avg_ups))
+
+			cnt += 1
+		}
 	}
 }
