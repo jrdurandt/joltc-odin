@@ -3,20 +3,18 @@ inputs = [
 ]
 
 output_folder = "temp"
+imports_file = "imports.odin"
+package_name = "jolt"
 
 remove_type_prefix = "JPH_"
 remove_macro_prefix = "JPH_"
 remove_function_prefix = "JPH_"
 
-package_name = "jolt"
-
-imports_file = "imports.odin"
-
 type_overrides = {
-    "Vec3" = "[3]f32",
-    "Vec4" = "[4]f32",
-    "Quat" = "quaternion128",
-    "Matrix4x4" = "matrix[4,4]f32"
+    "Vec3" = "[3]f32"
+    "Vec4" = "[4]f32"
+    "Quat" = "quaternion128"
+    "Matrix4x4" = "matrix[44]f32"
 }
 
 opaque_types = [

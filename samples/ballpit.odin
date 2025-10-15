@@ -1,5 +1,16 @@
 package samples
 
+/*
+    =========================== Ballpit Sample ================================
+    Simple example to test and demo Jolt Physics.
+    Uses Raylib to render simple shapes.
+
+    # Controls
+    Press and hold right mouse button to move camera and use WASD to move around.
+    Press space to toggles spawning balls
+    Left click in a ball to select/highlight it
+*/
+
 import "core:fmt"
 import "core:log"
 import "core:math/rand"
