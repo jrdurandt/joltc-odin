@@ -16,7 +16,7 @@ generate-bindings:
   # Install system dependencies
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq git cmake build-essential wget unzip
+    - apt-get install -y -qq git cmake build-essential wget unzip libclang-dev
     # Install Odin compiler (required for bindgen compilation)
     - wget -O odin-linux-amd64.tar.gz https://github.com/odin-lang/Odin/releases/latest/download/odin-linux-amd64-dev-2025-10-05.tar.gz
     - tar -xzf odin-linux-amd64.tar.gz
