@@ -49,16 +49,7 @@ defer jph.Shutdown()
 ```
 
 ## Sample
-Run sample with `odin run samples -debug`
-
-Or build with (replace .bin with .exe on Windows) `odin build samples -out:samples.bin`
-
-Samples is a simple application using raylib to render.
-- Hold down left mouse button and use WASD to control the camera.
-- Press space to toggle spawning balls.
-- Left click on a ball to select/unselect it (demostrates raycasting)
-
-This is a bit of a stress test as doing dynamic collisions of thousands of object is difficult. I get to around 3000+ balls before the pit overflows with a stable 60fps.
+Please see [jolt-odin-samples](https://gitlab.com/jrdurandt/jolt-odin-samples)
 
 ## Issues
 Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
