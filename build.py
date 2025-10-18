@@ -40,6 +40,12 @@ args_parser.add_argument(
     help="Download the latest Odin C Bindgen tool from GitHub (required for generating Odin bindings)",
 )
 
+args_parser.add_argument(
+    "-install-joltc",
+    action="store_true",
+    help="Linux only: Install the shared library to local",
+)
+
 args = args_parser.parse_args()
 
 SYSTEM = platform.system()
@@ -72,12 +78,18 @@ def main():
     do_compile_joltc = args.build_lib
     do_gen_bindings = args.gen_bindings
 
-    if not do_compile_joltc and not do_gen_bindings:
+    if not do_compile_joltc and not do_gen_bindings and not args.install_joltc:
         print("Nothing to do. Either specify -build-lib or -gen-bindings")
         exit(1)
 
     if do_compile_joltc:
         compile_joltc()
+
+    if args.install_joltc:
+        if IS_LINUX:
+            shutil.copy("libjoltc.so", "/usr/local/lib/")
+        else:
+            print("-install-joltc only for Linux")
 
     if do_gen_bindings:
         do_update_bindgen = args.update_bindgen
