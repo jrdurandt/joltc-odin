@@ -49,7 +49,7 @@ defer jph.Shutdown()
 ```
 
 ## Sample
-Please see [jolt-odin-samples](https://gitlab.com/jrdurandt/jolt-odin-samples)
+Please see [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples)
 
 ## Issues
 Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
