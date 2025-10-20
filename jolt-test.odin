@@ -83,7 +83,7 @@ hello_world :: proc(t: ^testing.T) {
 	) -> ValidateResult {
 		context = runtime.default_context()
 		fmt.println("[ContactListener] Contact validate callback")
-		return .JPH_ValidateResult_AcceptAllContactsForThisBodyPair
+		return .AcceptAllContactsForThisBodyPair
 	}
 	my_contact_listener_procs.OnContactAdded =
 	proc "c" (
@@ -151,16 +151,12 @@ hello_world :: proc(t: ^testing.T) {
 			cast(^Shape)floor_shape,
 			&floor_position,
 			nil,
-			.JPH_MotionType_Static,
+			.Static,
 			OBJECT_LAYER_NON_MOVING,
 		)
 		defer BodyCreationSettings_Destroy(floor_settings)
 
-		floor_id = BodyInterface_CreateAndAddBody(
-			body_interface,
-			floor_settings,
-			.JPH_Activation_DontActivate,
-		)
+		floor_id = BodyInterface_CreateAndAddBody(body_interface, floor_settings, .DontActivate)
 	}
 	defer BodyInterface_RemoveAndDestroyBody(body_interface, floor_id)
 
@@ -173,16 +169,12 @@ hello_world :: proc(t: ^testing.T) {
 			cast(^Shape)sphere_shape,
 			&sphere_position,
 			nil,
-			.JPH_MotionType_Dynamic,
+			.Dynamic,
 			OBJECT_LAYER_MOVING,
 		)
 		defer BodyCreationSettings_Destroy(sphere_settings)
 
-		sphere_id = BodyInterface_CreateAndAddBody(
-			body_interface,
-			sphere_settings,
-			.JPH_Activation_Activate,
-		)
+		sphere_id = BodyInterface_CreateAndAddBody(body_interface, sphere_settings, .Activate)
 	}
 	defer BodyInterface_RemoveAndDestroyBody(body_interface, sphere_id)
 
