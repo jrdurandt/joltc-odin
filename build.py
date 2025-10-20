@@ -75,7 +75,11 @@ def main():
     if do_update_joltc:
         update_joltc()
 
-    do_compile_joltc = args.build_lib
+    do_compile_joltc = do_update_joltc or args.build_lib
+
+    if not os.path.exists("libjoltc.so") or not os.path.exists("joltc.dll"):
+        do_compile_joltc = True
+
     do_gen_bindings = args.gen_bindings
 
     if not do_compile_joltc and not do_gen_bindings and not args.install_joltc:

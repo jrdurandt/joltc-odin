@@ -8,3 +8,6 @@
 joltc
 odin-c-bindgen
 bindgen/temp
+
+.vscode/
+.idea/
