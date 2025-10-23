@@ -43,197 +43,133 @@ CollisionSubGroupID :: u32
 
 CharacterID :: u32
 
-BroadPhaseLayerInterface :: struct {
-}
+BroadPhaseLayerInterface :: struct {}
 
-ObjectVsBroadPhaseLayerFilter :: struct {
-}
+ObjectVsBroadPhaseLayerFilter :: struct {}
 
-ObjectLayerPairFilter :: struct {
-}
+ObjectLayerPairFilter :: struct {}
 
-BroadPhaseLayerFilter :: struct {
-}
+BroadPhaseLayerFilter :: struct {}
 
-ObjectLayerFilter :: struct {
-}
+ObjectLayerFilter :: struct {}
 
-BodyFilter :: struct {
-}
+BodyFilter :: struct {}
 
-ShapeFilter :: struct {
-}
+ShapeFilter :: struct {}
 
-SimShapeFilter :: struct {
-}
+SimShapeFilter :: struct {}
 
-PhysicsStepListener :: struct {
-}
+PhysicsStepListener :: struct {}
 
-PhysicsSystem :: struct {
-}
+PhysicsSystem :: struct {}
 
-PhysicsMaterial :: struct {
-}
+PhysicsMaterial :: struct {}
 
-ShapeSettings :: struct {
-}
+ShapeSettings :: struct {}
 
-ConvexShapeSettings :: struct {
-}
+ConvexShapeSettings :: struct {}
 
-SphereShapeSettings :: struct {
-}
+SphereShapeSettings :: struct {}
 
-BoxShapeSettings :: struct {
-}
+BoxShapeSettings :: struct {}
 
-PlaneShapeSettings :: struct {
-}
+PlaneShapeSettings :: struct {}
 
-TriangleShapeSettings :: struct {
-}
+TriangleShapeSettings :: struct {}
 
-CapsuleShapeSettings :: struct {
-}
+CapsuleShapeSettings :: struct {}
 
-TaperedCapsuleShapeSettings :: struct {
-}
+TaperedCapsuleShapeSettings :: struct {}
 
-CylinderShapeSettings :: struct {
-}
+CylinderShapeSettings :: struct {}
 
-TaperedCylinderShapeSettings :: struct {
-}
+TaperedCylinderShapeSettings :: struct {}
 
-ConvexHullShapeSettings :: struct {
-}
+ConvexHullShapeSettings :: struct {}
 
-CompoundShapeSettings :: struct {
-}
+CompoundShapeSettings :: struct {}
 
-StaticCompoundShapeSettings :: struct {
-}
+StaticCompoundShapeSettings :: struct {}
 
-MutableCompoundShapeSettings :: struct {
-}
+MutableCompoundShapeSettings :: struct {}
 
-MeshShapeSettings :: struct {
-}
+MeshShapeSettings :: struct {}
 
-HeightFieldShapeSettings :: struct {
-}
+HeightFieldShapeSettings :: struct {}
 
-RotatedTranslatedShapeSettings :: struct {
-}
+RotatedTranslatedShapeSettings :: struct {}
 
-ScaledShapeSettings :: struct {
-}
+ScaledShapeSettings :: struct {}
 
-OffsetCenterOfMassShapeSettings :: struct {
-}
+OffsetCenterOfMassShapeSettings :: struct {}
 
-EmptyShapeSettings :: struct {
-}
+EmptyShapeSettings :: struct {}
 
-Shape :: struct {
-}
+Shape :: struct {}
 
-ConvexShape :: struct {
-}
+ConvexShape :: struct {}
 
-SphereShape :: struct {
-}
+SphereShape :: struct {}
 
-BoxShape :: struct {
-}
+BoxShape :: struct {}
 
-PlaneShape :: struct {
-}
+PlaneShape :: struct {}
 
-CapsuleShape :: struct {
-}
+CapsuleShape :: struct {}
 
-CylinderShape :: struct {
-}
+CylinderShape :: struct {}
 
-TaperedCylinderShape :: struct {
-}
+TaperedCylinderShape :: struct {}
 
-TriangleShape :: struct {
-}
+TriangleShape :: struct {}
 
-TaperedCapsuleShape :: struct {
-}
+TaperedCapsuleShape :: struct {}
 
-ConvexHullShape :: struct {
-}
+ConvexHullShape :: struct {}
 
-CompoundShape :: struct {
-}
+CompoundShape :: struct {}
 
-StaticCompoundShape :: struct {
-}
+StaticCompoundShape :: struct {}
 
-MutableCompoundShape :: struct {
-}
+MutableCompoundShape :: struct {}
 
-MeshShape :: struct {
-}
+MeshShape :: struct {}
 
-HeightFieldShape :: struct {
-}
+HeightFieldShape :: struct {}
 
-DecoratedShape :: struct {
-}
+DecoratedShape :: struct {}
 
-RotatedTranslatedShape :: struct {
-}
+RotatedTranslatedShape :: struct {}
 
-ScaledShape :: struct {
-}
+ScaledShape :: struct {}
 
-OffsetCenterOfMassShape :: struct {
-}
+OffsetCenterOfMassShape :: struct {}
 
-EmptyShape :: struct {
-}
+EmptyShape :: struct {}
 
-BodyCreationSettings :: struct {
-}
+BodyCreationSettings :: struct {}
 
-SoftBodyCreationSettings :: struct {
-}
+SoftBodyCreationSettings :: struct {}
 
-BodyInterface :: struct {
-}
+BodyInterface :: struct {}
 
-BodyLockInterface :: struct {
-}
+BodyLockInterface :: struct {}
 
-BroadPhaseQuery :: struct {
-}
+BroadPhaseQuery :: struct {}
 
-NarrowPhaseQuery :: struct {
-}
+NarrowPhaseQuery :: struct {}
 
-MotionProperties :: struct {
-}
+MotionProperties :: struct {}
 
-Body :: struct {
-}
+Body :: struct {}
 
-ContactListener :: struct {
-}
+ContactListener :: struct {}
 
-ContactManifold :: struct {
-}
+ContactManifold :: struct {}
 
-GroupFilter :: struct {
-}
+GroupFilter :: struct {}
 
-GroupFilterTable :: struct {
-}
+GroupFilterTable :: struct {}
 
 /* Enums */
 PhysicsUpdateError :: enum c.int {
@@ -458,9 +394,7 @@ Plane :: struct {
 	distance: f32,
 }
 
-Mat4 :: struct {
-	column: [4]Vec4,
-}
+Mat4 :: matrix[4, 4]f32
 
 RVec3 :: Vec3
 
@@ -680,74 +614,51 @@ CollisionEstimationResult :: struct {
 	impulses:         ^CollisionEstimationResultImpulse,
 }
 
-BodyActivationListener :: struct {
-}
+BodyActivationListener :: struct {}
 
-BodyDrawFilter :: struct {
-}
+BodyDrawFilter :: struct {}
 
-SharedMutex :: struct {
-}
+SharedMutex :: struct {}
 
-DebugRenderer :: struct {
-}
+DebugRenderer :: struct {}
 
-Constraint :: struct {
-}
+Constraint :: struct {}
 
-TwoBodyConstraint :: struct {
-}
+TwoBodyConstraint :: struct {}
 
-FixedConstraint :: struct {
-}
+FixedConstraint :: struct {}
 
-DistanceConstraint :: struct {
-}
+DistanceConstraint :: struct {}
 
-PointConstraint :: struct {
-}
+PointConstraint :: struct {}
 
-HingeConstraint :: struct {
-}
+HingeConstraint :: struct {}
 
-SliderConstraint :: struct {
-}
+SliderConstraint :: struct {}
 
-ConeConstraint :: struct {
-}
+ConeConstraint :: struct {}
 
-SwingTwistConstraint :: struct {
-}
+SwingTwistConstraint :: struct {}
 
-SixDOFConstraint :: struct {
-}
+SixDOFConstraint :: struct {}
 
-GearConstraint :: struct {
-}
+GearConstraint :: struct {}
 
-CharacterBase :: struct {
-}
+CharacterBase :: struct {}
 
-Character :: struct {
-}
+Character :: struct {}
 
-CharacterVirtual :: struct {
-}
+CharacterVirtual :: struct {}
 
-CharacterContactListener :: struct {
-}
+CharacterContactListener :: struct {}
 
-CharacterVsCharacterCollision :: struct {
-}
+CharacterVsCharacterCollision :: struct {}
 
-Skeleton :: struct {
-}
+Skeleton :: struct {}
 
-RagdollSettings :: struct {
-}
+RagdollSettings :: struct {}
 
-Ragdoll :: struct {
-}
+Ragdoll :: struct {}
 
 ConstraintSettings :: struct {
 	enabled:                  bool,
@@ -886,11 +797,9 @@ BodyLockWrite :: struct {
 	body:          ^Body,
 }
 
-BodyLockMultiRead :: struct {
-}
+BodyLockMultiRead :: struct {}
 
-BodyLockMultiWrite :: struct {
-}
+BodyLockMultiWrite :: struct {}
 
 ExtendedUpdateSettings :: struct {
 	stickToFloorStepDown:             Vec3,
@@ -991,8 +900,7 @@ JobSystemConfig :: struct {
 	maxBarriers:    u32,
 }
 
-JobSystem :: struct {
-}
+JobSystem :: struct {}
 
 /* JPH_PhysicsSystem */
 PhysicsSystemSettings :: struct {
@@ -1260,65 +1168,45 @@ SkeletonJoint :: struct {
 	parentJointIndex: i32,
 }
 
-WheelSettings :: struct {
-}
+WheelSettings :: struct {}
 
-WheelSettingsWV :: struct {
-}
+WheelSettingsWV :: struct {}
 
-WheelSettingsTV :: struct {
-}
+WheelSettingsTV :: struct {}
 
-Wheel :: struct {
-}
+Wheel :: struct {}
 
-WheelWV :: struct {
-}
+WheelWV :: struct {}
 
-WheelTV :: struct {
-}
+WheelTV :: struct {}
 
-VehicleTransmissionSettings :: struct {
-}
+VehicleTransmissionSettings :: struct {}
 
-VehicleCollisionTester :: struct {
-}
+VehicleCollisionTester :: struct {}
 
-VehicleCollisionTesterRay :: struct {
-}
+VehicleCollisionTesterRay :: struct {}
 
-VehicleCollisionTesterCastSphere :: struct {
-}
+VehicleCollisionTesterCastSphere :: struct {}
 
-VehicleCollisionTesterCastCylinder :: struct {
-}
+VehicleCollisionTesterCastCylinder :: struct {}
 
-VehicleConstraint :: struct {
-}
+VehicleConstraint :: struct {}
 
-VehicleControllerSettings :: struct {
-}
+VehicleControllerSettings :: struct {}
 
-WheeledVehicleControllerSettings :: struct {
-}
+WheeledVehicleControllerSettings :: struct {}
 
-MotorcycleControllerSettings :: struct {
-}
+MotorcycleControllerSettings :: struct {}
 
-TrackedVehicleControllerSettings :: struct {
-}
+TrackedVehicleControllerSettings :: struct {}
 
-WheeledVehicleController :: struct {
-}
+WheeledVehicleController :: struct {}
 
-MotorcycleController :: struct {
-}
+MotorcycleController :: struct {}
 
-TrackedVehicleController :: struct {
-}
+TrackedVehicleController :: struct {}
 
-VehicleController :: struct {
-}
+VehicleController :: struct {}
 
 VehicleAntiRollBar :: struct {
 	leftWheel:  i32,
