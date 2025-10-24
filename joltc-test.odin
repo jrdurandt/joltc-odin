@@ -1,4 +1,4 @@
-package jolt
+package joltc
 
 import "base:runtime"
 import "core:fmt"

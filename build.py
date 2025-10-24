@@ -25,7 +25,7 @@ args_parser.add_argument(
 args_parser.add_argument(
     "-gen-bindings",
     action="store_true",
-    help="Generate Odin language bindings for JoltC (produces jolt.odin file). Requires compiled bindgen tool.",
+    help="Generate Odin language bindings for JoltC (produces joltc.odin file). Requires compiled bindgen tool.",
 )
 
 args_parser.add_argument(
@@ -206,10 +206,10 @@ def gen_bindings():
     joltc_file = Path("./bindgen/temp/joltc.odin")
 
     if not joltc_file.exists():
-        print("❌ jolt.odin file not found - generate bindings first")
+        print("❌ joltc.odin file not found - generate bindings first")
         exit(1)
 
-    print("🧹 Cleaning enum prefixes in jolt.odin...")
+    print("🧹 Cleaning enum prefixes in joltc.odin...")
 
     subprocess.run(
         [sys.executable, "./bindgen/clean_enums.py", "./bindgen/temp/joltc.odin"],
@@ -220,8 +220,8 @@ def gen_bindings():
 
     print("✅ Enum cleaning completed successfully!")
 
-    shutil.copy("./bindgen/temp/joltc.odin", "jolt.odin")
-    print("✅ Successfully generated jolt.odin bindings file")
+    shutil.copy("./bindgen/temp/joltc.odin", "joltc.odin")
+    print("✅ Successfully generated joltc.odin bindings file")
 
 
 main()
