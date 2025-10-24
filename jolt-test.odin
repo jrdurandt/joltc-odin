@@ -73,8 +73,7 @@ hello_world :: proc(t: ^testing.T) {
 	defer PhysicsSystem_Destroy(physics_system)
 
 	my_contact_listener_procs: ContactListener_Procs
-	my_contact_listener_procs.OnContactValidate =
-	proc "c" (
+	my_contact_listener_procs.OnContactValidate = proc "c" (
 		userData: rawptr,
 		body1: ^Body,
 		body2: ^Body,
@@ -85,8 +84,7 @@ hello_world :: proc(t: ^testing.T) {
 		fmt.println("[ContactListener] Contact validate callback")
 		return .AcceptAllContactsForThisBodyPair
 	}
-	my_contact_listener_procs.OnContactAdded =
-	proc "c" (
+	my_contact_listener_procs.OnContactAdded = proc "c" (
 		userData: rawptr,
 		body1: ^Body,
 		body2: ^Body,
@@ -96,8 +94,7 @@ hello_world :: proc(t: ^testing.T) {
 		context = runtime.default_context()
 		fmt.println("[ContactListener] A contact was added")
 	}
-	my_contact_listener_procs.OnContactPersisted =
-	proc "c" (
+	my_contact_listener_procs.OnContactPersisted = proc "c" (
 		userData: rawptr,
 		body1: ^Body,
 		body2: ^Body,
@@ -107,32 +104,40 @@ hello_world :: proc(t: ^testing.T) {
 		context = runtime.default_context()
 		fmt.println("[ContactListener] A contact was persisted")
 	}
-	my_contact_listener_procs.OnContactRemoved =
-	proc "c" (userData: rawptr, subShapePair: ^SubShapeIDPair) {
+	my_contact_listener_procs.OnContactRemoved = proc "c" (
+		userData: rawptr,
+		subShapePair: ^SubShapeIDPair,
+	) {
 		context = runtime.default_context()
 		fmt.println("[ContactListener] A contact was removed")
 	}
 
-	my_contact_listener := ContactListener_Create(&my_contact_listener_procs)
+	my_contact_listener := ContactListener_Create(nil)
 	defer ContactListener_Destroy(my_contact_listener)
-
+	ContactListener_SetProcs(&my_contact_listener_procs)
 	PhysicsSystem_SetContactListener(physics_system, my_contact_listener)
 
 	my_activation_listener_proc: BodyActivationListener_Procs
-	my_activation_listener_proc.OnBodyActivated =
-	proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: u64) {
+	my_activation_listener_proc.OnBodyActivated = proc "c" (
+		userData: rawptr,
+		bodyID: BodyID,
+		bodyUserData: u64,
+	) {
 		context = runtime.default_context()
 		fmt.println("[BodyActivationListener] A body got activated")
 	}
-	my_activation_listener_proc.OnBodyDeactivated =
-	proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: u64) {
+	my_activation_listener_proc.OnBodyDeactivated = proc "c" (
+		userData: rawptr,
+		bodyID: BodyID,
+		bodyUserData: u64,
+	) {
 		context = runtime.default_context()
 		fmt.println("[BodyActivationListener] A body went to sleep")
 	}
 
-	my_activation_listener := BodyActivationListener_Create(&my_activation_listener_proc)
+	my_activation_listener := BodyActivationListener_Create(nil)
 	defer BodyActivationListener_Destroy(my_activation_listener)
-
+	BodyActivationListener_SetProcs(&my_activation_listener_proc)
 	PhysicsSystem_SetBodyActivationListener(physics_system, my_activation_listener)
 
 	body_interface := PhysicsSystem_GetBodyInterface(physics_system)
