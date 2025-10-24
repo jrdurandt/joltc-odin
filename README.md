@@ -1,11 +1,10 @@
-# jolt-odin
+# joltc-odin
 
-[Odin](https://odin-lang.org/:) binding for [Jolt Physics](https://github.com/jrouwe/JoltPhysics) using [JoltC](https://github.com/amerkoleci/joltc)
+[joltc](https://github.com/amerkoleci/joltc) bindings for [Odin](https://odin-lang.org)
 
 Bindings generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
 
 ## Build
-
 Requirements:
 - Odin (duh)
 - Python (to run build script)
@@ -53,3 +52,8 @@ Please see [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples)
 
 ## Issues
 Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
+
+## Acknowledgements
+- [Jolt Physics](https://github.com/jrouwe/JoltPhysics)
+- [joltc](https://github.com/amerkoleci/joltc)
+- [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
