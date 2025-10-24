@@ -4,7 +4,7 @@ inputs = [
 
 output_folder = "temp"
 imports_file = "imports.odin"
-package_name = "jolt"
+package_name = "joltc"
 
 remove_type_prefix = "JPH_"
 remove_macro_prefix = "JPH_"
