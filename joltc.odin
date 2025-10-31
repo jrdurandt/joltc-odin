@@ -909,6 +909,7 @@ JobSystemConfig :: struct {
 
 JobSystem :: struct {}
 
+// Params: (uint32_t wheelIndex, float &longitudinalImpulse, float &lateralImpulse, float suspensionImpulse, float longitudinalFriction, float lateralFriction, float longitudinalSlip, float lateralSlip, float deltaTime);
 TireMaxImpulseCallback :: proc "c" (
 	_: u32,
 	_: ^f32,
