@@ -910,15 +910,15 @@ JobSystemConfig :: struct {
 JobSystem :: struct {}
 
 TireMaxImpulseCallback :: proc "c" (
-	wheelIndex: u32,
-	longitudinalImpulse: ^f32,
-	lateralImpulse: ^f32,
-	suspensionImpulse: f32,
-	longitudinalFriction: f32,
-	lateralFriction: f32,
-	longitudinalSlip: f32,
-	lateralSlip: f32,
-	deltaTime: f32,
+	_: u32,
+	_: ^f32,
+	_: ^f32,
+	_: f32,
+	_: f32,
+	_: f32,
+	_: f32,
+	_: f32,
+	_: f32,
 )
 
 /* JPH_PhysicsSystem */
