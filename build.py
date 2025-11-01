@@ -53,7 +53,7 @@ IS_WINDOWS = SYSTEM == "Windows"
 IS_LINUX = SYSTEM == "Linux"
 IS_OSX = SYSTEM == "Darwin"
 
-JOLTC_ZIP_URL = "https://github.com/amerkoleci/joltc/archive/refs/heads/main.zip"
+JOLTC_ZIP_URL = "https://github.com/jrdurandt/joltc/archive/refs/heads/main.zip"
 BINDGEN_ZIP_URL = (
     "https://github.com/karl-zylinski/odin-c-bindgen/archive/refs/tags/1.0.zip"
 )
