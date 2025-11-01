@@ -2379,7 +2379,7 @@ foreign lib {
 	/* VehicleAntiRollBar */
 	VehicleAntiRollBar_Init :: proc(antiRollBar: ^VehicleAntiRollBar) ---
 
-	/* VehicleEngine */
+	/* VehicleEngineSettings */
 	VehicleEngineSettings_Create :: proc() -> ^VehicleEngineSettings ---
 	VehicleEngineSettings_Destroy :: proc(settings: ^VehicleEngineSettings) ---
 	VehicleEngineSettings_GetMaxTorque :: proc(settings: ^VehicleEngineSettings) -> f32 ---
@@ -2394,6 +2394,8 @@ foreign lib {
 	VehicleEngineSettings_SetAngularDamping :: proc(settings: ^VehicleEngineSettings, value: f32) ---
 	VehicleEngineSettings_GetNormalizedTorque :: proc(settings: ^VehicleEngineSettings) -> ^LinearCurve ---
 	VehicleEngineSettings_SetNormalizedTorque :: proc(settings: ^VehicleEngineSettings, value: ^LinearCurve) ---
+
+	/* VehicleEngine */
 	VehicleEngine_ClampRPM :: proc(engine: ^VehicleEngine) ---
 	VehicleEngine_GetCurrentRPM :: proc(engine: ^VehicleEngine) -> f32 ---
 	VehicleEngine_SetCurrentRPM :: proc(engine: ^VehicleEngine, rpm: f32) ---
@@ -2406,7 +2408,7 @@ foreign lib {
 	/* VehicleDifferentialSettings */
 	VehicleDifferentialSettings_Init :: proc(settings: ^VehicleDifferentialSettings) ---
 
-	/* VehicleTransmission */
+	/* VehicleTransmissionSettings */
 	VehicleTransmissionSettings_Create :: proc() -> ^VehicleTransmissionSettings ---
 	VehicleTransmissionSettings_Destroy :: proc(settings: ^VehicleTransmissionSettings) ---
 	VehicleTransmissionSettings_GetMode :: proc(settings: ^VehicleTransmissionSettings) -> TransmissionMode ---
@@ -2523,6 +2525,8 @@ foreign lib {
 	TrackedVehicleController_SetRightRatio :: proc(controller: ^TrackedVehicleController, value: f32) ---
 	TrackedVehicleController_GetBrakeInput :: proc(controller: ^TrackedVehicleController) -> f32 ---
 	TrackedVehicleController_SetBrakeInput :: proc(controller: ^TrackedVehicleController, value: f32) ---
+	TrackedVehicleController_GetEngine :: proc(controller: ^TrackedVehicleController) -> ^VehicleEngine ---
+	TrackedVehicleController_GetTransmission :: proc(controller: ^TrackedVehicleController) -> ^VehicleTransmission ---
 
 	/* MotorcycleController */
 	MotorcycleControllerSettings_Create :: proc() -> ^MotorcycleControllerSettings ---
@@ -2553,6 +2557,8 @@ foreign lib {
 	MotorcycleController_SetLeanSpringIntegrationCoefficientDecay :: proc(controller: ^MotorcycleController, value: f32) ---
 	MotorcycleController_GetLeanSmoothingFactor :: proc(controller: ^MotorcycleController) -> f32 ---
 	MotorcycleController_SetLeanSmoothingFactor :: proc(controller: ^MotorcycleController, value: f32) ---
+	MotorcycleController_GetEngine :: proc(controller: ^MotorcycleController) -> ^VehicleEngine ---
+	MotorcycleController_GetTransmission :: proc(controller: ^MotorcycleController) -> ^VehicleTransmission ---
 
 	/* LinearCurve */
 	LinearCurve_Create :: proc() -> ^LinearCurve ---
