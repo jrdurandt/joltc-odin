@@ -6,21 +6,27 @@ Bindings generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c
 
 ## Build
 Requirements:
-- Odin (duh)
-- Python (to run build script)
+- Odin
+- Python3
 - libclang (to generate bindings)
 
 ### Building JoltC
 If all you want is to build a shared library (*.so linux, .dll windows):
 
-`python build.py -compile-joltc`
+`python build.py --build-joltc`
 
-This will download and compile joltc (TODO: Windows!)
+This will download and compile joltc
+
+On Linux, once build has been run the shared lib (`libjoltc.so`) can be installed via:
+```
+cd joltc/build
+sudo make install
+```
 
 ### Building and generating bindings
 To generate bindings from the latest JoltC changes:
 
-`python build.py -gen-bindings`
+`python build.py --build-bindgen --gen-bindings`
 
 This will download and compile "odin-c-bindgen" and generate the bindings
 
@@ -49,9 +55,6 @@ defer jph.Shutdown()
 
 ## Sample
 Please see [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples)
-
-## Issues
-Only tested on Linux (Ubuntu 24.04 and Pop!_OS 22.04).
 
 ## Acknowledgements
 - [Jolt Physics](https://github.com/jrouwe/JoltPhysics)
