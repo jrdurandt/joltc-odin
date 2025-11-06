@@ -79,6 +79,12 @@ def build_joltc():
     )
     run(["cmake", "--build", "build", "--config", "Distribution"], cwd="joltc")
 
+    if IS_WINDOWS:
+        shutil.copy(build_dir / "bin" / "Distribution" / "joltc.dll", ".")
+        shutil.copy(build_dir / "lib" / "Distribution" / "joltc.lib", ".")
+    elif IS_LINUX:
+        print("Run 'cd joltc/build && sudo make install && sudo ldconfig'")
+
 
 def build_bindgen():
     """Download and build odin-c-bindgen."""
