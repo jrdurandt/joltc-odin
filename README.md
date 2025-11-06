@@ -24,7 +24,10 @@ python build.py --build-joltc
 
 This downloads and compiles joltc automatically.
 
-**Linux Installation (Optional):**
+**Window**
+Run the above inside the VS2022 Dev Console
+
+**Linux Installation:**
 ```bash
 cd joltc/build
 sudo make install
