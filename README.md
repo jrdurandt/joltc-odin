@@ -1,62 +1,119 @@
 # joltc-odin
 
-[joltc](https://github.com/amerkoleci/joltc) bindings for [Odin](https://odin-lang.org)
+[Jolt Physics](https://github.com/jrouwe/JoltPhysics) bindings for [Odin](https://odin-lang.org) via [joltc](https://github.com/amerkoleci/joltc).
 
-Bindings generated with [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
+## Overview
 
-## Build
-Requirements:
-- Odin
-- Python3
-- libclang (to generate bindings)
+This project provides Odin language bindings for the Jolt Physics engine, enabling high-performance physics simulation in Odin applications. The bindings are automatically generated using [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen) from the joltc C API.
 
-### Building JoltC
-If all you want is to build a shared library (*.so linux, .dll windows):
+## Requirements
 
-`python build.py --build-joltc`
+- [Odin compiler](https://odin-lang.org)
+- Python 3
+- libclang (required for binding generation)
 
-This will download and compile joltc
+## Quick Start
 
-On Linux, once build has been run the shared lib (`libjoltc.so`) can be installed via:
+### 1. Build JoltC Shared Library
+
+To build only the shared library (`.so` on Linux, `.dll` on Windows, `.dylib` on macOS):
+
+```bash
+python build.py --build-joltc
 ```
+
+This downloads and compiles joltc automatically.
+
+**Linux Installation (Optional):**
+```bash
 cd joltc/build
 sudo make install
+sudo ldconfig
 ```
 
-### Building and generating bindings
-To generate bindings from the latest JoltC changes:
+### 2. Generate Bindings (Optional)
 
-`python build.py --build-bindgen --gen-bindings`
+If you need fresh bindings from the latest JoltC changes:
 
-This will download and compile "odin-c-bindgen" and generate the bindings
-
-## Test
-Run tests with: `odin test .`
-
-## Using
-To use within your game, make sure it points to `jolt.odin` and the shared library is linked to your executable (put it in the same directory as your exe to make it simple). You might need to adjust the paths in `jolt-odin` to the shared library.
-
-You can copy the `jolt` directory to the root of your game along with the required shared libraries (.so for Linux, .dll for Windows and .dylib for macOS).
-
-Reference the jolt library in your game (see `samples/ballpit.odin` for examples).
-
+```bash
+python build.py --build-bindgen --gen-bindings
 ```
+
+This will:
+- Download and compile odin-c-bindgen
+- Generate new Odin bindings from the C headers
+
+## Usage
+
+### In Your Project
+
+1. Copy the `joltc-odin` directory to your project root
+2. Include the appropriate shared library for your platform:
+   - Linux: `libjoltc.so` (place in /usr/local/lib to make it available to the system)
+   - Windows: `joltc.dll`
+   - macOS: `libjoltc.dylib`
+3. Import and initialize Jolt in your code:
+
+```odin
 package my_game
 
 import jph "jolt"
 
-//...
+main :: proc() {
+    // Initialize Jolt Physics
+    assert(jph.Init())
+    defer jph.Shutdown()
 
-assert(jph.Init())
-defer jph.Shutdown()
-
-//... Setup physics and job system as required
+    // Setup physics world, job system, etc.
+    // See samples for complete examples
+}
 ```
 
-## Sample
-Please see [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples)
+### Running Tests
+
+```bash
+odin test .
+```
+
+## Examples
+
+For complete working examples, see the [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples) repository.
+
+## Project Structure
+
+```
+joltc-odin/
+├── jolt/           # Generated Odin bindings
+├── build.py        # Build script
+└── README.md       # This file
+```
+
+## Troubleshooting
+
+### Linking Issues
+
+Make sure the shared library is:
+- In the same directory as your executable, or
+- In your system's library path, or
+- Properly referenced in your build configuration
+
+You may need to adjust library paths in the `joltc-odin` package if your setup differs from the default.
+
+### Build Issues
+
+Ensure all requirements are installed and accessible in your PATH:
+- Odin compiler
+- Python 3
+- libclang development headers
 
 ## Acknowledgements
-- [Jolt Physics](https://github.com/jrouwe/JoltPhysics)
-- [joltc](https://github.com/amerkoleci/joltc)
-- [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)
+
+This project builds upon the excellent work of:
+
+- **[Jolt Physics](https://github.com/jrouwe/JoltPhysics)** - The high-performance physics engine (MIT License)
+- **[joltc](https://github.com/amerkoleci/joltc)** - C bindings for Jolt Physics (MIT License)
+- **[odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen)** - Automatic binding generator for Odin (MIT License)
+
+## License
+
+Please refer to the individual projects for their respective licenses.
