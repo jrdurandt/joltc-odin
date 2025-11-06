@@ -70,13 +70,6 @@ def build_joltc():
     run(["cmake", "-S", ".", "-B", "build", flags], cwd="joltc")
     run(["cmake", "--build", "build"], cwd="joltc")
 
-    src = build_dir / "lib" / f"libjoltc.so"
-    if src.exists():
-        shutil.copy2(src, Path.cwd())
-        print(f"Copied {src.name} to working directory")
-    else:
-        print(f"Warning: {src} not found.")
-
 
 def build_bindgen():
     """Download and build odin-c-bindgen."""
