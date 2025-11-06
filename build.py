@@ -74,12 +74,10 @@ def build_joltc():
             "build",
             "-DJPH_SAMPLES=OFF",
             "-DJPH_BUILD_SHARED=ON",
-            "-DCMAKE_INSTALL_PREFIX:String=SDK",
-            "-DCMAKE_BUILD_TYPE=Distribution",
         ],
         cwd="joltc",
     )
-    run(["cmake", "--build", "build"], cwd="joltc")
+    run(["cmake", "--build", "build", "--config", "Distribution"], cwd="joltc")
 
 
 def build_bindgen():
