@@ -65,9 +65,20 @@ def build_joltc():
     print("=== Building Jolt ===")
     build_dir = Path("joltc") / "build"
 
-    flags = '-DJPH_SAMPLES=OFF -DJPH_BUILD_SHARED=ON -DCMAKE_INSTALL_PREFIX:String="SDK" -DCMAKE_BUILD_TYPE=Distribution'
-
-    run(["cmake", "-S", ".", "-B", "build", flags], cwd="joltc")
+    run(
+        [
+            "cmake",
+            "-S",
+            ".",
+            "-B",
+            "build",
+            "-DJPH_SAMPLES=OFF",
+            "-DJPH_BUILD_SHARED=ON",
+            "-DCMAKE_INSTALL_PREFIX:String=SDK",
+            "-DCMAKE_BUILD_TYPE=Distribution",
+        ],
+        cwd="joltc",
+    )
     run(["cmake", "--build", "build"], cwd="joltc")
 
 
