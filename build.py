@@ -1,227 +1,131 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
-import urllib.request
-import zipfile
-import shutil
 import platform
+import shutil
 import subprocess
-import sys
+import tempfile
+import zipfile
 from pathlib import Path
-
-args_parser = argparse.ArgumentParser(
-    prog="build.py",
-    description="Build system for Jolt Physics bindings for Odin. Automatically downloads and compiles JoltC, builds the C binding generator, and generates Odin bindings.",
-    epilog="Credits: Jolt Physics by Jorrit Rouwe, JoltC by Amer Koleci, Odin C Bindgen by Karl Zylinski",
-)
-
-args_parser.add_argument(
-    "-build-lib",
-    action="store_true",
-    help="Build the Jolt Physics library for the current platform using CMake (produces .so/.dll/.dylib)",
-)
-
-args_parser.add_argument(
-    "-gen-bindings",
-    action="store_true",
-    help="Generate Odin language bindings for JoltC (produces joltc.odin file). Requires compiled bindgen tool.",
-)
-
-args_parser.add_argument(
-    "-update-joltc",
-    action="store_true",
-    help="Download the latest JoltC source code from GitHub (overwrites existing JoltC directory)",
-)
-
-args_parser.add_argument(
-    "-update-bindgen",
-    action="store_true",
-    help="Download the latest Odin C Bindgen tool from GitHub (required for generating Odin bindings)",
-)
-
-args_parser.add_argument(
-    "-install-joltc",
-    action="store_true",
-    help="Linux only: Install the shared library to local",
-)
-
-args = args_parser.parse_args()
+from urllib.request import urlopen
 
 SYSTEM = platform.system()
 IS_WINDOWS = SYSTEM == "Windows"
 IS_LINUX = SYSTEM == "Linux"
-IS_OSX = SYSTEM == "Darwin"
-
-JOLTC_ZIP_URL = "https://github.com/jrdurandt/joltc/archive/refs/heads/main.zip"
-BINDGEN_ZIP_URL = (
-    "https://github.com/karl-zylinski/odin-c-bindgen/archive/refs/tags/1.0.zip"
-)
 
 assert IS_WINDOWS or IS_LINUX, "Unsupported platform"
 
-BUILD_CONFIG_TYPE = "Distribution"
+JOLTC_URL = "https://github.com/jrdurandt/joltc/archive/refs/heads/main.zip"
+BINDGEN_URL = (
+    "https://github.com/karl-zylinski/odin-c-bindgen/archive/refs/tags/1.0.zip"
+)
 
-JOLTC_PATH = "joltc"
-BINDGEN_PATH = "odin-c-bindgen"
+
+# === Utility functions ===
+def run(cmd, cwd=None):
+    """Run a shell command, raising an exception if it fails."""
+    print(f"→ Running: {' '.join(cmd)}")
+    subprocess.run(cmd, cwd=cwd, check=True)
 
 
-def main():
-    do_update_joltc = args.update_joltc
+def download_and_extract(url: str, dest: Path):
+    """Download a GitHub zip archive and extract its contents directly into `dest`."""
+    print(f"=== Downloading {dest.name} ===")
+    dest.mkdir(parents=True, exist_ok=True)
 
-    if not os.path.exists(JOLTC_PATH):
-        do_update_joltc = True
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpzip = Path(tmpdir) / "repo.zip"
+        print(f"Downloading {url} ...")
+        with urlopen(url) as response, open(tmpzip, "wb") as f:
+            shutil.copyfileobj(response, f)
 
-    if do_update_joltc:
-        update_joltc()
+        print("Extracting...")
+        with zipfile.ZipFile(tmpzip, "r") as zip_ref:
+            zip_ref.extractall(tmpdir)
 
-    do_compile_joltc = do_update_joltc or args.build_lib
-
-    if not os.path.exists("libjoltc.so") or not os.path.exists("joltc.dll"):
-        do_compile_joltc = True
-
-    do_gen_bindings = args.gen_bindings
-
-    if not do_compile_joltc and not do_gen_bindings and not args.install_joltc:
-        print("Nothing to do. Either specify -build-lib or -gen-bindings")
-        exit(1)
-
-    if do_compile_joltc:
-        compile_joltc()
-
-    if args.install_joltc:
-        if IS_LINUX:
-            shutil.copy("libjoltc.so", "/usr/local/lib/")
+        # GitHub zips have a single root folder
+        inner_dirs = [d for d in Path(tmpdir).iterdir() if d.is_dir()]
+        if inner_dirs:
+            inner = inner_dirs[0]
+            for item in inner.iterdir():
+                target = dest / item.name
+                if item.is_dir():
+                    shutil.copytree(item, target, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, target)
         else:
-            print("-install-joltc only for Linux")
-
-    if do_gen_bindings:
-        do_update_bindgen = args.update_bindgen
-
-        if not os.path.exists(BINDGEN_PATH):
-            do_update_bindgen = True
-
-        if do_update_bindgen:
-            update_bindgen()
-            compile_bindgen()
-
-        gen_bindings()
+            print("Warning: no subdirectory found inside archive.")
 
 
-def cmd_execute(cmd):
-    res = os.system(cmd)
-    if res != 0:
-        print(f"ERROR: Command failed with exit code {res}: {cmd}")
-        exit(1)
+def build_joltc():
+    """Download and build JoltC"""
+    if not Path("joltc").exists():
+        download_and_extract(JOLTC_URL, Path("joltc"))
+
+    print("=== Building Jolt ===")
+    build_dir = Path("joltc") / "build"
+
+    flags = '-DJPH_SAMPLES=OFF -DJPH_BUILD_SHARED=ON -DCMAKE_INSTALL_PREFIX:String="SDK" -DCMAKE_BUILD_TYPE=Distribution'
+
+    run(["cmake", "-S", ".", "-B", "build", flags], cwd="joltc")
+    run(["cmake", "--build", "build"], cwd="joltc")
+
+    src = build_dir / "lib" / f"libjoltc.so"
+    if src.exists():
+        shutil.copy2(src, Path.cwd())
+        print(f"Copied {src.name} to working directory")
+    else:
+        print(f"Warning: {src} not found.")
 
 
-def update_joltc():
-    if os.path.exists(JOLTC_PATH):
-        shutil.rmtree(JOLTC_PATH)
+def build_bindgen():
+    """Download and build odin-c-bindgen."""
+    if not Path("odin-c-bindgen").exists():
+        download_and_extract(BINDGEN_URL, Path("odin-c-bindgen"))
 
-    temp_zip = "joltc-temp.zip"
-    temp_folder = "joltc-temp"
-    print("📥 Downloading JoltC source code from GitHub...")
-    urllib.request.urlretrieve(JOLTC_ZIP_URL, temp_zip)
-
-    with zipfile.ZipFile(temp_zip) as zip_file:
-        zip_file.extractall(temp_folder)
-        shutil.copytree(temp_folder + "/joltc-main", JOLTC_PATH)
-
-    os.remove(temp_zip)
-    shutil.rmtree(temp_folder)
-
-
-def compile_joltc():
-    owd = os.getcwd()
-    os.chdir(JOLTC_PATH)
-
-    print("🔨 Compiling JoltC library for", SYSTEM + "...")
-
-    flags = (
-        '-DJPH_SAMPLES=OFF -DJPH_BUILD_SHARED=ON -DCMAKE_INSTALL_PREFIX:String="SDK" -DCMAKE_BUILD_TYPE=%s'
-        % BUILD_CONFIG_TYPE
-    )
-
-    os.chdir("build")
-    if IS_LINUX:
-        cmd_execute('cmake -S .. -G "Unix Makefiles" %s' % flags)
-        cmd_execute("make")
-        shutil.copy("lib/libjoltc.so", owd)
-        print("✅ Successfully built libjoltc.so")
-    elif IS_WINDOWS:
-        cmd_execute('cmake -S .. -G "Visual Studio 17 2022" -A x64 %s' % flags)
-        cmd_execute("cmake --build . --config %s" % BUILD_CONFIG_TYPE)
-        shutil.copy("bin/%s/joltc.dll" % BUILD_CONFIG_TYPE, owd)
-        shutil.copy("lib/%s/joltc.lib" % BUILD_CONFIG_TYPE, owd)
-        print("✅ Successfully built joltc.dll and joltc.lib")
-    elif IS_OSX:
-        print("❌ ERROR: macOS JoltC build is not yet configured in this script")
-        exit(1)
-
-    os.chdir(owd)
-
-
-def update_bindgen():
-    if os.path.exists(BINDGEN_PATH):
-        shutil.rmtree(BINDGEN_PATH)
-
-    temp_zip = "bindgen-temp.zip"
-    temp_folder = "bindgen-temp"
-    print("📥 Downloading Odin C Bindgen tool from GitHub...")
-    urllib.request.urlretrieve(BINDGEN_ZIP_URL, temp_zip)
-
-    with zipfile.ZipFile(temp_zip) as zip_file:
-        zip_file.extractall(temp_folder)
-        shutil.copytree(temp_folder + "/odin-c-bindgen-1.0", BINDGEN_PATH)
-
-    os.remove(temp_zip)
-    shutil.rmtree(temp_folder)
-
-
-def compile_bindgen():
-    owd = os.getcwd()
-    os.chdir(BINDGEN_PATH)
-
-    print("🔨 Compiling Odin C Bindgen executable...")
-
-    if IS_LINUX or IS_OSX:
-        cmd_execute("odin build src -out:bindgen.bin")
-        print("✅ Successfully built bindgen.bin")
-    elif IS_WINDOWS:
-        cmd_execute("odin build src -out:bindgen.exe")
-        print("✅ Successfully built bindgen.exe")
-
-    os.chdir(owd)
+    print("=== Building odin-c-bindgen ===")
+    run(["odin", "build", "src", "-out:bindgen.bin"], cwd="odin-c-bindgen")
 
 
 def gen_bindings():
-    print("🔄 Generating Odin bindings from JoltC headers...")
+    """Generate bindings using odin-c-bindgen."""
+    print("=== Generating bindings ===")
+    run([str(Path("odin-c-bindgen") / "bindgen.bin"), "bindgen"])
+    src = Path("bindgen") / "temp" / "joltc.odin"
+    if src.exists():
+        shutil.copy2(src, Path.cwd())
+        print("Copied joltc.odin to working directory.")
+    else:
+        print("Warning: bindgen/temp/joltc.odin not found.")
 
-    if IS_LINUX or IS_OSX:
-        cmd_execute("./odin-c-bindgen/bindgen.bin bindgen")
-    elif IS_WINDOWS:
-        cmd_execute("odin-c-bindgen/bindgen.exe bindgen")
 
-    joltc_file = Path("./bindgen/temp/joltc.odin")
-
-    if not joltc_file.exists():
-        print("❌ joltc.odin file not found - generate bindings first")
-        exit(1)
-
-    print("🧹 Cleaning enum prefixes in joltc.odin...")
-
-    subprocess.run(
-        [sys.executable, "./bindgen/clean_enums.py", "./bindgen/temp/joltc.odin"],
-        capture_output=True,
-        text=False,
-        check=True,
+# === Main ===
+def main():
+    parser = argparse.ArgumentParser(
+        description="Cross-platform build script for joltc and odin-c-bindgen"
     )
+    parser.add_argument(
+        "--build-joltc", action="store_true", help="Download and build joltc"
+    )
+    parser.add_argument(
+        "--build-bindgen", action="store_true", help="Download and build odin-c-bindgen"
+    )
+    parser.add_argument("--gen-bindings", action="store_true", help="Generate bindings")
+    parser.add_argument("--all", action="store_true", help="Run all steps")
+    args = parser.parse_args()
 
-    print("✅ Enum cleaning completed successfully!")
+    if not any(vars(args).values()):
+        parser.print_help()
+        return
 
-    shutil.copy("./bindgen/temp/joltc.odin", "joltc.odin")
-    print("✅ Successfully generated joltc.odin bindings file")
+    if args.all or args.build_joltc:
+        build_joltc()
+    if args.all or args.build_bindgen:
+        build_bindgen()
+    if args.all or args.gen_bindings:
+        gen_bindings()
+
+    print("✅ Done.")
 
 
 main()
