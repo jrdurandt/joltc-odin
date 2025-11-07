@@ -17,7 +17,7 @@ assert IS_WINDOWS or IS_LINUX, "Unsupported platform"
 
 JOLTC_URL = "https://github.com/jrdurandt/joltc/archive/refs/heads/main.zip"
 BINDGEN_URL = (
-    "https://github.com/karl-zylinski/odin-c-bindgen/archive/refs/tags/1.0.zip"
+    "https://github.com/karl-zylinski/odin-c-bindgen/archive/refs/tags/2.0.zip"
 )
 
 
@@ -80,8 +80,8 @@ def build_joltc():
     run(["cmake", "--build", "build", "--config", "Distribution"], cwd="joltc")
 
     if IS_WINDOWS:
-        shutil.copy(build_dir / "bin" / "Distribution" / "joltc.dll", ".")
-        shutil.copy(build_dir / "lib" / "Distribution" / "joltc.lib", ".")
+        shutil.copy(build_dir / "bin" / "Distribution" / "joltc.dll", Path.cwd())
+        shutil.copy(build_dir / "lib" / "Distribution" / "joltc.lib", Path.cwd())
     elif IS_LINUX:
         print("Run 'cd joltc/build && sudo make install && sudo ldconfig'")
 
@@ -91,21 +91,23 @@ def build_bindgen():
     if not Path("odin-c-bindgen").exists():
         download_and_extract(BINDGEN_URL, Path("odin-c-bindgen"))
 
+    bindgen_exe = "bindgen.exe"
+    if IS_LINUX:
+        bindgen_exe = "bindgen.bin"
+
     print("=== Building odin-c-bindgen ===")
-    run(["odin", "build", "src", "-out:bindgen.bin"], cwd="odin-c-bindgen")
+    run(["odin", "build", "src", "-out:%s" % bindgen_exe], cwd="odin-c-bindgen")
 
 
 def gen_bindings():
     """Generate bindings using odin-c-bindgen."""
-    print("=== Generating bindings ===")
-    run([str(Path("odin-c-bindgen") / "bindgen.bin"), "bindgen"])
-    src = Path("bindgen") / "temp" / "joltc.odin"
-    if src.exists():
-        shutil.copy2(src, Path.cwd())
-        print("Copied joltc.odin to working directory.")
-    else:
-        print("Warning: bindgen/temp/joltc.odin not found.")
 
+    bindgen_exe = "bindgen.exe"
+    if IS_LINUX:
+        bindgen_exe = "bindgen.bin"
+
+    print("=== Generating bindings ===")
+    run([str(Path("odin-c-bindgen") / bindgen_exe), "bindgen"])
 
 # === Main ===
 def main():

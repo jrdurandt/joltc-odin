@@ -2,10 +2,6 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 package joltc
 
-import "core:c"
-
-_ :: c
-
 when ODIN_OS == .Windows {
 	foreign import lib "joltc.lib"
 } else when ODIN_OS == .Darwin {
@@ -16,438 +12,296 @@ when ODIN_OS == .Windows {
 
 
 JOLT_C_H_ :: 1
-
-// CAPI :: JPH_EXTERN JPH_EXPORT
-
-DEFAULT_COLLISION_TOLERANCE :: 1.0 - 4 // float cDefaultCollisionTolerance = 1.0e-4f
-DEFAULT_PENETRATION_TOLERANCE :: 1.0 - 4 // float cDefaultPenetrationTolerance = 1.0e-4f
-DEFAULT_CONVEX_RADIUS :: 0.05 // float cDefaultConvexRadius = 0.05f
-CAPSULE_PROJECTION_SLOP :: 0.02 // float cCapsuleProjectionSlop = 0.02f
-MAX_PHYSICS_JOBS :: 2048 // int cMaxPhysicsJobs = 2048
-MAX_PHYSICS_BARRIERS :: 8 // int cMaxPhysicsBarriers = 8
-// INVALID_COLLISION_GROUP_ID :: ~0
-// INVALID_COLLISION_SUBGROUP_ID :: ~0
-M_PI :: 3.14159265358979323846 // To avoid collision with JPH_PI
+DEFAULT_COLLISION_TOLERANCE :: (1.0e-4) // float cDefaultCollisionTolerance = 1.0e-4f
+DEFAULT_PENETRATION_TOLERANCE :: (1.0e-4) // float cDefaultPenetrationTolerance = 1.0e-4f
+DEFAULT_CONVEX_RADIUS :: (0.05) // float cDefaultConvexRadius = 0.05f
+CAPSULE_PROJECTION_SLOP :: (0.02) // float cCapsuleProjectionSlop = 0.02f
+MAX_PHYSICS_JOBS :: (2048) // int cMaxPhysicsJobs = 2048
+MAX_PHYSICS_BARRIERS :: (8) // int cMaxPhysicsBarriers = 8
+INVALID_COLLISION_GROUP_ID :: max(u32)
+INVALID_COLLISION_SUBGROUP_ID :: max(u32)
+M_PI :: (3.14159265358979323846) // To avoid collision with JPH_PI
 
 Bool :: u32
-
 BodyID :: u32
-
 SubShapeID :: u32
-
 ObjectLayer :: u32
-
 BroadPhaseLayer :: u8
-
 CollisionGroupID :: u32
-
 CollisionSubGroupID :: u32
-
 CharacterID :: u32
-
 BroadPhaseLayerInterface :: struct {}
-
 ObjectVsBroadPhaseLayerFilter :: struct {}
-
 ObjectLayerPairFilter :: struct {}
-
 BroadPhaseLayerFilter :: struct {}
-
 ObjectLayerFilter :: struct {}
-
 BodyFilter :: struct {}
-
 ShapeFilter :: struct {}
-
 SimShapeFilter :: struct {}
-
 PhysicsStepListener :: struct {}
-
 PhysicsSystem :: struct {}
-
 PhysicsMaterial :: struct {}
-
 LinearCurve :: struct {}
-
 ShapeSettings :: struct {}
-
 ConvexShapeSettings :: struct {}
-
 SphereShapeSettings :: struct {}
-
 BoxShapeSettings :: struct {}
-
 PlaneShapeSettings :: struct {}
-
 TriangleShapeSettings :: struct {}
-
 CapsuleShapeSettings :: struct {}
-
 TaperedCapsuleShapeSettings :: struct {}
-
 CylinderShapeSettings :: struct {}
-
 TaperedCylinderShapeSettings :: struct {}
-
 ConvexHullShapeSettings :: struct {}
-
 CompoundShapeSettings :: struct {}
-
 StaticCompoundShapeSettings :: struct {}
-
 MutableCompoundShapeSettings :: struct {}
-
 MeshShapeSettings :: struct {}
-
 HeightFieldShapeSettings :: struct {}
-
 RotatedTranslatedShapeSettings :: struct {}
-
 ScaledShapeSettings :: struct {}
-
 OffsetCenterOfMassShapeSettings :: struct {}
-
 EmptyShapeSettings :: struct {}
-
 Shape :: struct {}
-
 ConvexShape :: struct {}
-
 SphereShape :: struct {}
-
 BoxShape :: struct {}
-
 PlaneShape :: struct {}
-
 CapsuleShape :: struct {}
-
 CylinderShape :: struct {}
-
 TaperedCylinderShape :: struct {}
-
 TriangleShape :: struct {}
-
 TaperedCapsuleShape :: struct {}
-
 ConvexHullShape :: struct {}
-
 CompoundShape :: struct {}
-
 StaticCompoundShape :: struct {}
-
 MutableCompoundShape :: struct {}
-
 MeshShape :: struct {}
-
 HeightFieldShape :: struct {}
-
 DecoratedShape :: struct {}
-
 RotatedTranslatedShape :: struct {}
-
 ScaledShape :: struct {}
-
 OffsetCenterOfMassShape :: struct {}
-
 EmptyShape :: struct {}
-
 BodyCreationSettings :: struct {}
-
 SoftBodyCreationSettings :: struct {}
-
 BodyInterface :: struct {}
-
 BodyLockInterface :: struct {}
-
 BroadPhaseQuery :: struct {}
-
 NarrowPhaseQuery :: struct {}
-
 MotionProperties :: struct {}
-
 Body :: struct {}
-
 ContactListener :: struct {}
-
 ContactManifold :: struct {}
-
 GroupFilter :: struct {}
-
-GroupFilterTable :: struct {}
+GroupFilterTable :: struct {} /* Inherits JPH_GroupFilter */
 
 /* Enums */
-PhysicsUpdateError :: enum c.int {
-	JPH_PhysicsUpdateError_None = 0,
-	JPH_PhysicsUpdateError_ManifoldCacheFull = 1,
-	JPH_PhysicsUpdateError_BodyPairCacheFull = 2,
-	JPH_PhysicsUpdateError_ContactConstraintsFull = 4,
-	_JPH_PhysicsUpdateError_Count,
-	_JPH_PhysicsUpdateError_Force32 = 2147483647,
+PhysicsUpdateError :: enum u32 {
+	None                   = 0,
+	ManifoldCacheFull      = 1,
+	BodyPairCacheFull      = 2,
+	ContactConstraintsFull = 4,
 }
 
-BodyType :: enum c.int {
-	JPH_BodyType_Rigid = 0,
-	JPH_BodyType_Soft = 1,
-	_JPH_BodyType_Count,
-	_JPH_BodyType_Force32 = 2147483647,
+BodyType :: enum u32 {
+	Rigid = 0,
+	Soft  = 1,
 }
 
-MotionType :: enum c.int {
-	JPH_MotionType_Static = 0,
-	JPH_MotionType_Kinematic = 1,
-	JPH_MotionType_Dynamic = 2,
-	_JPH_MotionType_Count,
-	_JPH_MotionType_Force32 = 2147483647,
+MotionType :: enum u32 {
+	Static    = 0,
+	Kinematic = 1,
+	Dynamic   = 2,
 }
 
-Activation :: enum c.int {
-	JPH_Activation_Activate = 0,
-	JPH_Activation_DontActivate = 1,
-	_JPH_Activation_Count,
-	_JPH_Activation_Force32 = 2147483647,
+Activation :: enum u32 {
+	Activate     = 0,
+	DontActivate = 1,
 }
 
-ValidateResult :: enum c.int {
-	JPH_ValidateResult_AcceptAllContactsForThisBodyPair = 0,
-	JPH_ValidateResult_AcceptContact = 1,
-	JPH_ValidateResult_RejectContact = 2,
-	JPH_ValidateResult_RejectAllContactsForThisBodyPair = 3,
-	_JPH_ValidateResult_Count,
-	_JPH_ValidateResult_Force32 = 2147483647,
+ValidateResult :: enum u32 {
+	AcceptAllContactsForThisBodyPair = 0,
+	AcceptContact                    = 1,
+	RejectContact                    = 2,
+	RejectAllContactsForThisBodyPair = 3,
 }
 
-ShapeType :: enum c.int {
-	JPH_ShapeType_Convex = 0,
-	JPH_ShapeType_Compound = 1,
-	JPH_ShapeType_Decorated = 2,
-	JPH_ShapeType_Mesh = 3,
-	JPH_ShapeType_HeightField = 4,
-	JPH_ShapeType_SoftBody = 5,
-	JPH_ShapeType_User1 = 6,
-	JPH_ShapeType_User2 = 7,
-	JPH_ShapeType_User3 = 8,
-	JPH_ShapeType_User4 = 9,
-	_JPH_ShapeType_Count,
-	_JPH_ShapeType_Force32 = 2147483647,
+ShapeType :: enum u32 {
+	Convex      = 0,
+	Compound    = 1,
+	Decorated   = 2,
+	Mesh        = 3,
+	HeightField = 4,
+	SoftBody    = 5,
+	User1       = 6,
+	User2       = 7,
+	User3       = 8,
+	User4       = 9,
 }
 
-ShapeSubType :: enum c.int {
-	JPH_ShapeSubType_Sphere = 0,
-	JPH_ShapeSubType_Box = 1,
-	JPH_ShapeSubType_Triangle = 2,
-	JPH_ShapeSubType_Capsule = 3,
-	JPH_ShapeSubType_TaperedCapsule = 4,
-	JPH_ShapeSubType_Cylinder = 5,
-	JPH_ShapeSubType_ConvexHull = 6,
-	JPH_ShapeSubType_StaticCompound = 7,
-	JPH_ShapeSubType_MutableCompound = 8,
-	JPH_ShapeSubType_RotatedTranslated = 9,
-	JPH_ShapeSubType_Scaled = 10,
-	JPH_ShapeSubType_OffsetCenterOfMass = 11,
-	JPH_ShapeSubType_Mesh = 12,
-	JPH_ShapeSubType_HeightField = 13,
-	JPH_ShapeSubType_SoftBody = 14,
-	_JPH_ShapeSubType_Count,
-	_JPH_ShapeSubType_Force32 = 2147483647,
+ShapeSubType :: enum u32 {
+	Sphere             = 0,
+	Box                = 1,
+	Triangle           = 2,
+	Capsule            = 3,
+	TaperedCapsule     = 4,
+	Cylinder           = 5,
+	ConvexHull         = 6,
+	StaticCompound     = 7,
+	MutableCompound    = 8,
+	RotatedTranslated  = 9,
+	Scaled             = 10,
+	OffsetCenterOfMass = 11,
+	Mesh               = 12,
+	HeightField        = 13,
+	SoftBody           = 14,
 }
 
-ConstraintType :: enum c.int {
-	JPH_ConstraintType_Constraint = 0,
-	JPH_ConstraintType_TwoBodyConstraint = 1,
-	_JPH_ConstraintType_Count,
-	_JPH_ConstraintType_Force32 = 2147483647,
+ConstraintType :: enum u32 {
+	Constraint        = 0,
+	TwoBodyConstraint = 1,
 }
 
-ConstraintSubType :: enum c.int {
-	JPH_ConstraintSubType_Fixed = 0,
-	JPH_ConstraintSubType_Point = 1,
-	JPH_ConstraintSubType_Hinge = 2,
-	JPH_ConstraintSubType_Slider = 3,
-	JPH_ConstraintSubType_Distance = 4,
-	JPH_ConstraintSubType_Cone = 5,
-	JPH_ConstraintSubType_SwingTwist = 6,
-	JPH_ConstraintSubType_SixDOF = 7,
-	JPH_ConstraintSubType_Path = 8,
-	JPH_ConstraintSubType_Vehicle = 9,
-	JPH_ConstraintSubType_RackAndPinion = 10,
-	JPH_ConstraintSubType_Gear = 11,
-	JPH_ConstraintSubType_Pulley = 12,
-	JPH_ConstraintSubType_User1 = 13,
-	JPH_ConstraintSubType_User2 = 14,
-	JPH_ConstraintSubType_User3 = 15,
-	JPH_ConstraintSubType_User4 = 16,
-	_JPH_ConstraintSubType_Count,
-	_JPH_ConstraintSubType_Force32 = 2147483647,
+ConstraintSubType :: enum u32 {
+	Fixed         = 0,
+	Point         = 1,
+	Hinge         = 2,
+	Slider        = 3,
+	Distance      = 4,
+	Cone          = 5,
+	SwingTwist    = 6,
+	SixDOF        = 7,
+	Path          = 8,
+	Vehicle       = 9,
+	RackAndPinion = 10,
+	Gear          = 11,
+	Pulley        = 12,
+	User1         = 13,
+	User2         = 14,
+	User3         = 15,
+	User4         = 16,
 }
 
-ConstraintSpace :: enum c.int {
-	JPH_ConstraintSpace_LocalToBodyCOM = 0,
-	JPH_ConstraintSpace_WorldSpace = 1,
-	_JPH_ConstraintSpace_Count,
-	_JPH_ConstraintSpace_Force32 = 2147483647,
+ConstraintSpace :: enum u32 {
+	LocalToBodyCOM = 0,
+	WorldSpace     = 1,
 }
 
-MotionQuality :: enum c.int {
-	JPH_MotionQuality_Discrete = 0,
-	JPH_MotionQuality_LinearCast = 1,
-	_JPH_MotionQuality_Count,
-	_JPH_MotionQuality_Force32 = 2147483647,
+MotionQuality :: enum u32 {
+	Discrete   = 0,
+	LinearCast = 1,
 }
 
-OverrideMassProperties :: enum c.int {
-	JPH_OverrideMassProperties_CalculateMassAndInertia,
-	JPH_OverrideMassProperties_CalculateInertia,
-	JPH_OverrideMassProperties_MassAndInertiaProvided,
-	_JPH_JPH_OverrideMassProperties_Count,
-	_JPH_JPH_OverrideMassProperties_Force32 = 2147483647,
+OverrideMassProperties :: enum u32 {
+	CalculateMassAndInertia = 0,
+	CalculateInertia        = 1,
+	MassAndInertiaProvided  = 2,
 }
 
-AllowedDOFs :: enum c.int {
-	JPH_AllowedDOFs_All = 63,
-	JPH_AllowedDOFs_TranslationX = 1,
-	JPH_AllowedDOFs_TranslationY = 2,
-	JPH_AllowedDOFs_TranslationZ = 4,
-	JPH_AllowedDOFs_RotationX = 8,
-	JPH_AllowedDOFs_RotationY = 16,
-	JPH_AllowedDOFs_RotationZ = 32,
-	JPH_AllowedDOFs_Plane2D = 35,
-	_JPH_AllowedDOFs_Count,
-	_JPH_AllowedDOFs_Force32 = 2147483647,
+AllowedDOFs :: enum u32 {
+	All          = 63,
+	TranslationX = 1,
+	TranslationY = 2,
+	TranslationZ = 4,
+	RotationX    = 8,
+	RotationY    = 16,
+	RotationZ    = 32,
+	Plane2D      = 35,
 }
 
-GroundState :: enum c.int {
-	JPH_GroundState_OnGround = 0,
-	JPH_GroundState_OnSteepGround = 1,
-	JPH_GroundState_NotSupported = 2,
-	JPH_GroundState_InAir = 3,
-	_JPH_GroundState_Count,
-	_JPH_GroundState_Force32 = 2147483647,
+GroundState :: enum u32 {
+	OnGround      = 0,
+	OnSteepGround = 1,
+	NotSupported  = 2,
+	InAir         = 3,
 }
 
-BackFaceMode :: enum c.int {
-	JPH_BackFaceMode_IgnoreBackFaces,
-	JPH_BackFaceMode_CollideWithBackFaces,
-	_JPH_BackFaceMode_Count,
-	_JPH_BackFaceMode_Force32 = 2147483647,
+BackFaceMode :: enum u32 {
+	IgnoreBackFaces      = 0,
+	CollideWithBackFaces = 1,
 }
 
-ActiveEdgeMode :: enum c.int {
-	JPH_ActiveEdgeMode_CollideOnlyWithActive,
-	JPH_ActiveEdgeMode_CollideWithAll,
-	_JPH_ActiveEdgeMode_Count,
-	_JPH_ActiveEdgeMode_Force32 = 2147483647,
+ActiveEdgeMode :: enum u32 {
+	CollideOnlyWithActive = 0,
+	CollideWithAll        = 1,
 }
 
-CollectFacesMode :: enum c.int {
-	JPH_CollectFacesMode_CollectFaces,
-	JPH_CollectFacesMode_NoFaces,
-	_JPH_CollectFacesMode_Count,
-	_JPH_CollectFacesMode_Force32 = 2147483647,
+CollectFacesMode :: enum u32 {
+	CollectFaces = 0,
+	NoFaces      = 1,
 }
 
-MotorState :: enum c.int {
-	JPH_MotorState_Off = 0,
-	JPH_MotorState_Velocity = 1,
-	JPH_MotorState_Position = 2,
-	_JPH_MotorState_Count,
-	_JPH_MotorState_Force32 = 2147483647,
+MotorState :: enum u32 {
+	Off      = 0,
+	Velocity = 1,
+	Position = 2,
 }
 
-CollisionCollectorType :: enum c.int {
-	JPH_CollisionCollectorType_AllHit = 0,
-	JPH_CollisionCollectorType_AllHitSorted = 1,
-	JPH_CollisionCollectorType_ClosestHit = 2,
-	JPH_CollisionCollectorType_AnyHit = 3,
-	_JPH_CollisionCollectorType_Count,
-	_JPH_CollisionCollectorType_Force32 = 2147483647,
+CollisionCollectorType :: enum u32 {
+	AllHit       = 0,
+	AllHitSorted = 1,
+	ClosestHit   = 2,
+	AnyHit       = 3,
 }
 
-SwingType :: enum c.int {
-	JPH_SwingType_Cone,
-	JPH_SwingType_Pyramid,
-	_JPH_SwingType_Count,
-	_JPH_SwingType_Force32 = 2147483647,
+SwingType :: enum u32 {
+	Cone    = 0,
+	Pyramid = 1,
 }
 
-SixDOFConstraintAxis :: enum c.int {
-	JPH_SixDOFConstraintAxis_TranslationX,
-	JPH_SixDOFConstraintAxis_TranslationY,
-	JPH_SixDOFConstraintAxis_TranslationZ,
-	JPH_SixDOFConstraintAxis_RotationX,
-	JPH_SixDOFConstraintAxis_RotationY,
-	JPH_SixDOFConstraintAxis_RotationZ,
-	_JPH_SixDOFConstraintAxis_Num,
-	_JPH_SixDOFConstraintAxis_NumTranslation = 3,
-	_JPH_SixDOFConstraintAxis_Force32 = 2147483647,
+SixDOFConstraintAxis :: enum u32 {
+	TranslationX = 0,
+	TranslationY = 1,
+	TranslationZ = 2,
+	RotationX    = 3,
+	RotationY    = 4,
+	RotationZ    = 5,
 }
 
-SpringMode :: enum c.int {
-	JPH_SpringMode_FrequencyAndDamping = 0,
-	JPH_SpringMode_StiffnessAndDamping = 1,
-	_JPH_SpringMode_Count,
-	_JPH_SpringMode_Force32 = 2147483647,
+SpringMode :: enum u32 {
+	FrequencyAndDamping = 0,
+	StiffnessAndDamping = 1,
 }
 
 /// Defines how to color soft body constraints
-SoftBodyConstraintColor :: enum c.int {
-	JPH_SoftBodyConstraintColor_ConstraintType,
-
-	/// Draw different types of constraints in different colors
-	JPH_SoftBodyConstraintColor_ConstraintGroup,
-
-	/// Draw constraints in the same group in the same color, non-parallel group will be red
-	JPH_SoftBodyConstraintColor_ConstraintOrder,
-
-	/// Draw constraints in the same group in the same color, non-parallel group will be red, and order within each group will be indicated with gradient
-	_JPH_SoftBodyConstraintColor_Count,
-
-	/// Draw constraints in the same group in the same color, non-parallel group will be red, and order within each group will be indicated with gradient
-	_JPH_SoftBodyConstraintColor_Force32 = 2147483647,
+SoftBodyConstraintColor :: enum u32 {
+	ConstraintType  = 0, /// Draw different types of constraints in different colors
+	ConstraintGroup = 1, /// Draw constraints in the same group in the same color, non-parallel group will be red
+	ConstraintOrder = 2, /// Draw constraints in the same group in the same color, non-parallel group will be red, and order within each group will be indicated with gradient
 }
 
-BodyManager_ShapeColor :: enum c.int {
-	JPH_BodyManager_ShapeColor_InstanceColor, ///< Random color per instance
-	JPH_BodyManager_ShapeColor_ShapeTypeColor, ///< Convex = green, scaled = yellow, compound = orange, mesh = red
-	JPH_BodyManager_ShapeColor_MotionTypeColor, ///< Static = grey, keyframed = green, dynamic = random color per instance
-	JPH_BodyManager_ShapeColor_SleepColor, ///< Static = grey, keyframed = green, dynamic = yellow, sleeping = red
-	JPH_BodyManager_ShapeColor_IslandColor, ///< Static = grey, active = random color per island, sleeping = light grey
-	JPH_BodyManager_ShapeColor_MaterialColor, ///< Color as defined by the PhysicsMaterial of the shape
-	_JPH_BodyManager_ShapeColor_Count,
-	_JPH_BodyManager_ShapeColor_Force32 = 2147483647,
+BodyManager_ShapeColor :: enum u32 {
+	InstanceColor   = 0, ///< Random color per instance
+	ShapeTypeColor  = 1, ///< Convex = green, scaled = yellow, compound = orange, mesh = red
+	MotionTypeColor = 2, ///< Static = grey, keyframed = green, dynamic = random color per instance
+	SleepColor      = 3, ///< Static = grey, keyframed = green, dynamic = yellow, sleeping = red
+	IslandColor     = 4, ///< Static = grey, active = random color per island, sleeping = light grey
+	MaterialColor   = 5, ///< Color as defined by the PhysicsMaterial of the shape
 }
 
-DebugRenderer_CastShadow :: enum c.int {
-	JPH_DebugRenderer_CastShadow_On = 0, ///< This shape should cast a shadow
-	JPH_DebugRenderer_CastShadow_Off = 1, ///< This shape should not cast a shadow
-	_JPH_DebugRenderer_CastShadow_Count,
-	_JPH_DebugRenderer_CastShadow_Force32 = 2147483647,
+DebugRenderer_CastShadow :: enum u32 {
+	On  = 0, ///< This shape should cast a shadow
+	Off = 1, ///< This shape should not cast a shadow
 }
 
-DebugRenderer_DrawMode :: enum c.int {
-	JPH_DebugRenderer_DrawMode_Solid = 0, ///< Draw as a solid shape
-	JPH_DebugRenderer_DrawMode_Wireframe = 1, ///< Draw as wireframe
-	_JPH_DebugRenderer_DrawMode_Count,
-	_JPH_DebugRenderer_DrawMode_Force32 = 2147483647,
+DebugRenderer_DrawMode :: enum u32 {
+	Solid     = 0, ///< Draw as a solid shape
+	Wireframe = 1, ///< Draw as wireframe
 }
 
-Mesh_Shape_BuildQuality :: enum c.int {
-	JPH_Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
-	JPH_Mesh_Shape_BuildQuality_FavorBuildSpeed = 1,
-	_JPH_Mesh_Shape_BuildQuality_Count,
-	_JPH_Mesh_Shape_BuildQuality_Force32 = 2147483647,
+Mesh_Shape_BuildQuality :: enum u32 {
+	FavorRuntimePerformance = 0,
+	FavorBuildSpeed         = 1,
 }
 
-TransmissionMode :: enum c.int {
-	JPH_TransmissionMode_Auto = 0,
-	JPH_TransmissionMode_Manual = 1,
-	_JPH_TransmissionMode_Count,
-	_JPH_TransmissionMode_Force32 = 2147483647,
+TransmissionMode :: enum u32 {
+	Auto   = 0,
+	Manual = 1,
 }
 
 Vec3 :: [3]f32
-
 Vec4 :: [4]f32
-
 Quat :: quaternion128
 
 Plane :: struct {
@@ -456,11 +310,8 @@ Plane :: struct {
 }
 
 Mat4 :: matrix[4, 4]f32
-
 RVec3 :: Vec3
-
 RMat4 :: Mat4
-
 Color :: u32
 
 AABox :: struct {
@@ -501,38 +352,64 @@ ContactSettings :: struct {
 	invInertiaScale1:               f32,
 	invMassScale2:                  f32,
 	invInertiaScale2:               f32,
-	isSensor:                       bool,
+	isSensor:                       Bool,
 	relativeLinearSurfaceVelocity:  Vec3,
 	relativeAngularSurfaceVelocity: Vec3,
 }
 
 CollideSettingsBase :: struct {
+	/// How active edges (edges that a moving object should bump into) are handled
 	activeEdgeMode:              ActiveEdgeMode, /* = JPH_ActiveEdgeMode_CollideOnlyWithActive*/
+
+	/// If colliding faces should be collected or only the collision point
 	collectFacesMode:            CollectFacesMode, /* = JPH_CollectFacesMode_NoFaces*/
+
+	/// If objects are closer than this distance, they are considered to be colliding (used for GJK) (unit: meter)
 	collisionTolerance:          f32, /* = JPH_DEFAULT_COLLISION_TOLERANCE*/
+
+	/// A factor that determines the accuracy of the penetration depth calculation. If the change of the squared distance is less than tolerance * current_penetration_depth^2 the algorithm will terminate. (unit: dimensionless)
 	penetrationTolerance:        f32, /* = JPH_DEFAULT_PENETRATION_TOLERANCE*/
+
+	/// When mActiveEdgeMode is CollideOnlyWithActive a movement direction can be provided. When hitting an inactive edge, the system will select the triangle normal as penetration depth only if it impedes the movement less than with the calculated penetration depth.
 	activeEdgeMovementDirection: Vec3, /* = Vec3::sZero()*/
 }
 
 /* CollideShapeSettings */
 CollideShapeSettings :: struct {
 	base:                  CollideSettingsBase, /* Inherits JPH_CollideSettingsBase */
+
+	/// When > 0 contacts in the vicinity of the query shape can be found. All nearest contacts that are not further away than this distance will be found (unit: meter)
 	maxSeparationDistance: f32, /* = 0.0f*/
+
+	/// How backfacing triangles should be treated
 	backFaceMode:          BackFaceMode, /* = JPH_BackFaceMode_IgnoreBackFaces*/
 }
 
 /* ShapeCastSettings */
 ShapeCastSettings :: struct {
 	base:                            CollideSettingsBase, /* Inherits JPH_CollideSettingsBase */
+
+	/// How backfacing triangles should be treated (should we report moving from back to front for triangle based shapes, e.g. for MeshShape/HeightFieldShape?)
 	backFaceModeTriangles:           BackFaceMode, /* = JPH_BackFaceMode_IgnoreBackFaces*/
+
+	/// How backfacing convex objects should be treated (should we report starting inside an object and moving out?)
 	backFaceModeConvex:              BackFaceMode, /* = JPH_BackFaceMode_IgnoreBackFaces*/
+
+	/// Indicates if we want to shrink the shape by the convex radius and then expand it again. This speeds up collision detection and gives a more accurate normal at the cost of a more 'rounded' shape.
 	useShrunkenShapeAndConvexRadius: bool, /* = false*/
+
+	/// When true, and the shape is intersecting at the beginning of the cast (fraction = 0) then this will calculate the deepest penetration point (costing additional CPU time)
 	returnDeepestPoint:              bool, /* = false*/
 }
 
 RayCastSettings :: struct {
+	/// How backfacing triangles should be treated (should we report back facing hits for triangle based shapes, e.g. MeshShape/HeightFieldShape?)
 	backFaceModeTriangles: BackFaceMode, /* = JPH_BackFaceMode_IgnoreBackFaces*/
+
+	/// How backfacing convex objects should be treated (should we report back facing hits for convex shapes?)
 	backFaceModeConvex:    BackFaceMode, /* = JPH_BackFaceMode_IgnoreBackFaces*/
+
+	/// If convex shapes should be treated as solid. When true, a ray starting inside a convex shape will generate a hit at fraction 0.
 	treatConvexAsSolid:    bool, /* = true*/
 }
 
@@ -634,29 +511,18 @@ CollisionGroup :: struct {
 	subGroupID:  CollisionSubGroupID,
 }
 
-CastRayResultCallback :: proc "c" (_: rawptr, _: ^RayCastResult)
-
-RayCastBodyResultCallback :: proc "c" (_: rawptr, _: ^BroadPhaseCastResult)
-
-CollideShapeBodyResultCallback :: proc "c" (_: rawptr, _: BodyID)
-
-CollidePointResultCallback :: proc "c" (_: rawptr, _: ^CollidePointResult)
-
-CollideShapeResultCallback :: proc "c" (_: rawptr, _: ^CollideShapeResult)
-
-CastShapeResultCallback :: proc "c" (_: rawptr, _: ^ShapeCastResult)
-
-CastRayCollectorCallback :: proc "c" (_: rawptr, _: ^RayCastResult) -> f32
-
-RayCastBodyCollectorCallback :: proc "c" (_: rawptr, _: ^BroadPhaseCastResult) -> f32
-
-CollideShapeBodyCollectorCallback :: proc "c" (_: rawptr, _: BodyID) -> f32
-
-CollidePointCollectorCallback :: proc "c" (_: rawptr, _: ^CollidePointResult) -> f32
-
-CollideShapeCollectorCallback :: proc "c" (_: rawptr, _: ^CollideShapeResult) -> f32
-
-CastShapeCollectorCallback :: proc "c" (_: rawptr, _: ^ShapeCastResult) -> f32
+CastRayResultCallback :: proc "c" (_context: rawptr, result: ^RayCastResult)
+RayCastBodyResultCallback :: proc "c" (_context: rawptr, result: ^BroadPhaseCastResult)
+CollideShapeBodyResultCallback :: proc "c" (_context: rawptr, result: BodyID)
+CollidePointResultCallback :: proc "c" (_context: rawptr, result: ^CollidePointResult)
+CollideShapeResultCallback :: proc "c" (_context: rawptr, result: ^CollideShapeResult)
+CastShapeResultCallback :: proc "c" (_context: rawptr, result: ^ShapeCastResult)
+CastRayCollectorCallback :: proc "c" (_context: rawptr, result: ^RayCastResult) -> f32
+RayCastBodyCollectorCallback :: proc "c" (_context: rawptr, result: ^BroadPhaseCastResult) -> f32
+CollideShapeBodyCollectorCallback :: proc "c" (_context: rawptr, result: BodyID) -> f32
+CollidePointCollectorCallback :: proc "c" (_context: rawptr, result: ^CollidePointResult) -> f32
+CollideShapeCollectorCallback :: proc "c" (_context: rawptr, result: ^CollideShapeResult) -> f32
+CastShapeCollectorCallback :: proc "c" (_context: rawptr, result: ^ShapeCastResult) -> f32
 
 CollisionEstimationResultImpulse :: struct {
 	contactImpulse:   f32,
@@ -676,49 +542,27 @@ CollisionEstimationResult :: struct {
 }
 
 BodyActivationListener :: struct {}
-
 BodyDrawFilter :: struct {}
-
 SharedMutex :: struct {}
-
 DebugRenderer :: struct {}
-
 Constraint :: struct {}
-
 TwoBodyConstraint :: struct {}
-
 FixedConstraint :: struct {}
-
 DistanceConstraint :: struct {}
-
 PointConstraint :: struct {}
-
 HingeConstraint :: struct {}
-
 SliderConstraint :: struct {}
-
 ConeConstraint :: struct {}
-
 SwingTwistConstraint :: struct {}
-
 SixDOFConstraint :: struct {}
-
 GearConstraint :: struct {}
-
 CharacterBase :: struct {}
-
-Character :: struct {}
-
-CharacterVirtual :: struct {}
-
+Character :: struct {} /* Inherits JPH_CharacterBase */
+CharacterVirtual :: struct {} /* Inherits JPH_CharacterBase */
 CharacterContactListener :: struct {}
-
 CharacterVsCharacterCollision :: struct {}
-
 Skeleton :: struct {}
-
 RagdollSettings :: struct {}
-
 Ragdoll :: struct {}
 
 ConstraintSettings :: struct {
@@ -859,7 +703,6 @@ BodyLockWrite :: struct {
 }
 
 BodyLockMultiRead :: struct {}
-
 BodyLockMultiWrite :: struct {}
 
 ExtendedUpdateSettings :: struct {
@@ -942,15 +785,16 @@ Point :: struct {
 	y: f32,
 }
 
-TraceFunc :: proc "c" (_: cstring)
-
-AssertFailureFunc :: proc "c" (_: cstring, _: cstring, _: cstring, _: u32) -> bool
-
-JobFunction :: proc "c" (_: rawptr)
-
-QueueJobCallback :: proc "c" (_: rawptr, _: JobFunction, _: rawptr)
-
-QueueJobsCallback :: proc "c" (_: rawptr, _: JobFunction, _: ^rawptr, _: u32)
+TraceFunc :: proc "c" (message: cstring)
+AssertFailureFunc :: proc "c" (
+	expression: cstring,
+	message: cstring,
+	file: cstring,
+	line: u32,
+) -> bool
+JobFunction :: proc "c" (arg: rawptr)
+QueueJobCallback :: proc "c" (_context: rawptr, job: JobFunction, arg: rawptr)
+QueueJobsCallback :: proc "c" (_context: rawptr, job: JobFunction, args: ^rawptr, count: u32)
 
 JobSystemThreadPoolConfig :: struct {
 	maxJobs:     u32,
@@ -967,6 +811,42 @@ JobSystemConfig :: struct {
 }
 
 JobSystem :: struct {}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
+	JobSystemThreadPool_Create :: proc(config: ^JobSystemThreadPoolConfig) -> ^JobSystem ---
+	JobSystemCallback_Create :: proc(config: ^JobSystemConfig) -> ^JobSystem ---
+	JobSystem_Destroy :: proc(jobSystem: ^JobSystem) ---
+	Init :: proc() -> bool ---
+	Shutdown :: proc() ---
+	SetTraceHandler :: proc(handler: TraceFunc) ---
+	SetAssertFailureHandler :: proc(handler: AssertFailureFunc) ---
+
+	/* Structs free members */
+	CollideShapeResult_FreeMembers :: proc(result: ^CollideShapeResult) ---
+	CollisionEstimationResult_FreeMembers :: proc(result: ^CollisionEstimationResult) ---
+
+	/* JPH_BroadPhaseLayerInterface */
+	BroadPhaseLayerInterfaceMask_Create :: proc(numBroadPhaseLayers: u32) -> ^BroadPhaseLayerInterface ---
+	BroadPhaseLayerInterfaceMask_ConfigureLayer :: proc(bpInterface: ^BroadPhaseLayerInterface, broadPhaseLayer: BroadPhaseLayer, groupsToInclude: u32, groupsToExclude: u32) ---
+	BroadPhaseLayerInterfaceTable_Create :: proc(numObjectLayers: u32, numBroadPhaseLayers: u32) -> ^BroadPhaseLayerInterface ---
+	BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer :: proc(bpInterface: ^BroadPhaseLayerInterface, objectLayer: ObjectLayer, broadPhaseLayer: BroadPhaseLayer) ---
+
+	/* JPH_ObjectLayerPairFilter */
+	ObjectLayerPairFilterMask_Create :: proc() -> ^ObjectLayerPairFilter ---
+	ObjectLayerPairFilterMask_GetObjectLayer :: proc(group: u32, mask: u32) -> ObjectLayer ---
+	ObjectLayerPairFilterMask_GetGroup :: proc(layer: ObjectLayer) -> u32 ---
+	ObjectLayerPairFilterMask_GetMask :: proc(layer: ObjectLayer) -> u32 ---
+	ObjectLayerPairFilterTable_Create :: proc(numObjectLayers: u32) -> ^ObjectLayerPairFilter ---
+	ObjectLayerPairFilterTable_DisableCollision :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
+	ObjectLayerPairFilterTable_EnableCollision :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
+	ObjectLayerPairFilterTable_ShouldCollide :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) -> bool ---
+
+	/* JPH_ObjectVsBroadPhaseLayerFilter */
+	ObjectVsBroadPhaseLayerFilterMask_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface) -> ^ObjectVsBroadPhaseLayerFilter ---
+	ObjectVsBroadPhaseLayerFilterTable_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface, numBroadPhaseLayers: u32, objectLayerPairFilter: ^ObjectLayerPairFilter, numObjectLayers: u32) -> ^ObjectVsBroadPhaseLayerFilter ---
+	DrawSettings_InitDefault :: proc(settings: ^DrawSettings) ---
+}
 
 // Params: (uint32_t wheelIndex, float &longitudinalImpulse, float &lateralImpulse, float suspensionImpulse, float longitudinalFriction, float lateralFriction, float longitudinalSlip, float lateralSlip, float deltaTime);
 TireMaxImpulseCallback :: proc "c" (
@@ -1022,338 +902,8 @@ PhysicsSettings :: struct {
 	checkActiveEdges:                     bool,
 }
 
-/* PhysicsStepListener */
-PhysicsStepListenerContext :: struct {
-	deltaTime:     f32,
-	isFirstStep:   bool,
-	isLastStep:    bool,
-	physicsSystem: ^PhysicsSystem,
-}
-
-PhysicsStepListener_Procs :: struct {
-	OnStep: proc "c" (_: rawptr, _: ^PhysicsStepListenerContext),
-}
-
-/* JPH_BroadPhaseLayerFilter_Procs */
-BroadPhaseLayerFilter_Procs :: struct {
-	ShouldCollide: proc "c" (_: rawptr, _: BroadPhaseLayer) -> bool,
-}
-
-/* JPH_ObjectLayerFilter */
-ObjectLayerFilter_Procs :: struct {
-	ShouldCollide: proc "c" (_: rawptr, _: ObjectLayer) -> bool,
-}
-
-/* JPH_BodyFilter */
-BodyFilter_Procs :: struct {
-	ShouldCollide:       proc "c" (_: rawptr, _: BodyID) -> bool,
-	ShouldCollideLocked: proc "c" (_: rawptr, _: ^Body) -> bool,
-}
-
-/* JPH_ShapeFilter */
-ShapeFilter_Procs :: struct {
-	ShouldCollide:  proc "c" (_: rawptr, _: ^Shape, _: ^SubShapeID) -> bool,
-	ShouldCollide2: proc "c" (
-		_: rawptr,
-		_: ^Shape,
-		_: ^SubShapeID,
-		_: ^Shape,
-		_: ^SubShapeID,
-	) -> bool,
-}
-
-/* JPH_SimShapeFilter */
-SimShapeFilter_Procs :: struct {
-	ShouldCollide: proc "c" (
-		_: rawptr,
-		_: ^Body,
-		_: ^Shape,
-		_: ^SubShapeID,
-		_: ^Body,
-		_: ^Shape,
-		_: ^SubShapeID,
-	) -> bool,
-}
-
-/* Contact listener */
-ContactListener_Procs :: struct {
-	OnContactValidate:  proc "c" (
-		_: rawptr,
-		_: ^Body,
-		_: ^Body,
-		_: ^RVec3,
-		_: ^CollideShapeResult,
-	) -> ValidateResult,
-	OnContactAdded:     proc "c" (
-		_: rawptr,
-		_: ^Body,
-		_: ^Body,
-		_: ^ContactManifold,
-		_: ^ContactSettings,
-	),
-	OnContactPersisted: proc "c" (
-		_: rawptr,
-		_: ^Body,
-		_: ^Body,
-		_: ^ContactManifold,
-		_: ^ContactSettings,
-	),
-	OnContactRemoved:   proc "c" (_: rawptr, _: ^SubShapeIDPair),
-}
-
-/* BodyActivationListener */
-BodyActivationListener_Procs :: struct {
-	OnBodyActivated:   proc "c" (_: rawptr, _: BodyID, _: u64),
-	OnBodyDeactivated: proc "c" (_: rawptr, _: BodyID, _: u64),
-}
-
-/* JPH_BodyDrawFilter */
-BodyDrawFilter_Procs :: struct {
-	ShouldDraw: proc "c" (_: rawptr, _: ^Body) -> bool,
-}
-
-/* CharacterContactListener */
-CharacterContactListener_Procs :: struct {
-	OnAdjustBodyVelocity:        proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^Body,
-		_: ^Vec3,
-		_: ^Vec3,
-	),
-	OnContactValidate:           proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: BodyID,
-		_: SubShapeID,
-	) -> bool,
-	OnCharacterContactValidate:  proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^CharacterVirtual,
-		_: SubShapeID,
-	) -> bool,
-	OnContactAdded:              proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: BodyID,
-		_: SubShapeID,
-		_: ^RVec3,
-		_: ^Vec3,
-		_: ^CharacterContactSettings,
-	),
-	OnContactPersisted:          proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: BodyID,
-		_: SubShapeID,
-		_: ^RVec3,
-		_: ^Vec3,
-		_: ^CharacterContactSettings,
-	),
-	OnContactRemoved:            proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: BodyID,
-		_: SubShapeID,
-	),
-	OnCharacterContactAdded:     proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^CharacterVirtual,
-		_: SubShapeID,
-		_: ^RVec3,
-		_: ^Vec3,
-		_: ^CharacterContactSettings,
-	),
-	OnCharacterContactPersisted: proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^CharacterVirtual,
-		_: SubShapeID,
-		_: ^RVec3,
-		_: ^Vec3,
-		_: ^CharacterContactSettings,
-	),
-	OnCharacterContactRemoved:   proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: CharacterID,
-		_: SubShapeID,
-	),
-	OnContactSolve:              proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: BodyID,
-		_: SubShapeID,
-		_: ^RVec3,
-		_: ^Vec3,
-		_: ^Vec3,
-		_: ^PhysicsMaterial,
-		_: ^Vec3,
-		_: ^Vec3,
-	),
-	OnCharacterContactSolve:     proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^CharacterVirtual,
-		_: SubShapeID,
-		_: ^RVec3,
-		_: ^Vec3,
-		_: ^Vec3,
-		_: ^PhysicsMaterial,
-		_: ^Vec3,
-		_: ^Vec3,
-	),
-}
-
-/* JPH_CharacterVsCharacterCollision */
-CharacterVsCharacterCollision_Procs :: struct {
-	CollideCharacter: proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^RMat4,
-		_: ^CollideShapeSettings,
-		_: ^RVec3,
-	),
-	CastCharacter:    proc "c" (
-		_: rawptr,
-		_: ^CharacterVirtual,
-		_: ^RMat4,
-		_: ^Vec3,
-		_: ^ShapeCastSettings,
-		_: ^RVec3,
-	),
-}
-
-/* DebugRenderer */
-DebugRenderer_Procs :: struct {
-	DrawLine:     proc "c" (_: rawptr, _: ^RVec3, _: ^RVec3, _: Color),
-	DrawTriangle: proc "c" (
-		_: rawptr,
-		_: ^RVec3,
-		_: ^RVec3,
-		_: ^RVec3,
-		_: Color,
-		_: DebugRenderer_CastShadow,
-	),
-	DrawText3D:   proc "c" (_: rawptr, _: ^RVec3, _: cstring, _: Color, _: f32),
-}
-
-/* Skeleton */
-SkeletonJoint :: struct {
-	name:             cstring,
-	parentName:       cstring,
-	parentJointIndex: i32,
-}
-
-WheelSettings :: struct {}
-
-WheelSettingsWV :: struct {}
-
-WheelSettingsTV :: struct {}
-
-Wheel :: struct {}
-
-WheelWV :: struct {}
-
-WheelTV :: struct {}
-
-VehicleEngineSettings :: struct {}
-
-VehicleEngine :: struct {}
-
-VehicleTransmissionSettings :: struct {}
-
-VehicleTransmission :: struct {}
-
-VehicleCollisionTester :: struct {}
-
-VehicleCollisionTesterRay :: struct {}
-
-VehicleCollisionTesterCastSphere :: struct {}
-
-VehicleCollisionTesterCastCylinder :: struct {}
-
-VehicleConstraint :: struct {}
-
-VehicleControllerSettings :: struct {}
-
-WheeledVehicleControllerSettings :: struct {}
-
-MotorcycleControllerSettings :: struct {}
-
-TrackedVehicleControllerSettings :: struct {}
-
-WheeledVehicleController :: struct {}
-
-MotorcycleController :: struct {}
-
-TrackedVehicleController :: struct {}
-
-VehicleController :: struct {}
-
-VehicleAntiRollBar :: struct {
-	leftWheel:  i32,
-	rightWheel: i32,
-	stiffness:  f32,
-}
-
-VehicleConstraintSettings :: struct {
-	base:              ConstraintSettings, /* Inherits JPH_ConstraintSettings */
-	up:                Vec3,
-	forward:           Vec3,
-	maxPitchRollAngle: f32,
-	wheelsCount:       u32,
-	wheels:            ^^WheelSettings,
-	antiRollBarsCount: u32,
-	antiRollBars:      ^VehicleAntiRollBar,
-	controller:        ^VehicleControllerSettings,
-}
-
-VehicleDifferentialSettings :: struct {
-	leftWheel:         i32,
-	rightWheel:        i32,
-	differentialRatio: f32,
-	leftRightSplit:    f32,
-	limitedSlipRatio:  f32,
-	engineTorqueRatio: f32,
-}
-
 @(default_calling_convention = "c", link_prefix = "JPH_")
 foreign lib {
-	JobSystemThreadPool_Create :: proc(config: ^JobSystemThreadPoolConfig) -> ^JobSystem ---
-	JobSystemCallback_Create :: proc(config: ^JobSystemConfig) -> ^JobSystem ---
-	JobSystem_Destroy :: proc(jobSystem: ^JobSystem) ---
-	Init :: proc() -> bool ---
-	Shutdown :: proc() ---
-	SetTraceHandler :: proc(handler: TraceFunc) ---
-	SetAssertFailureHandler :: proc(handler: AssertFailureFunc) ---
-
-	/* Structs free members */
-	CollideShapeResult_FreeMembers :: proc(result: ^CollideShapeResult) ---
-	CollisionEstimationResult_FreeMembers :: proc(result: ^CollisionEstimationResult) ---
-
-	/* JPH_BroadPhaseLayerInterface */
-	BroadPhaseLayerInterfaceMask_Create :: proc(numBroadPhaseLayers: u32) -> ^BroadPhaseLayerInterface ---
-	BroadPhaseLayerInterfaceMask_ConfigureLayer :: proc(bpInterface: ^BroadPhaseLayerInterface, broadPhaseLayer: BroadPhaseLayer, groupsToInclude: u32, groupsToExclude: u32) ---
-	BroadPhaseLayerInterfaceTable_Create :: proc(numObjectLayers: u32, numBroadPhaseLayers: u32) -> ^BroadPhaseLayerInterface ---
-	BroadPhaseLayerInterfaceTable_MapObjectToBroadPhaseLayer :: proc(bpInterface: ^BroadPhaseLayerInterface, objectLayer: ObjectLayer, broadPhaseLayer: BroadPhaseLayer) ---
-
-	/* JPH_ObjectLayerPairFilter */
-	ObjectLayerPairFilterMask_Create :: proc() -> ^ObjectLayerPairFilter ---
-	ObjectLayerPairFilterMask_GetObjectLayer :: proc(group: u32, mask: u32) -> ObjectLayer ---
-	ObjectLayerPairFilterMask_GetGroup :: proc(layer: ObjectLayer) -> u32 ---
-	ObjectLayerPairFilterMask_GetMask :: proc(layer: ObjectLayer) -> u32 ---
-	ObjectLayerPairFilterTable_Create :: proc(numObjectLayers: u32) -> ^ObjectLayerPairFilter ---
-	ObjectLayerPairFilterTable_DisableCollision :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
-	ObjectLayerPairFilterTable_EnableCollision :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) ---
-	ObjectLayerPairFilterTable_ShouldCollide :: proc(objectFilter: ^ObjectLayerPairFilter, layer1: ObjectLayer, layer2: ObjectLayer) -> bool ---
-
-	/* JPH_ObjectVsBroadPhaseLayerFilter */
-	ObjectVsBroadPhaseLayerFilterMask_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface) -> ^ObjectVsBroadPhaseLayerFilter ---
-	ObjectVsBroadPhaseLayerFilterTable_Create :: proc(broadPhaseLayerInterface: ^BroadPhaseLayerInterface, numBroadPhaseLayers: u32, objectLayerPairFilter: ^ObjectLayerPairFilter, numObjectLayers: u32) -> ^ObjectVsBroadPhaseLayerFilter ---
-	DrawSettings_InitDefault :: proc(settings: ^DrawSettings) ---
 	PhysicsSystem_Create :: proc(settings: ^PhysicsSystemSettings) -> ^PhysicsSystem ---
 	PhysicsSystem_Destroy :: proc(system: ^PhysicsSystem) ---
 	PhysicsSystem_SetPhysicsSettings :: proc(system: ^PhysicsSystem, settings: ^PhysicsSettings) ---
@@ -1386,10 +936,26 @@ foreign lib {
 	PhysicsSystem_GetBodies :: proc(system: ^PhysicsSystem, ids: ^BodyID, count: u32) ---
 	PhysicsSystem_GetConstraints :: proc(system: ^PhysicsSystem, constraints: ^^Constraint, count: u32) ---
 	PhysicsSystem_ActivateBodiesInAABox :: proc(system: ^PhysicsSystem, box: ^AABox, layer: ObjectLayer) ---
-	PhysicsSystem_DrawBodies :: proc(system: ^PhysicsSystem, settings: ^DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter) ---
+	PhysicsSystem_DrawBodies :: proc(system: ^PhysicsSystem, settings: ^DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter) --- /* = nullptr */
 	PhysicsSystem_DrawConstraints :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
 	PhysicsSystem_DrawConstraintLimits :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
 	PhysicsSystem_DrawConstraintReferenceFrame :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
+}
+
+/* PhysicsStepListener */
+PhysicsStepListenerContext :: struct {
+	deltaTime:     f32,
+	isFirstStep:   Bool,
+	isLastStep:    Bool,
+	physicsSystem: ^PhysicsSystem,
+}
+
+PhysicsStepListener_Procs :: struct {
+	OnStep: proc "c" (userData: rawptr, _context: ^PhysicsStepListenerContext),
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	PhysicsStepListener_SetProcs :: proc(procs: ^PhysicsStepListener_Procs) ---
 	PhysicsStepListener_Create :: proc(userData: rawptr) -> ^PhysicsStepListener ---
 	PhysicsStepListener_Destroy :: proc(listener: ^PhysicsStepListener) ---
@@ -1471,7 +1037,7 @@ foreign lib {
 	/* GroupFilter/GroupFilterTable */
 	GroupFilter_Destroy :: proc(groupFilter: ^GroupFilter) ---
 	GroupFilter_CanCollide :: proc(groupFilter: ^GroupFilter, group1: ^CollisionGroup, group2: ^CollisionGroup) -> bool ---
-	GroupFilterTable_Create :: proc(numSubGroups: u32) -> ^GroupFilterTable ---
+	GroupFilterTable_Create :: proc(numSubGroups: u32) -> ^GroupFilterTable --- /* = 0*/
 	GroupFilterTable_DisableCollision :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) ---
 	GroupFilterTable_EnableCollision :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) ---
 	GroupFilterTable_IsCollisionEnabled :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) -> bool ---
@@ -1560,7 +1126,7 @@ foreign lib {
 	CylinderShape_GetHalfHeight :: proc(shape: ^CylinderShape) -> f32 ---
 
 	/* TaperedCylinderShape */
-	TaperedCylinderShapeSettings_Create :: proc(halfHeightOfTaperedCylinder: f32, topRadius: f32, bottomRadius: f32, convexRadius: f32, material: ^PhysicsMaterial) -> ^TaperedCylinderShapeSettings ---
+	TaperedCylinderShapeSettings_Create :: proc(halfHeightOfTaperedCylinder: f32, topRadius: f32, bottomRadius: f32, convexRadius: f32, material: ^PhysicsMaterial) -> ^TaperedCylinderShapeSettings --- /* = cDefaultConvexRadius*/
 	TaperedCylinderShapeSettings_CreateShape :: proc(settings: ^TaperedCylinderShapeSettings) -> ^TaperedCylinderShape ---
 	TaperedCylinderShape_GetTopRadius :: proc(shape: ^TaperedCylinderShape) -> f32 ---
 	TaperedCylinderShape_GetBottomRadius :: proc(shape: ^TaperedCylinderShape) -> f32 ---
@@ -1642,7 +1208,7 @@ foreign lib {
 	/* MutableCompoundShape */
 	MutableCompoundShapeSettings_Create :: proc() -> ^MutableCompoundShapeSettings ---
 	MutableCompoundShape_Create :: proc(settings: ^MutableCompoundShapeSettings) -> ^MutableCompoundShape ---
-	MutableCompoundShape_AddShape :: proc(shape: ^MutableCompoundShape, position: ^Vec3, rotation: ^Quat, child: ^Shape, userData: u32, index: u32) -> u32 ---
+	MutableCompoundShape_AddShape :: proc(shape: ^MutableCompoundShape, position: ^Vec3, rotation: ^Quat, child: ^Shape, userData: u32, index: u32) -> u32 --- /* = 0 */
 	MutableCompoundShape_RemoveShape :: proc(shape: ^MutableCompoundShape, index: u32) ---
 	MutableCompoundShape_ModifyShape :: proc(shape: ^MutableCompoundShape, index: u32, position: ^Vec3, rotation: ^Quat) ---
 	MutableCompoundShape_ModifyShape2 :: proc(shape: ^MutableCompoundShape, index: u32, position: ^Vec3, rotation: ^Quat, newShape: ^Shape) ---
@@ -1829,7 +1395,7 @@ foreign lib {
 	HingeConstraint_GetLimitsSpringSettings :: proc(constraint: ^HingeConstraint, result: ^SpringSettings) ---
 	HingeConstraint_SetLimitsSpringSettings :: proc(constraint: ^HingeConstraint, settings: ^SpringSettings) ---
 	HingeConstraint_GetTotalLambdaPosition :: proc(constraint: ^HingeConstraint, result: ^Vec3) ---
-	HingeConstraint_GetTotalLambdaRotation :: proc(constraint: ^HingeConstraint, rotation: ^f32) ---
+	HingeConstraint_GetTotalLambdaRotation :: proc(constraint: ^HingeConstraint, rotation: ^[2]f32) ---
 	HingeConstraint_GetTotalLambdaRotationLimits :: proc(constraint: ^HingeConstraint) -> f32 ---
 	HingeConstraint_GetTotalLambdaMotor :: proc(constraint: ^HingeConstraint) -> f32 ---
 
@@ -1855,7 +1421,7 @@ foreign lib {
 	SliderConstraint_HasLimits :: proc(constraint: ^SliderConstraint) -> bool ---
 	SliderConstraint_GetLimitsSpringSettings :: proc(constraint: ^SliderConstraint, result: ^SpringSettings) ---
 	SliderConstraint_SetLimitsSpringSettings :: proc(constraint: ^SliderConstraint, settings: ^SpringSettings) ---
-	SliderConstraint_GetTotalLambdaPosition :: proc(constraint: ^SliderConstraint, position: ^f32) ---
+	SliderConstraint_GetTotalLambdaPosition :: proc(constraint: ^SliderConstraint, position: ^[2]f32) ---
 	SliderConstraint_GetTotalLambdaPositionLimits :: proc(constraint: ^SliderConstraint) -> f32 ---
 	SliderConstraint_GetTotalLambdaRotation :: proc(constraint: ^SliderConstraint, result: ^Vec3) ---
 	SliderConstraint_GetTotalLambdaMotor :: proc(constraint: ^SliderConstraint) -> f32 ---
@@ -2158,29 +1724,143 @@ foreign lib {
 	Body_SetUserData :: proc(body: ^Body, userData: u64) ---
 	Body_GetUserData :: proc(body: ^Body) -> u64 ---
 	Body_GetFixedToWorldBody :: proc() -> ^Body ---
+}
+
+/* JPH_BroadPhaseLayerFilter_Procs */
+BroadPhaseLayerFilter_Procs :: struct {
+	ShouldCollide: proc "c" (userData: rawptr, layer: BroadPhaseLayer) -> bool,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	BroadPhaseLayerFilter_SetProcs :: proc(procs: ^BroadPhaseLayerFilter_Procs) ---
 	BroadPhaseLayerFilter_Create :: proc(userData: rawptr) -> ^BroadPhaseLayerFilter ---
 	BroadPhaseLayerFilter_Destroy :: proc(filter: ^BroadPhaseLayerFilter) ---
+}
+
+/* JPH_ObjectLayerFilter */
+ObjectLayerFilter_Procs :: struct {
+	ShouldCollide: proc "c" (userData: rawptr, layer: ObjectLayer) -> bool,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	ObjectLayerFilter_SetProcs :: proc(procs: ^ObjectLayerFilter_Procs) ---
 	ObjectLayerFilter_Create :: proc(userData: rawptr) -> ^ObjectLayerFilter ---
 	ObjectLayerFilter_Destroy :: proc(filter: ^ObjectLayerFilter) ---
+}
+
+/* JPH_BodyFilter */
+BodyFilter_Procs :: struct {
+	ShouldCollide:       proc "c" (userData: rawptr, bodyID: BodyID) -> bool,
+	ShouldCollideLocked: proc "c" (userData: rawptr, bodyID: ^Body) -> bool,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	BodyFilter_SetProcs :: proc(procs: ^BodyFilter_Procs) ---
 	BodyFilter_Create :: proc(userData: rawptr) -> ^BodyFilter ---
 	BodyFilter_Destroy :: proc(filter: ^BodyFilter) ---
+}
+
+/* JPH_ShapeFilter */
+ShapeFilter_Procs :: struct {
+	ShouldCollide:  proc "c" (
+		userData: rawptr,
+		shape2: ^Shape,
+		subShapeIDOfShape2: ^SubShapeID,
+	) -> bool,
+	ShouldCollide2: proc "c" (
+		userData: rawptr,
+		shape1: ^Shape,
+		subShapeIDOfShape1: ^SubShapeID,
+		shape2: ^Shape,
+		subShapeIDOfShape2: ^SubShapeID,
+	) -> bool,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	ShapeFilter_SetProcs :: proc(procs: ^ShapeFilter_Procs) ---
 	ShapeFilter_Create :: proc(userData: rawptr) -> ^ShapeFilter ---
 	ShapeFilter_Destroy :: proc(filter: ^ShapeFilter) ---
 	ShapeFilter_GetBodyID2 :: proc(filter: ^ShapeFilter) -> BodyID ---
 	ShapeFilter_SetBodyID2 :: proc(filter: ^ShapeFilter, id: BodyID) ---
+}
+
+/* JPH_SimShapeFilter */
+SimShapeFilter_Procs :: struct {
+	ShouldCollide: proc "c" (
+		userData: rawptr,
+		body1: ^Body,
+		shape1: ^Shape,
+		subShapeIDOfShape1: ^SubShapeID,
+		body2: ^Body,
+		shape2: ^Shape,
+		subShapeIDOfShape2: ^SubShapeID,
+	) -> bool,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	SimShapeFilter_SetProcs :: proc(procs: ^SimShapeFilter_Procs) ---
 	SimShapeFilter_Create :: proc(userData: rawptr) -> ^SimShapeFilter ---
 	SimShapeFilter_Destroy :: proc(filter: ^SimShapeFilter) ---
+}
+
+/* Contact listener */
+ContactListener_Procs :: struct {
+	OnContactValidate:  proc "c" (
+		userData: rawptr,
+		body1: ^Body,
+		body2: ^Body,
+		baseOffset: ^RVec3,
+		collisionResult: ^CollideShapeResult,
+	) -> ValidateResult,
+	OnContactAdded:     proc "c" (
+		userData: rawptr,
+		body1: ^Body,
+		body2: ^Body,
+		manifold: ^ContactManifold,
+		settings: ^ContactSettings,
+	),
+	OnContactPersisted: proc "c" (
+		userData: rawptr,
+		body1: ^Body,
+		body2: ^Body,
+		manifold: ^ContactManifold,
+		settings: ^ContactSettings,
+	),
+	OnContactRemoved:   proc "c" (userData: rawptr, subShapePair: ^SubShapeIDPair),
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	ContactListener_SetProcs :: proc(procs: ^ContactListener_Procs) ---
 	ContactListener_Create :: proc(userData: rawptr) -> ^ContactListener ---
 	ContactListener_Destroy :: proc(listener: ^ContactListener) ---
+}
+
+/* BodyActivationListener */
+BodyActivationListener_Procs :: struct {
+	OnBodyActivated:   proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: u64),
+	OnBodyDeactivated: proc "c" (userData: rawptr, bodyID: BodyID, bodyUserData: u64),
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	BodyActivationListener_SetProcs :: proc(procs: ^BodyActivationListener_Procs) ---
 	BodyActivationListener_Create :: proc(userData: rawptr) -> ^BodyActivationListener ---
 	BodyActivationListener_Destroy :: proc(listener: ^BodyActivationListener) ---
+}
+
+/* JPH_BodyDrawFilter */
+BodyDrawFilter_Procs :: struct {
+	ShouldDraw: proc "c" (userData: rawptr, body: ^Body) -> bool,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	BodyDrawFilter_SetProcs :: proc(procs: ^BodyDrawFilter_Procs) ---
 	BodyDrawFilter_Create :: proc(userData: rawptr) -> ^BodyDrawFilter ---
 	BodyDrawFilter_Destroy :: proc(filter: ^BodyDrawFilter) ---
@@ -2217,27 +1897,27 @@ foreign lib {
 
 	/* Character */
 	Character_Create :: proc(settings: ^CharacterSettings, position: ^RVec3, rotation: ^Quat, userData: u64, system: ^PhysicsSystem) -> ^Character ---
-	Character_AddToPhysicsSystem :: proc(character: ^Character, activationMode: Activation, lockBodies: bool) ---
-	Character_RemoveFromPhysicsSystem :: proc(character: ^Character, lockBodies: bool) ---
-	Character_Activate :: proc(character: ^Character, lockBodies: bool) ---
-	Character_PostSimulation :: proc(character: ^Character, maxSeparationDistance: f32, lockBodies: bool) ---
-	Character_SetLinearAndAngularVelocity :: proc(character: ^Character, linearVelocity: ^Vec3, angularVelocity: ^Vec3, lockBodies: bool) ---
+	Character_AddToPhysicsSystem :: proc(character: ^Character, activationMode: Activation, lockBodies: bool) --- /*= JPH_ActivationActivate */
+	Character_RemoveFromPhysicsSystem :: proc(character: ^Character, lockBodies: bool) --- /* = true */
+	Character_Activate :: proc(character: ^Character, lockBodies: bool) --- /* = true */
+	Character_PostSimulation :: proc(character: ^Character, maxSeparationDistance: f32, lockBodies: bool) --- /* = true */
+	Character_SetLinearAndAngularVelocity :: proc(character: ^Character, linearVelocity: ^Vec3, angularVelocity: ^Vec3, lockBodies: bool) --- /* = true */
 	Character_GetLinearVelocity :: proc(character: ^Character, result: ^Vec3) ---
-	Character_SetLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) ---
-	Character_AddLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) ---
-	Character_AddImpulse :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) ---
+	Character_SetLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) --- /* = true */
+	Character_AddLinearVelocity :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) --- /* = true */
+	Character_AddImpulse :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) --- /* = true */
 	Character_GetBodyID :: proc(character: ^Character) -> BodyID ---
-	Character_GetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, lockBodies: bool) ---
-	Character_SetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, activationMode: Activation, lockBodies: bool) ---
-	Character_GetPosition :: proc(character: ^Character, position: ^RVec3, lockBodies: bool) ---
-	Character_SetPosition :: proc(character: ^Character, position: ^RVec3, activationMode: Activation, lockBodies: bool) ---
-	Character_GetRotation :: proc(character: ^Character, rotation: ^Quat, lockBodies: bool) ---
-	Character_SetRotation :: proc(character: ^Character, rotation: ^Quat, activationMode: Activation, lockBodies: bool) ---
-	Character_GetCenterOfMassPosition :: proc(character: ^Character, result: ^RVec3, lockBodies: bool) ---
-	Character_GetWorldTransform :: proc(character: ^Character, result: ^RMat4, lockBodies: bool) ---
+	Character_GetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, lockBodies: bool) --- /* = true */
+	Character_SetPositionAndRotation :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, activationMode: Activation, lockBodies: bool) --- /* = true */
+	Character_GetPosition :: proc(character: ^Character, position: ^RVec3, lockBodies: bool) --- /* = true */
+	Character_SetPosition :: proc(character: ^Character, position: ^RVec3, activationMode: Activation, lockBodies: bool) --- /* = true */
+	Character_GetRotation :: proc(character: ^Character, rotation: ^Quat, lockBodies: bool) --- /* = true */
+	Character_SetRotation :: proc(character: ^Character, rotation: ^Quat, activationMode: Activation, lockBodies: bool) --- /* = true */
+	Character_GetCenterOfMassPosition :: proc(character: ^Character, result: ^RVec3, lockBodies: bool) --- /* = true */
+	Character_GetWorldTransform :: proc(character: ^Character, result: ^RMat4, lockBodies: bool) --- /* = true */
 	Character_GetLayer :: proc(character: ^Character) -> ObjectLayer ---
-	Character_SetLayer :: proc(character: ^Character, value: ObjectLayer, lockBodies: bool) ---
-	Character_SetShape :: proc(character: ^Character, shape: ^Shape, maxPenetrationDepth: f32, lockBodies: bool) ---
+	Character_SetLayer :: proc(character: ^Character, value: ObjectLayer, lockBodies: bool) --- /*= true*/
+	Character_SetShape :: proc(character: ^Character, shape: ^Shape, maxPenetrationDepth: f32, lockBodies: bool) --- /*= true*/
 
 	/* CharacterVirtualSettings */
 	CharacterVirtualSettings_Init :: proc(settings: ^CharacterVirtualSettings) ---
@@ -2291,9 +1971,131 @@ foreign lib {
 	CharacterVirtual_HasCollidedWithBody :: proc(character: ^CharacterVirtual, body: BodyID) -> bool ---
 	CharacterVirtual_HasCollidedWith :: proc(character: ^CharacterVirtual, other: CharacterID) -> bool ---
 	CharacterVirtual_HasCollidedWithCharacter :: proc(character: ^CharacterVirtual, other: ^CharacterVirtual) -> bool ---
+}
+
+/* CharacterContactListener */
+CharacterContactListener_Procs :: struct {
+	OnAdjustBodyVelocity:        proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		body2: ^Body,
+		ioLinearVelocity: ^Vec3,
+		ioAngularVelocity: ^Vec3,
+	),
+	OnContactValidate:           proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		bodyID2: BodyID,
+		subShapeID2: SubShapeID,
+	) -> bool,
+	OnCharacterContactValidate:  proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		otherCharacter: ^CharacterVirtual,
+		subShapeID2: SubShapeID,
+	) -> bool,
+	OnContactAdded:              proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		bodyID2: BodyID,
+		subShapeID2: SubShapeID,
+		contactPosition: ^RVec3,
+		contactNormal: ^Vec3,
+		ioSettings: ^CharacterContactSettings,
+	),
+	OnContactPersisted:          proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		bodyID2: BodyID,
+		subShapeID2: SubShapeID,
+		contactPosition: ^RVec3,
+		contactNormal: ^Vec3,
+		ioSettings: ^CharacterContactSettings,
+	),
+	OnContactRemoved:            proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		bodyID2: BodyID,
+		subShapeID2: SubShapeID,
+	),
+	OnCharacterContactAdded:     proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		otherCharacter: ^CharacterVirtual,
+		subShapeID2: SubShapeID,
+		contactPosition: ^RVec3,
+		contactNormal: ^Vec3,
+		ioSettings: ^CharacterContactSettings,
+	),
+	OnCharacterContactPersisted: proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		otherCharacter: ^CharacterVirtual,
+		subShapeID2: SubShapeID,
+		contactPosition: ^RVec3,
+		contactNormal: ^Vec3,
+		ioSettings: ^CharacterContactSettings,
+	),
+	OnCharacterContactRemoved:   proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		otherCharacterID: CharacterID,
+		subShapeID2: SubShapeID,
+	),
+	OnContactSolve:              proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		bodyID2: BodyID,
+		subShapeID2: SubShapeID,
+		contactPosition: ^RVec3,
+		contactNormal: ^Vec3,
+		contactVelocity: ^Vec3,
+		contactMaterial: ^PhysicsMaterial,
+		characterVelocity: ^Vec3,
+		newCharacterVelocity: ^Vec3,
+	),
+	OnCharacterContactSolve:     proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		otherCharacter: ^CharacterVirtual,
+		subShapeID2: SubShapeID,
+		contactPosition: ^RVec3,
+		contactNormal: ^Vec3,
+		contactVelocity: ^Vec3,
+		contactMaterial: ^PhysicsMaterial,
+		characterVelocity: ^Vec3,
+		newCharacterVelocity: ^Vec3,
+	),
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	CharacterContactListener_SetProcs :: proc(procs: ^CharacterContactListener_Procs) ---
 	CharacterContactListener_Create :: proc(userData: rawptr) -> ^CharacterContactListener ---
 	CharacterContactListener_Destroy :: proc(listener: ^CharacterContactListener) ---
+}
+
+/* JPH_CharacterVsCharacterCollision */
+CharacterVsCharacterCollision_Procs :: struct {
+	CollideCharacter: proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		centerOfMassTransform: ^RMat4,
+		collideShapeSettings: ^CollideShapeSettings,
+		baseOffset: ^RVec3,
+	),
+	CastCharacter:    proc "c" (
+		userData: rawptr,
+		character: ^CharacterVirtual,
+		centerOfMassTransform: ^RMat4,
+		direction: ^Vec3,
+		shapeCastSettings: ^ShapeCastSettings,
+		baseOffset: ^RVec3,
+	),
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	CharacterVsCharacterCollision_SetProcs :: proc(procs: ^CharacterVsCharacterCollision_Procs) ---
 	CharacterVsCharacterCollision_Create :: proc(userData: rawptr) -> ^CharacterVsCharacterCollision ---
 	CharacterVsCharacterCollision_CreateSimple :: proc() -> ^CharacterVsCharacterCollision ---
@@ -2305,6 +2107,30 @@ foreign lib {
 	CollisionDispatch_CollideShapeVsShape :: proc(shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, scale2: ^Vec3, centerOfMassTransform1: ^Mat4, centerOfMassTransform2: ^Mat4, collideShapeSettings: ^CollideShapeSettings, callback: CollideShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
 	CollisionDispatch_CastShapeVsShapeLocalSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1InShape2LocalSpace: ^Vec3, scale2: ^Vec3, centerOfMassTransform1InShape2LocalSpace: ^Mat4, centerOfMassWorldTransform2: ^Mat4, shapeCastSettings: ^ShapeCastSettings, callback: CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
 	CollisionDispatch_CastShapeVsShapeWorldSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, inScale2: ^Vec3, centerOfMassWorldTransform1: ^Mat4, centerOfMassWorldTransform2: ^Mat4, shapeCastSettings: ^ShapeCastSettings, callback: CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
+}
+
+/* DebugRenderer */
+DebugRenderer_Procs :: struct {
+	DrawLine:     proc "c" (userData: rawptr, from: ^RVec3, to: ^RVec3, color: Color),
+	DrawTriangle: proc "c" (
+		userData: rawptr,
+		v1: ^RVec3,
+		v2: ^RVec3,
+		v3: ^RVec3,
+		color: Color,
+		castShadow: DebugRenderer_CastShadow,
+	),
+	DrawText3D:   proc "c" (
+		userData: rawptr,
+		position: ^RVec3,
+		str: cstring,
+		color: Color,
+		height: f32,
+	),
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	DebugRenderer_SetProcs :: proc(procs: ^DebugRenderer_Procs) ---
 	DebugRenderer_Create :: proc(userData: rawptr) -> ^DebugRenderer ---
 	DebugRenderer_Destroy :: proc(renderer: ^DebugRenderer) ---
@@ -2332,6 +2158,17 @@ foreign lib {
 	DebugRenderer_DrawSwingPyramidLimits :: proc(renderer: ^DebugRenderer, _matrix: ^RMat4, minSwingYAngle: f32, maxSwingYAngle: f32, minSwingZAngle: f32, maxSwingZAngle: f32, edgeLength: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
 	DebugRenderer_DrawPie :: proc(renderer: ^DebugRenderer, center: ^RVec3, radius: f32, normal: ^Vec3, axis: ^Vec3, minAngle: f32, maxAngle: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
 	DebugRenderer_DrawTaperedCylinder :: proc(renderer: ^DebugRenderer, inMatrix: ^RMat4, top: f32, bottom: f32, topRadius: f32, bottomRadius: f32, color: Color, castShadow: DebugRenderer_CastShadow, drawMode: DebugRenderer_DrawMode) ---
+}
+
+/* Skeleton */
+SkeletonJoint :: struct {
+	name:             cstring,
+	parentName:       cstring,
+	parentJointIndex: i32,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	Skeleton_Create :: proc() -> ^Skeleton ---
 	Skeleton_Destroy :: proc(skeleton: ^Skeleton) ---
 	Skeleton_AddJoint :: proc(skeleton: ^Skeleton, name: cstring) -> u32 ---
@@ -2349,20 +2186,75 @@ foreign lib {
 	RagdollSettings_GetSkeleton :: proc(character: ^RagdollSettings) -> ^Skeleton ---
 	RagdollSettings_SetSkeleton :: proc(character: ^RagdollSettings, skeleton: ^Skeleton) ---
 	RagdollSettings_Stabilize :: proc(settings: ^RagdollSettings) -> bool ---
-	RagdollSettings_DisableParentChildCollisions :: proc(settings: ^RagdollSettings, jointMatrices: ^Mat4, minSeparationDistance: f32) ---
+	RagdollSettings_DisableParentChildCollisions :: proc(settings: ^RagdollSettings, jointMatrices: ^Mat4, minSeparationDistance: f32) --- /*=nullptr*/
 	RagdollSettings_CalculateBodyIndexToConstraintIndex :: proc(settings: ^RagdollSettings) ---
 	RagdollSettings_GetConstraintIndexForBodyIndex :: proc(settings: ^RagdollSettings, bodyIndex: i32) -> i32 ---
 	RagdollSettings_CalculateConstraintIndexToBodyIdxPair :: proc(settings: ^RagdollSettings) ---
-	RagdollSettings_CreateRagdoll :: proc(settings: ^RagdollSettings, system: ^PhysicsSystem, collisionGroup: CollisionGroupID, userData: u64) -> ^Ragdoll ---
+	RagdollSettings_CreateRagdoll :: proc(settings: ^RagdollSettings, system: ^PhysicsSystem, collisionGroup: CollisionGroupID, userData: u64) -> ^Ragdoll --- /*=0*/
 	Ragdoll_Destroy :: proc(ragdoll: ^Ragdoll) ---
-	Ragdoll_AddToPhysicsSystem :: proc(ragdoll: ^Ragdoll, activationMode: Activation, lockBodies: bool) ---
-	Ragdoll_RemoveFromPhysicsSystem :: proc(ragdoll: ^Ragdoll, lockBodies: bool) ---
-	Ragdoll_Activate :: proc(ragdoll: ^Ragdoll, lockBodies: bool) ---
-	Ragdoll_IsActive :: proc(ragdoll: ^Ragdoll, lockBodies: bool) -> bool ---
+	Ragdoll_AddToPhysicsSystem :: proc(ragdoll: ^Ragdoll, activationMode: Activation, lockBodies: bool) --- /*= JPH_ActivationActivate */
+	Ragdoll_RemoveFromPhysicsSystem :: proc(ragdoll: ^Ragdoll, lockBodies: bool) --- /* = true */
+	Ragdoll_Activate :: proc(ragdoll: ^Ragdoll, lockBodies: bool) --- /* = true */
+	Ragdoll_IsActive :: proc(ragdoll: ^Ragdoll, lockBodies: bool) -> bool --- /* = true */
 	Ragdoll_ResetWarmStart :: proc(ragdoll: ^Ragdoll) ---
 
 	/* JPH_EstimateCollisionResponse */
 	EstimateCollisionResponse :: proc(body1: ^Body, body2: ^Body, manifold: ^ContactManifold, combinedFriction: f32, combinedRestitution: f32, minVelocityForRestitution: f32, numIterations: u32, result: ^CollisionEstimationResult) ---
+}
+
+WheelSettings :: struct {}
+WheelSettingsWV :: struct {} /* Inherits JPH_WheelSettings */
+WheelSettingsTV :: struct {} /* Inherits JPH_WheelSettings */
+Wheel :: struct {}
+WheelWV :: struct {} /* Inherits JPH_Wheel */
+WheelTV :: struct {} /* Inherits JPH_Wheel */
+VehicleEngineSettings :: struct {}
+VehicleEngine :: struct {} /* Inherits JPH_VehicleEngineSettings */
+VehicleTransmissionSettings :: struct {}
+VehicleTransmission :: struct {} /* Inherits JPH_VehicleTransmissionSettings */
+VehicleCollisionTester :: struct {}
+VehicleCollisionTesterRay :: struct {} /* Inherits JPH_VehicleCollisionTester */
+VehicleCollisionTesterCastSphere :: struct {} /* Inherits JPH_VehicleCollisionTester */
+VehicleCollisionTesterCastCylinder :: struct {} /* Inherits JPH_VehicleCollisionTester */
+VehicleConstraint :: struct {} /* Inherits JPH_Constraint */
+VehicleControllerSettings :: struct {}
+WheeledVehicleControllerSettings :: struct {} /* Inherits JPH_VehicleControllerSettings */
+MotorcycleControllerSettings :: struct {} /* Inherits JPH_WheeledVehicleControllerSettings */
+TrackedVehicleControllerSettings :: struct {} /* Inherits JPH_VehicleControllerSettings */
+WheeledVehicleController :: struct {} /* Inherits JPH_VehicleController */
+MotorcycleController :: struct {} /* Inherits JPH_WheeledVehicleController */
+TrackedVehicleController :: struct {} /* Inherits JPH_VehicleController */
+VehicleController :: struct {}
+
+VehicleAntiRollBar :: struct {
+	leftWheel:  i32,
+	rightWheel: i32,
+	stiffness:  f32,
+}
+
+VehicleConstraintSettings :: struct {
+	base:              ConstraintSettings, /* Inherits JPH_ConstraintSettings */
+	up:                Vec3,
+	forward:           Vec3,
+	maxPitchRollAngle: f32,
+	wheelsCount:       u32,
+	wheels:            ^^WheelSettings,
+	antiRollBarsCount: u32,
+	antiRollBars:      ^VehicleAntiRollBar,
+	controller:        ^VehicleControllerSettings,
+}
+
+VehicleDifferentialSettings :: struct {
+	leftWheel:         i32,
+	rightWheel:        i32,
+	differentialRatio: f32,
+	leftRightSplit:    f32,
+	limitedSlipRatio:  f32,
+	engineTorqueRatio: f32,
+}
+
+@(default_calling_convention = "c", link_prefix = "JPH_")
+foreign lib {
 	VehicleConstraintSettings_Init :: proc(settings: ^VehicleConstraintSettings) ---
 	VehicleConstraint_Create :: proc(body: ^Body, settings: ^VehicleConstraintSettings) -> ^VehicleConstraint ---
 	VehicleConstraint_AsPhysicsStepListener :: proc(constraint: ^VehicleConstraint) -> ^PhysicsStepListener ---
