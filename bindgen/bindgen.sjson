@@ -2,8 +2,8 @@ inputs = [
     "../joltc/include/joltc.h"
 ]
 
-output_folder = "temp"
-imports_file = "imports.odin"
+output_folder = ".."
+imports_file = "imports.inc"
 package_name = "joltc"
 
 remove_type_prefix = "JPH_"

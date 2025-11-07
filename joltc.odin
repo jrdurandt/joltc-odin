@@ -6,10 +6,12 @@ import "core:c"
 
 _ :: c
 
-when (ODIN_OS == .Linux) {
-	foreign import lib "system:libjoltc.so"
-} else when (ODIN_OS == .Windows) {
+when ODIN_OS == .Windows {
 	foreign import lib "joltc.lib"
+} else when ODIN_OS == .Darwin {
+	foreign import lib "libjoltc.dylib"
+} else when ODIN_OS == .Linux {
+	foreign import lib "system:libjoltc.so"
 }
 
 
@@ -175,214 +177,271 @@ GroupFilterTable :: struct {}
 
 /* Enums */
 PhysicsUpdateError :: enum c.int {
-	None                   = 0,
-	ManifoldCacheFull      = 1,
-	BodyPairCacheFull      = 2,
-	ContactConstraintsFull = 4,
+	JPH_PhysicsUpdateError_None = 0,
+	JPH_PhysicsUpdateError_ManifoldCacheFull = 1,
+	JPH_PhysicsUpdateError_BodyPairCacheFull = 2,
+	JPH_PhysicsUpdateError_ContactConstraintsFull = 4,
+	_JPH_PhysicsUpdateError_Count,
+	_JPH_PhysicsUpdateError_Force32 = 2147483647,
 }
 
 BodyType :: enum c.int {
-	Rigid = 0,
-	Soft  = 1,
+	JPH_BodyType_Rigid = 0,
+	JPH_BodyType_Soft = 1,
+	_JPH_BodyType_Count,
+	_JPH_BodyType_Force32 = 2147483647,
 }
 
 MotionType :: enum c.int {
-	Static    = 0,
-	Kinematic = 1,
-	Dynamic   = 2,
+	JPH_MotionType_Static = 0,
+	JPH_MotionType_Kinematic = 1,
+	JPH_MotionType_Dynamic = 2,
+	_JPH_MotionType_Count,
+	_JPH_MotionType_Force32 = 2147483647,
 }
 
 Activation :: enum c.int {
-	Activate     = 0,
-	DontActivate = 1,
+	JPH_Activation_Activate = 0,
+	JPH_Activation_DontActivate = 1,
+	_JPH_Activation_Count,
+	_JPH_Activation_Force32 = 2147483647,
 }
 
 ValidateResult :: enum c.int {
-	AcceptAllContactsForThisBodyPair = 0,
-	AcceptContact                    = 1,
-	RejectContact                    = 2,
-	RejectAllContactsForThisBodyPair = 3,
+	JPH_ValidateResult_AcceptAllContactsForThisBodyPair = 0,
+	JPH_ValidateResult_AcceptContact = 1,
+	JPH_ValidateResult_RejectContact = 2,
+	JPH_ValidateResult_RejectAllContactsForThisBodyPair = 3,
+	_JPH_ValidateResult_Count,
+	_JPH_ValidateResult_Force32 = 2147483647,
 }
 
 ShapeType :: enum c.int {
-	Convex      = 0,
-	Compound    = 1,
-	Decorated   = 2,
-	Mesh        = 3,
-	HeightField = 4,
-	SoftBody    = 5,
-	User1       = 6,
-	User2       = 7,
-	User3       = 8,
-	User4       = 9,
+	JPH_ShapeType_Convex = 0,
+	JPH_ShapeType_Compound = 1,
+	JPH_ShapeType_Decorated = 2,
+	JPH_ShapeType_Mesh = 3,
+	JPH_ShapeType_HeightField = 4,
+	JPH_ShapeType_SoftBody = 5,
+	JPH_ShapeType_User1 = 6,
+	JPH_ShapeType_User2 = 7,
+	JPH_ShapeType_User3 = 8,
+	JPH_ShapeType_User4 = 9,
+	_JPH_ShapeType_Count,
+	_JPH_ShapeType_Force32 = 2147483647,
 }
 
 ShapeSubType :: enum c.int {
-	Sphere             = 0,
-	Box                = 1,
-	Triangle           = 2,
-	Capsule            = 3,
-	TaperedCapsule     = 4,
-	Cylinder           = 5,
-	ConvexHull         = 6,
-	StaticCompound     = 7,
-	MutableCompound    = 8,
-	RotatedTranslated  = 9,
-	Scaled             = 10,
-	OffsetCenterOfMass = 11,
-	Mesh               = 12,
-	HeightField        = 13,
-	SoftBody           = 14,
+	JPH_ShapeSubType_Sphere = 0,
+	JPH_ShapeSubType_Box = 1,
+	JPH_ShapeSubType_Triangle = 2,
+	JPH_ShapeSubType_Capsule = 3,
+	JPH_ShapeSubType_TaperedCapsule = 4,
+	JPH_ShapeSubType_Cylinder = 5,
+	JPH_ShapeSubType_ConvexHull = 6,
+	JPH_ShapeSubType_StaticCompound = 7,
+	JPH_ShapeSubType_MutableCompound = 8,
+	JPH_ShapeSubType_RotatedTranslated = 9,
+	JPH_ShapeSubType_Scaled = 10,
+	JPH_ShapeSubType_OffsetCenterOfMass = 11,
+	JPH_ShapeSubType_Mesh = 12,
+	JPH_ShapeSubType_HeightField = 13,
+	JPH_ShapeSubType_SoftBody = 14,
+	_JPH_ShapeSubType_Count,
+	_JPH_ShapeSubType_Force32 = 2147483647,
 }
 
 ConstraintType :: enum c.int {
-	Constraint        = 0,
-	TwoBodyConstraint = 1,
+	JPH_ConstraintType_Constraint = 0,
+	JPH_ConstraintType_TwoBodyConstraint = 1,
+	_JPH_ConstraintType_Count,
+	_JPH_ConstraintType_Force32 = 2147483647,
 }
 
 ConstraintSubType :: enum c.int {
-	Fixed         = 0,
-	Point         = 1,
-	Hinge         = 2,
-	Slider        = 3,
-	Distance      = 4,
-	Cone          = 5,
-	SwingTwist    = 6,
-	SixDOF        = 7,
-	Path          = 8,
-	Vehicle       = 9,
-	RackAndPinion = 10,
-	Gear          = 11,
-	Pulley        = 12,
-	User1         = 13,
-	User2         = 14,
-	User3         = 15,
-	User4         = 16,
+	JPH_ConstraintSubType_Fixed = 0,
+	JPH_ConstraintSubType_Point = 1,
+	JPH_ConstraintSubType_Hinge = 2,
+	JPH_ConstraintSubType_Slider = 3,
+	JPH_ConstraintSubType_Distance = 4,
+	JPH_ConstraintSubType_Cone = 5,
+	JPH_ConstraintSubType_SwingTwist = 6,
+	JPH_ConstraintSubType_SixDOF = 7,
+	JPH_ConstraintSubType_Path = 8,
+	JPH_ConstraintSubType_Vehicle = 9,
+	JPH_ConstraintSubType_RackAndPinion = 10,
+	JPH_ConstraintSubType_Gear = 11,
+	JPH_ConstraintSubType_Pulley = 12,
+	JPH_ConstraintSubType_User1 = 13,
+	JPH_ConstraintSubType_User2 = 14,
+	JPH_ConstraintSubType_User3 = 15,
+	JPH_ConstraintSubType_User4 = 16,
+	_JPH_ConstraintSubType_Count,
+	_JPH_ConstraintSubType_Force32 = 2147483647,
 }
 
 ConstraintSpace :: enum c.int {
-	LocalToBodyCOM = 0,
-	WorldSpace     = 1,
+	JPH_ConstraintSpace_LocalToBodyCOM = 0,
+	JPH_ConstraintSpace_WorldSpace = 1,
+	_JPH_ConstraintSpace_Count,
+	_JPH_ConstraintSpace_Force32 = 2147483647,
 }
 
 MotionQuality :: enum c.int {
-	Discrete   = 0,
-	LinearCast = 1,
+	JPH_MotionQuality_Discrete = 0,
+	JPH_MotionQuality_LinearCast = 1,
+	_JPH_MotionQuality_Count,
+	_JPH_MotionQuality_Force32 = 2147483647,
 }
 
 OverrideMassProperties :: enum c.int {
-	CalculateMassAndInertia,
-	CalculateInertia,
-	MassAndInertiaProvided,
+	JPH_OverrideMassProperties_CalculateMassAndInertia,
+	JPH_OverrideMassProperties_CalculateInertia,
+	JPH_OverrideMassProperties_MassAndInertiaProvided,
+	_JPH_JPH_OverrideMassProperties_Count,
+	_JPH_JPH_OverrideMassProperties_Force32 = 2147483647,
 }
 
 AllowedDOFs :: enum c.int {
-	All          = 63,
-	TranslationX = 1,
-	TranslationY = 2,
-	TranslationZ = 4,
-	RotationX    = 8,
-	RotationY    = 16,
-	RotationZ    = 32,
-	Plane2D      = 35,
+	JPH_AllowedDOFs_All = 63,
+	JPH_AllowedDOFs_TranslationX = 1,
+	JPH_AllowedDOFs_TranslationY = 2,
+	JPH_AllowedDOFs_TranslationZ = 4,
+	JPH_AllowedDOFs_RotationX = 8,
+	JPH_AllowedDOFs_RotationY = 16,
+	JPH_AllowedDOFs_RotationZ = 32,
+	JPH_AllowedDOFs_Plane2D = 35,
+	_JPH_AllowedDOFs_Count,
+	_JPH_AllowedDOFs_Force32 = 2147483647,
 }
 
 GroundState :: enum c.int {
-	OnGround      = 0,
-	OnSteepGround = 1,
-	NotSupported  = 2,
-	InAir         = 3,
+	JPH_GroundState_OnGround = 0,
+	JPH_GroundState_OnSteepGround = 1,
+	JPH_GroundState_NotSupported = 2,
+	JPH_GroundState_InAir = 3,
+	_JPH_GroundState_Count,
+	_JPH_GroundState_Force32 = 2147483647,
 }
 
 BackFaceMode :: enum c.int {
-	IgnoreBackFaces,
-	CollideWithBackFaces,
+	JPH_BackFaceMode_IgnoreBackFaces,
+	JPH_BackFaceMode_CollideWithBackFaces,
+	_JPH_BackFaceMode_Count,
+	_JPH_BackFaceMode_Force32 = 2147483647,
 }
 
 ActiveEdgeMode :: enum c.int {
-	CollideOnlyWithActive,
-	CollideWithAll,
+	JPH_ActiveEdgeMode_CollideOnlyWithActive,
+	JPH_ActiveEdgeMode_CollideWithAll,
+	_JPH_ActiveEdgeMode_Count,
+	_JPH_ActiveEdgeMode_Force32 = 2147483647,
 }
 
 CollectFacesMode :: enum c.int {
-	CollectFaces,
-	NoFaces,
+	JPH_CollectFacesMode_CollectFaces,
+	JPH_CollectFacesMode_NoFaces,
+	_JPH_CollectFacesMode_Count,
+	_JPH_CollectFacesMode_Force32 = 2147483647,
 }
 
 MotorState :: enum c.int {
-	Off      = 0,
-	Velocity = 1,
-	Position = 2,
+	JPH_MotorState_Off = 0,
+	JPH_MotorState_Velocity = 1,
+	JPH_MotorState_Position = 2,
+	_JPH_MotorState_Count,
+	_JPH_MotorState_Force32 = 2147483647,
 }
 
 CollisionCollectorType :: enum c.int {
-	AllHit       = 0,
-	AllHitSorted = 1,
-	ClosestHit   = 2,
-	AnyHit       = 3,
+	JPH_CollisionCollectorType_AllHit = 0,
+	JPH_CollisionCollectorType_AllHitSorted = 1,
+	JPH_CollisionCollectorType_ClosestHit = 2,
+	JPH_CollisionCollectorType_AnyHit = 3,
+	_JPH_CollisionCollectorType_Count,
+	_JPH_CollisionCollectorType_Force32 = 2147483647,
 }
 
 SwingType :: enum c.int {
-	Cone,
-	Pyramid,
+	JPH_SwingType_Cone,
+	JPH_SwingType_Pyramid,
+	_JPH_SwingType_Count,
+	_JPH_SwingType_Force32 = 2147483647,
 }
 
 SixDOFConstraintAxis :: enum c.int {
-	TranslationX,
-	TranslationY,
-	TranslationZ,
-	RotationX,
-	RotationY,
-	RotationZ,
+	JPH_SixDOFConstraintAxis_TranslationX,
+	JPH_SixDOFConstraintAxis_TranslationY,
+	JPH_SixDOFConstraintAxis_TranslationZ,
+	JPH_SixDOFConstraintAxis_RotationX,
+	JPH_SixDOFConstraintAxis_RotationY,
+	JPH_SixDOFConstraintAxis_RotationZ,
+	_JPH_SixDOFConstraintAxis_Num,
+	_JPH_SixDOFConstraintAxis_NumTranslation = 3,
+	_JPH_SixDOFConstraintAxis_Force32 = 2147483647,
 }
 
 SpringMode :: enum c.int {
-	FrequencyAndDamping = 0,
-	StiffnessAndDamping = 1,
+	JPH_SpringMode_FrequencyAndDamping = 0,
+	JPH_SpringMode_StiffnessAndDamping = 1,
+	_JPH_SpringMode_Count,
+	_JPH_SpringMode_Force32 = 2147483647,
 }
 
 /// Defines how to color soft body constraints
 SoftBodyConstraintColor :: enum c.int {
-	ConstraintType,
+	JPH_SoftBodyConstraintColor_ConstraintType,
 
 	/// Draw different types of constraints in different colors
-	ConstraintGroup,
+	JPH_SoftBodyConstraintColor_ConstraintGroup,
 
 	/// Draw constraints in the same group in the same color, non-parallel group will be red
-	ConstraintOrder,
+	JPH_SoftBodyConstraintColor_ConstraintOrder,
 
 	/// Draw constraints in the same group in the same color, non-parallel group will be red, and order within each group will be indicated with gradient
+	_JPH_SoftBodyConstraintColor_Count,
 
 	/// Draw constraints in the same group in the same color, non-parallel group will be red, and order within each group will be indicated with gradient
+	_JPH_SoftBodyConstraintColor_Force32 = 2147483647,
 }
 
 BodyManager_ShapeColor :: enum c.int {
-	InstanceColor, ///< Random color per instance
-	ShapeTypeColor, ///< Convex = green, scaled = yellow, compound = orange, mesh = red
-	MotionTypeColor, ///< Static = grey, keyframed = green, dynamic = random color per instance
-	SleepColor, ///< Static = grey, keyframed = green, dynamic = yellow, sleeping = red
-	IslandColor, ///< Static = grey, active = random color per island, sleeping = light grey
-	MaterialColor, ///< Color as defined by the PhysicsMaterial of the shape
+	JPH_BodyManager_ShapeColor_InstanceColor, ///< Random color per instance
+	JPH_BodyManager_ShapeColor_ShapeTypeColor, ///< Convex = green, scaled = yellow, compound = orange, mesh = red
+	JPH_BodyManager_ShapeColor_MotionTypeColor, ///< Static = grey, keyframed = green, dynamic = random color per instance
+	JPH_BodyManager_ShapeColor_SleepColor, ///< Static = grey, keyframed = green, dynamic = yellow, sleeping = red
+	JPH_BodyManager_ShapeColor_IslandColor, ///< Static = grey, active = random color per island, sleeping = light grey
+	JPH_BodyManager_ShapeColor_MaterialColor, ///< Color as defined by the PhysicsMaterial of the shape
+	_JPH_BodyManager_ShapeColor_Count,
+	_JPH_BodyManager_ShapeColor_Force32 = 2147483647,
 }
 
 DebugRenderer_CastShadow :: enum c.int {
-	On  = 0, ///< This shape should cast a shadow
-	Off = 1, ///< This shape should not cast a shadow
+	JPH_DebugRenderer_CastShadow_On = 0, ///< This shape should cast a shadow
+	JPH_DebugRenderer_CastShadow_Off = 1, ///< This shape should not cast a shadow
+	_JPH_DebugRenderer_CastShadow_Count,
+	_JPH_DebugRenderer_CastShadow_Force32 = 2147483647,
 }
 
 DebugRenderer_DrawMode :: enum c.int {
-	Solid     = 0, ///< Draw as a solid shape
-	Wireframe = 1, ///< Draw as wireframe
+	JPH_DebugRenderer_DrawMode_Solid = 0, ///< Draw as a solid shape
+	JPH_DebugRenderer_DrawMode_Wireframe = 1, ///< Draw as wireframe
+	_JPH_DebugRenderer_DrawMode_Count,
+	_JPH_DebugRenderer_DrawMode_Force32 = 2147483647,
 }
 
 Mesh_Shape_BuildQuality :: enum c.int {
-	FavorRuntimePerformance = 0,
-	FavorBuildSpeed         = 1,
+	JPH_Mesh_Shape_BuildQuality_FavorRuntimePerformance = 0,
+	JPH_Mesh_Shape_BuildQuality_FavorBuildSpeed = 1,
+	_JPH_Mesh_Shape_BuildQuality_Count,
+	_JPH_Mesh_Shape_BuildQuality_Force32 = 2147483647,
 }
 
 TransmissionMode :: enum c.int {
-	Auto   = 0,
-	Manual = 1,
+	JPH_TransmissionMode_Auto = 0,
+	JPH_TransmissionMode_Manual = 1,
+	_JPH_TransmissionMode_Count,
+	_JPH_TransmissionMode_Force32 = 2147483647,
 }
 
 Vec3 :: [3]f32
