@@ -17,7 +17,7 @@ remove_enum_members = [
   "_JPH_*"
 ]
 remove = [
-  "JOLT_C_H"
+  "JOLT_C_H_"
   "JPH_CAPI"
 ]
 clang_include_paths = [

@@ -11,7 +11,6 @@ when ODIN_OS == .Windows {
 }
 
 
-JOLT_C_H_                     :: 1
 DEFAULT_COLLISION_TOLERANCE   :: (1.0e-4)                 // float cDefaultCollisionTolerance = 1.0e-4f
 DEFAULT_PENETRATION_TOLERANCE :: (1.0e-4)                 // float cDefaultPenetrationTolerance = 1.0e-4f
 DEFAULT_CONVEX_RADIUS         :: (0.05)                   // float cDefaultConvexRadius = 0.05f
