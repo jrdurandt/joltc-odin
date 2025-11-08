@@ -1,0 +1,6 @@
+[submodule "joltc"]
+	path = joltc
+	url = https://github.com/amerkoleci/joltc.git
+[submodule "odin-c-bindgen"]
+	path = odin-c-bindgen
+	url = https://github.com/karl-zylinski/odin-c-bindgen.git
