@@ -4,22 +4,13 @@ import argparse
 import platform
 import shutil
 import subprocess
-import tempfile
-import zipfile
 from pathlib import Path
-from urllib.request import urlopen
 
 SYSTEM = platform.system()
 IS_WINDOWS = SYSTEM == "Windows"
 IS_LINUX = SYSTEM == "Linux"
 
 assert IS_WINDOWS or IS_LINUX, "Unsupported platform"
-
-JOLTC_URL = "https://github.com/jrdurandt/joltc/archive/refs/heads/main.zip"
-BINDGEN_URL = (
-    "https://github.com/karl-zylinski/odin-c-bindgen/archive/refs/tags/2.0.zip"
-)
-
 
 # === Utility functions ===
 def run(cmd, cwd=None):
@@ -28,39 +19,8 @@ def run(cmd, cwd=None):
     subprocess.run(cmd, cwd=cwd, check=True)
 
 
-def download_and_extract(url: str, dest: Path):
-    """Download a GitHub zip archive and extract its contents directly into `dest`."""
-    print(f"=== Downloading {dest.name} ===")
-    dest.mkdir(parents=True, exist_ok=True)
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpzip = Path(tmpdir) / "repo.zip"
-        print(f"Downloading {url} ...")
-        with urlopen(url) as response, open(tmpzip, "wb") as f:
-            shutil.copyfileobj(response, f)
-
-        print("Extracting...")
-        with zipfile.ZipFile(tmpzip, "r") as zip_ref:
-            zip_ref.extractall(tmpdir)
-
-        # GitHub zips have a single root folder
-        inner_dirs = [d for d in Path(tmpdir).iterdir() if d.is_dir()]
-        if inner_dirs:
-            inner = inner_dirs[0]
-            for item in inner.iterdir():
-                target = dest / item.name
-                if item.is_dir():
-                    shutil.copytree(item, target, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(item, target)
-        else:
-            print("Warning: no subdirectory found inside archive.")
-
-
 def build_joltc():
-    """Download and build JoltC"""
-    if not Path("joltc").exists():
-        download_and_extract(JOLTC_URL, Path("joltc"))
+    """Build JoltC"""
 
     print("=== Building Jolt ===")
     build_dir = Path("joltc") / "build"
@@ -83,13 +43,11 @@ def build_joltc():
         shutil.copy(build_dir / "bin" / "Distribution" / "joltc.dll", Path.cwd())
         shutil.copy(build_dir / "lib" / "Distribution" / "joltc.lib", Path.cwd())
     elif IS_LINUX:
-        print("Run 'cd joltc/build && sudo make install && sudo ldconfig'")
+        print("To install, run 'cd joltc/build && sudo make install && sudo ldconfig'")
 
 
 def build_bindgen():
-    """Download and build odin-c-bindgen."""
-    if not Path("odin-c-bindgen").exists():
-        download_and_extract(BINDGEN_URL, Path("odin-c-bindgen"))
+    """Build odin-c-bindgen."""
 
     bindgen_exe = "bindgen.exe"
     if IS_LINUX:
