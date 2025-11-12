@@ -81,6 +81,7 @@ odin test .
 ## Examples
 
 For complete working examples, see the [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples) repository.
+Run examples with `odin run examples -debug`
 
 ## Project Structure
 
