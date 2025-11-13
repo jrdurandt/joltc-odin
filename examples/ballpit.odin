@@ -6,8 +6,8 @@ import "core:math/rand"
 import jph ".."
 import rl "vendor:raylib"
 
-WINDOW_WIDTH :: 800
-WINDOW_HEIGHT :: 600
+WINDOW_WIDTH :: 1920
+WINDOW_HEIGHT :: 1080
 
 main :: proc() {
 	rl.SetConfigFlags({.MSAA_4X_HINT})

@@ -800,6 +800,9 @@ JobSystemConfig :: struct {
 
 JobSystem :: struct {}
 
+/* Calculate max tire impulses by combining friction, slip, and suspension impulse. Note that the actual applied impulse may be lower (e.g. when the vehicle is stationary on a horizontal surface the actual impulse applied will be 0) */
+TireMaxImpulseCallback :: proc "c" (wheelIndex: u32, outLongitudinalImpulse: ^f32, outLateralImpulse: ^f32, suspensionImpulse: f32, longitudinalFriction: f32, lateralFriction: f32, longitudinalSlip: f32, lateralSlip: f32, deltaTime: f32)
+
 @(default_calling_convention="c", link_prefix="JPH_")
 foreign lib {
 	JobSystemThreadPool_Create :: proc(config: ^JobSystemThreadPoolConfig) -> ^JobSystem ---
@@ -2258,6 +2261,7 @@ foreign lib {
 	WheeledVehicleController_SetHandBrakeInput                       :: proc(controller: ^WheeledVehicleController, handBrakeInput: f32) ---
 	WheeledVehicleController_GetHandBrakeInput                       :: proc(controller: ^WheeledVehicleController) -> f32 ---
 	WheeledVehicleController_GetWheelSpeedAtClutch                   :: proc(controller: ^WheeledVehicleController) -> f32 ---
+	WheeledVehicleController_SetTireMaxImpulseCallback               :: proc(controller: ^WheeledVehicleController, tireMaxImpulseCallback: TireMaxImpulseCallback) ---
 
 	/* WheelSettingsTV - WheelTV - TrackedVehicleController */
 	/* TODO: Add VehicleTrack and VehicleTrackSettings */
