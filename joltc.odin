@@ -40,6 +40,7 @@ SimShapeFilter                  :: struct {}
 PhysicsStepListener             :: struct {}
 PhysicsSystem                   :: struct {}
 PhysicsMaterial                 :: struct {}
+LinearCurve                     :: struct {}
 ShapeSettings                   :: struct {}
 ConvexShapeSettings             :: struct {}
 SphereShapeSettings             :: struct {}
@@ -307,7 +308,13 @@ Plane :: struct {
 	distance: f32,
 }
 
-Mat4  :: matrix[4,4]f32
+Mat4 :: matrix[4,4]f32
+
+Point :: struct {
+	x: f32,
+	y: f32,
+}
+
 RVec3 :: Vec3
 RMat4 :: Mat4
 Color :: u32
@@ -2044,6 +2051,8 @@ WheelSettingsTV                    :: struct {} /* Inherits JPH_WheelSettings */
 Wheel                              :: struct {}
 WheelWV                            :: struct {} /* Inherits JPH_Wheel */
 WheelTV                            :: struct {} /* Inherits JPH_Wheel */
+VehicleEngine                      :: struct {}
+VehicleTransmission                :: struct {}
 VehicleTransmissionSettings        :: struct {}
 VehicleCollisionTester             :: struct {}
 VehicleCollisionTesterRay          :: struct {} /* Inherits JPH_VehicleCollisionTester */
@@ -2173,13 +2182,23 @@ foreign lib {
 	/* VehicleAntiRollBar */
 	VehicleAntiRollBar_Init :: proc(antiRollBar: ^VehicleAntiRollBar) ---
 
-	/* VehicleEngine */
+	/* VehicleEngineSettings */
 	VehicleEngineSettings_Init :: proc(settings: ^VehicleEngineSettings) ---
+
+	/* VehicleEngine */
+	VehicleEngine_ClampRPM           :: proc(engine: ^VehicleEngine) ---
+	VehicleEngine_GetCurrentRPM      :: proc(engine: ^VehicleEngine) -> f32 ---
+	VehicleEngine_SetCurrentRPM      :: proc(engine: ^VehicleEngine, rpm: f32) ---
+	VehicleEngine_GetAngularVelocity :: proc(engine: ^VehicleEngine) -> f32 ---
+	VehicleEngine_GetTorque          :: proc(engine: ^VehicleEngine, acceleration: f32) -> f32 ---
+	VehicleEngine_ApplyTorque        :: proc(engine: ^VehicleEngine, torque: f32, deltaTime: f32) ---
+	VehicleEngine_ApplyDamping       :: proc(engine: ^VehicleEngine, deltaTime: f32) ---
+	VehicleEngine_AllowSleep         :: proc(engine: ^VehicleEngine) -> bool ---
 
 	/* VehicleDifferentialSettings */
 	VehicleDifferentialSettings_Init :: proc(settings: ^VehicleDifferentialSettings) ---
 
-	/* VehicleTransmission */
+	/* VehicleTransmissionSettings */
 	VehicleTransmissionSettings_Create                   :: proc() -> ^VehicleTransmissionSettings ---
 	VehicleTransmissionSettings_Destroy                  :: proc(settings: ^VehicleTransmissionSettings) ---
 	VehicleTransmissionSettings_GetMode                  :: proc(settings: ^VehicleTransmissionSettings) -> TransmissionMode ---
@@ -2207,6 +2226,15 @@ foreign lib {
 	VehicleTransmissionSettings_GetClutchStrength        :: proc(settings: ^VehicleTransmissionSettings) -> f32 ---
 	VehicleTransmissionSettings_SetClutchStrength        :: proc(settings: ^VehicleTransmissionSettings, value: f32) ---
 
+	/* VehicleTransmission */
+	VehicleTransmission_Set               :: proc(transmission: ^VehicleTransmission, currentGear: i32, clutchFriction: f32) ---
+	VehicleTransmission_Update            :: proc(transmission: ^VehicleTransmission, deltaTime: f32, currentRPM: f32, forwardInput: f32, canShiftUp: bool) ---
+	VehicleTransmission_GetCurrentGear    :: proc(transmission: ^VehicleTransmission) -> i32 ---
+	VehicleTransmission_GetClutchFriction :: proc(transmission: ^VehicleTransmission) -> f32 ---
+	VehicleTransmission_IsSwitchingGear   :: proc(transmission: ^VehicleTransmission) -> bool ---
+	VehicleTransmission_GetCurrentRatio   :: proc(transmission: ^VehicleTransmission) -> f32 ---
+	VehicleTransmission_AllowSleep        :: proc(transmission: ^VehicleTransmission) -> bool ---
+
 	/* VehicleCollisionTester */
 	VehicleCollisionTester_Destroy            :: proc(tester: ^VehicleCollisionTester) ---
 	VehicleCollisionTester_GetObjectLayer     :: proc(tester: ^VehicleCollisionTester) -> ObjectLayer ---
@@ -2220,18 +2248,17 @@ foreign lib {
 	VehicleController_GetConstraint   :: proc(controller: ^VehicleController) -> ^VehicleConstraint ---
 
 	/* ---- WheelSettingsWV - WheelWV - WheeledVehicleController ---- */
-	WheelSettingsWV_Create            :: proc() -> ^WheelSettingsWV ---
-	WheelSettingsWV_GetInertia        :: proc(settings: ^WheelSettingsWV) -> f32 ---
-	WheelSettingsWV_SetInertia        :: proc(settings: ^WheelSettingsWV, value: f32) ---
-	WheelSettingsWV_GetAngularDamping :: proc(settings: ^WheelSettingsWV) -> f32 ---
-	WheelSettingsWV_SetAngularDamping :: proc(settings: ^WheelSettingsWV, value: f32) ---
-	WheelSettingsWV_GetMaxSteerAngle  :: proc(settings: ^WheelSettingsWV) -> f32 ---
-	WheelSettingsWV_SetMaxSteerAngle  :: proc(settings: ^WheelSettingsWV, value: f32) ---
-
-	//JPH_CAPI JPH_LinearCurve* JPH_WheelSettingsWV_GetLongitudinalFriction(const JPH_WheelSettingsWV* settings);
-	//JPH_CAPI void JPH_WheelSettingsWV_SetLongitudinalFriction(JPH_WheelSettingsWV* settings, const JPH_LinearCurve* value);
-	//JPH_CAPI JPH_LinearCurve* JPH_WheelSettingsWV_GetLateralFriction(const JPH_WheelSettingsWV* settings);
-	//JPH_CAPI void JPH_WheelSettingsWV_SetLateralFriction(JPH_WheelSettingsWV* settings, const JPH_LinearCurve* value);
+	WheelSettingsWV_Create                                           :: proc() -> ^WheelSettingsWV ---
+	WheelSettingsWV_GetInertia                                       :: proc(settings: ^WheelSettingsWV) -> f32 ---
+	WheelSettingsWV_SetInertia                                       :: proc(settings: ^WheelSettingsWV, value: f32) ---
+	WheelSettingsWV_GetAngularDamping                                :: proc(settings: ^WheelSettingsWV) -> f32 ---
+	WheelSettingsWV_SetAngularDamping                                :: proc(settings: ^WheelSettingsWV, value: f32) ---
+	WheelSettingsWV_GetMaxSteerAngle                                 :: proc(settings: ^WheelSettingsWV) -> f32 ---
+	WheelSettingsWV_SetMaxSteerAngle                                 :: proc(settings: ^WheelSettingsWV, value: f32) ---
+	WheelSettingsWV_GetLongitudinalFriction                          :: proc(settings: ^WheelSettingsWV) -> ^LinearCurve ---
+	WheelSettingsWV_SetLongitudinalFriction                          :: proc(settings: ^WheelSettingsWV, value: ^LinearCurve) ---
+	WheelSettingsWV_GetLateralFriction                               :: proc(settings: ^WheelSettingsWV) -> ^LinearCurve ---
+	WheelSettingsWV_SetLateralFriction                               :: proc(settings: ^WheelSettingsWV, value: ^LinearCurve) ---
 	WheelSettingsWV_GetMaxBrakeTorque                                :: proc(settings: ^WheelSettingsWV) -> f32 ---
 	WheelSettingsWV_SetMaxBrakeTorque                                :: proc(settings: ^WheelSettingsWV, value: f32) ---
 	WheelSettingsWV_GetMaxHandBrakeTorque                            :: proc(settings: ^WheelSettingsWV) -> f32 ---
@@ -2262,6 +2289,8 @@ foreign lib {
 	WheeledVehicleController_GetHandBrakeInput                       :: proc(controller: ^WheeledVehicleController) -> f32 ---
 	WheeledVehicleController_GetWheelSpeedAtClutch                   :: proc(controller: ^WheeledVehicleController) -> f32 ---
 	WheeledVehicleController_SetTireMaxImpulseCallback               :: proc(controller: ^WheeledVehicleController, tireMaxImpulseCallback: TireMaxImpulseCallback) ---
+	WheeledVehicleController_GetEngine                               :: proc(controller: ^WheeledVehicleController) -> ^VehicleEngine ---
+	WheeledVehicleController_GetTransmission                         :: proc(controller: ^WheeledVehicleController) -> ^VehicleTransmission ---
 
 	/* WheelSettingsTV - WheelTV - TrackedVehicleController */
 	/* TODO: Add VehicleTrack and VehicleTrackSettings */
@@ -2286,6 +2315,8 @@ foreign lib {
 	TrackedVehicleController_SetRightRatio           :: proc(controller: ^TrackedVehicleController, value: f32) ---
 	TrackedVehicleController_GetBrakeInput           :: proc(controller: ^TrackedVehicleController) -> f32 ---
 	TrackedVehicleController_SetBrakeInput           :: proc(controller: ^TrackedVehicleController, value: f32) ---
+	TrackedVehicleController_GetEngine               :: proc(controller: ^TrackedVehicleController) -> ^VehicleEngine ---
+	TrackedVehicleController_GetTransmission         :: proc(controller: ^TrackedVehicleController) -> ^VehicleTransmission ---
 
 	/* MotorcycleController */
 	MotorcycleControllerSettings_Create                                   :: proc() -> ^MotorcycleControllerSettings ---
@@ -2316,5 +2347,19 @@ foreign lib {
 	MotorcycleController_SetLeanSpringIntegrationCoefficientDecay         :: proc(controller: ^MotorcycleController, value: f32) ---
 	MotorcycleController_GetLeanSmoothingFactor                           :: proc(controller: ^MotorcycleController) -> f32 ---
 	MotorcycleController_SetLeanSmoothingFactor                           :: proc(controller: ^MotorcycleController, value: f32) ---
+
+	/* LinearCurve */
+	LinearCurve_Create        :: proc() -> ^LinearCurve ---
+	LinearCurve_Destroy       :: proc(curve: ^LinearCurve) ---
+	LinearCurve_Clear         :: proc(curve: ^LinearCurve) ---
+	LinearCurve_Reserve       :: proc(curve: ^LinearCurve, numPoints: u32) ---
+	LinearCurve_AddPoint      :: proc(curve: ^LinearCurve, x: f32, y: f32) ---
+	LinearCurve_Sort          :: proc(curve: ^LinearCurve) ---
+	LinearCurve_GetMinX       :: proc(curve: ^LinearCurve) -> f32 ---
+	LinearCurve_GetMaxX       :: proc(curve: ^LinearCurve) -> f32 ---
+	LinearCurve_GetValue      :: proc(curve: ^LinearCurve, x: f32) -> f32 ---
+	LinearCurve_GetPointCount :: proc(curve: ^LinearCurve) -> u32 ---
+	LinearCurve_GetPoint      :: proc(curve: ^LinearCurve, index: u32) -> Point ---
+	LinearCurve_GetPoints     :: proc(curve: ^LinearCurve, points: ^Point, count: ^u32) ---
 }
 
