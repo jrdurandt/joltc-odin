@@ -2087,13 +2087,12 @@ VehicleConstraintSettings :: struct {
 }
 
 VehicleEngineSettings :: struct {
-	maxTorque: f32,
-	minRPM:    f32,
-	maxRPM:    f32,
-
-	//LinearCurve			normalizedTorque;
-	inertia:        f32,
-	angularDamping: f32,
+	maxTorque:        f32,
+	minRPM:           f32,
+	maxRPM:           f32,
+	normalizedTorque: ^LinearCurve,
+	inertia:          f32,
+	angularDamping:   f32,
 }
 
 VehicleDifferentialSettings :: struct {
