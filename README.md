@@ -1,8 +1,8 @@
 # joltc-odin
 
-[Jolt Physics](https://github.com/jrouwe/JoltPhysics) bindings for [Odin](https://odin-lang.org) via [joltc](https://github.com/amerkoleci/joltc).
+> IMPORTANT: Future improvements will be contributed to [odin-joltc](https://github.com/nadako/odin-joltc) instead
 
-Also see: [odin-joltc](https://github.com/nadako/odin-joltc)
+[Jolt Physics](https://github.com/jrouwe/JoltPhysics) bindings for [Odin](https://odin-lang.org) via [joltc](https://github.com/amerkoleci/joltc).
 
 ## Overview
 
