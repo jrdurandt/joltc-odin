@@ -2,6 +2,8 @@
 
 [Jolt Physics](https://github.com/jrouwe/JoltPhysics) bindings for [Odin](https://odin-lang.org) via [joltc](https://github.com/amerkoleci/joltc).
 
+Also see: [odin-joltc](https://github.com/nadako/odin-joltc)
+
 ## Overview
 
 This project provides Odin language bindings for the Jolt Physics engine, enabling high-performance physics simulation in Odin applications. The bindings are automatically generated using [odin-c-bindgen](https://github.com/karl-zylinski/odin-c-bindgen) from the joltc C API.
