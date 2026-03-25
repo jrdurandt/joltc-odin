@@ -22,6 +22,7 @@ gen-bindings:
     @echo "Generate joltc odin bindings"
     ./odin-c-bindgen/{{ bindgen_exe }} bindgen
 
-run-examples:
-    @echo "Run examples"
-    odin run examples -debug
+[working-directory("examples/ballpit")]
+run-example-ballpit:
+    @echo "Run examples - Ballpit"
+    odin run . -debug

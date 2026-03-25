@@ -1,9 +1,10 @@
-package joltc_examples
+package joltc_examples_ballpit
 
 import "core:fmt"
 import "core:math/rand"
 
-import jph ".."
+import phy ".."
+import jph "../.."
 import rl "vendor:raylib"
 
 WINDOW_WIDTH :: 1920
@@ -23,8 +24,8 @@ main :: proc() {
 		projection = .PERSPECTIVE,
 	}
 
-	init_physics()
-	defer destroy_physics()
+	phy.init_physics()
+	defer phy.destroy_physics()
 
 	sphere_mesh := rl.GenMeshSphere(1, 8, 8)
 	sphere := rl.LoadModelFromMesh(sphere_mesh)
@@ -39,7 +40,7 @@ main :: proc() {
 			&{0, 0, 0},
 			nil,
 			.Static,
-			OBJECT_LAYER_NON_MOVING,
+			phy.OBJECT_LAYER_NON_MOVING,
 		)
 		defer jph.BodyCreationSettings_Destroy(floor_settings)
 
@@ -47,12 +48,12 @@ main :: proc() {
 		jph.BodyCreationSettings_SetFriction(floor_settings, 0.5)
 
 		floor_id = jph.BodyInterface_CreateAndAddBody(
-			physics.body_interface,
+			phy.physics.body_interface,
 			floor_settings,
 			.DontActivate,
 		)
 	}
-	defer jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, floor_id)
+	defer jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, floor_id)
 
 	build_wall :: proc(size: [3]f32, position: [3]f32) -> jph.BodyID {
 		size := size
@@ -65,39 +66,39 @@ main :: proc() {
 			&position,
 			nil,
 			.Static,
-			OBJECT_LAYER_NON_MOVING,
+			phy.OBJECT_LAYER_NON_MOVING,
 		)
 		defer jph.BodyCreationSettings_Destroy(floor_settings)
 
 		return jph.BodyInterface_CreateAndAddBody(
-			physics.body_interface,
+			phy.physics.body_interface,
 			floor_settings,
 			.DontActivate,
 		)
 	}
 
 	wall_n := build_wall({25, 2.5, 0.5}, {0, 2.5, -25})
-	defer jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, wall_n)
+	defer jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, wall_n)
 
 	wall_s := build_wall({25, 2.5, 0.5}, {0, 2.5, 25})
-	defer jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, wall_s)
+	defer jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, wall_s)
 
 	wall_e := build_wall({0.5, 2.5, 25.0}, {-25, 2.5, 0})
-	defer jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, wall_e)
+	defer jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, wall_e)
 
 	wall_w := build_wall({0.5, 2.5, 25.0}, {25, 2.5, 0})
-	defer jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, wall_w)
+	defer jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, wall_w)
 
 	balls: [dynamic]jph.BodyID
 	defer {
 		for ball_id in balls {
-			jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, ball_id)
+			jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, ball_id)
 		}
 		delete(balls)
 	}
 
 	sphere_shape := jph.SphereShape_Create(1)
-	jph.PhysicsSystem_OptimizeBroadPhase(physics.system)
+	jph.PhysicsSystem_OptimizeBroadPhase(phy.physics.system)
 
 	removed_balls: [dynamic]int
 	defer delete(removed_balls)
@@ -122,12 +123,12 @@ main :: proc() {
 				&ball_pos,
 				nil,
 				.Dynamic,
-				OBJECT_LAYER_MOVING,
+				phy.OBJECT_LAYER_MOVING,
 			)
 			defer jph.BodyCreationSettings_Destroy(sphere_settings)
 
 			ball_id := jph.BodyInterface_CreateAndAddBody(
-				physics.body_interface,
+				phy.physics.body_interface,
 				sphere_settings,
 				.Activate,
 			)
@@ -135,7 +136,7 @@ main :: proc() {
 			append(&balls, ball_id)
 		}
 
-		update_physics()
+		phy.update_physics()
 
 		rl.BeginDrawing()
 		defer rl.EndDrawing()
@@ -162,8 +163,8 @@ main :: proc() {
 				position: [3]f32
 				rotation: quaternion128
 
-				jph.BodyInterface_GetPosition(physics.body_interface, ball_id, &position)
-				jph.BodyInterface_GetRotation(physics.body_interface, ball_id, &rotation)
+				jph.BodyInterface_GetPosition(phy.physics.body_interface, ball_id, &position)
+				jph.BodyInterface_GetRotation(phy.physics.body_interface, ball_id, &rotation)
 
 				//Kill plane
 				if position.y <= -50 {
@@ -173,14 +174,14 @@ main :: proc() {
 
 				sphere.transform = rl.QuaternionToMatrix(rotation)
 
-				is_active := jph.BodyInterface_IsActive(physics.body_interface, ball_id)
+				is_active := jph.BodyInterface_IsActive(phy.physics.body_interface, ball_id)
 				rl.DrawModel(sphere, position, 1, is_active ? rl.RED : rl.GRAY)
 				rl.DrawModelWires(sphere, position, 1, rl.DARKGRAY)
 			}
 
 			for ball_index in removed_balls {
 				ball_id := balls[ball_index]
-				jph.BodyInterface_RemoveAndDestroyBody(physics.body_interface, ball_id)
+				jph.BodyInterface_RemoveAndDestroyBody(phy.physics.body_interface, ball_id)
 				unordered_remove(&balls, ball_index)
 			}
 			clear(&removed_balls)
