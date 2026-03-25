@@ -7,7 +7,7 @@ when ODIN_OS == .Windows {
 } else when ODIN_OS == .Darwin {
 	foreign import lib "libjoltc.dylib"
 } else when ODIN_OS == .Linux {
-	foreign import lib "system:libjoltc.so"
+	foreign import lib "libjoltc.so"
 }
 
 
@@ -345,10 +345,7 @@ IndexedTriangle :: struct {
 	userData:      u32,
 }
 
-MassProperties :: struct {
-	mass:    f32,
-	inertia: Mat4,
-}
+MassProperties :: struct {}
 
 ContactSettings :: struct {
 	combinedFriction:               f32,
@@ -455,19 +452,7 @@ CollidePointResult :: struct {
 	subShapeID2: SubShapeID,
 }
 
-CollideShapeResult :: struct {
-	contactPointOn1:  Vec3,
-	contactPointOn2:  Vec3,
-	penetrationAxis:  Vec3,
-	penetrationDepth: f32,
-	subShapeID1:      SubShapeID,
-	subShapeID2:      SubShapeID,
-	bodyID2:          BodyID,
-	shape1FaceCount:  u32,
-	shape1Faces:      ^Vec3,
-	shape2FaceCount:  u32,
-	shape2Faces:      ^Vec3,
-}
+CollideShapeResult :: struct {}
 
 ShapeCastResult :: struct {
 	contactPointOn1:  Vec3,
@@ -791,8 +776,8 @@ CharacterVirtualContact :: struct {
 TraceFunc         :: proc "c" (message: cstring)
 AssertFailureFunc :: proc "c" (expression: cstring, message: cstring, file: cstring, line: u32) -> bool
 JobFunction       :: proc "c" (arg: rawptr)
-QueueJobCallback  :: proc "c" (_context: rawptr, job: JobFunction, arg: rawptr)
-QueueJobsCallback :: proc "c" (_context: rawptr, job: JobFunction, args: ^rawptr, count: u32)
+QueueJobCallback  :: proc "c" (_context: rawptr, job: ^JobFunction, arg: rawptr)
+QueueJobsCallback :: proc "c" (_context: rawptr, job: ^JobFunction, args: ^rawptr, count: u32)
 
 JobSystemThreadPoolConfig :: struct {
 	maxJobs:     u32,
@@ -802,8 +787,8 @@ JobSystemThreadPoolConfig :: struct {
 
 JobSystemConfig :: struct {
 	_context:       rawptr,
-	queueJob:       QueueJobCallback,
-	queueJobs:      QueueJobsCallback,
+	queueJob:       ^QueueJobCallback,
+	queueJobs:      ^QueueJobsCallback,
 	maxConcurrency: u32,
 	maxBarriers:    u32,
 }
@@ -924,7 +909,7 @@ foreign lib {
 	PhysicsSystem_GetBodies                    :: proc(system: ^PhysicsSystem, ids: ^BodyID, count: u32) ---
 	PhysicsSystem_GetConstraints               :: proc(system: ^PhysicsSystem, constraints: ^^Constraint, count: u32) ---
 	PhysicsSystem_ActivateBodiesInAABox        :: proc(system: ^PhysicsSystem, box: ^AABox, layer: ObjectLayer) ---
-	PhysicsSystem_DrawBodies                   :: proc(system: ^PhysicsSystem, settings: ^DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter) --- /* = nullptr */
+	PhysicsSystem_DrawBodies                   :: proc(system: ^PhysicsSystem, settings: ^DrawSettings, renderer: ^DebugRenderer, bodyFilter: ^BodyDrawFilter /* = nullptr */) ---
 	PhysicsSystem_DrawConstraints              :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
 	PhysicsSystem_DrawConstraintLimits         :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
 	PhysicsSystem_DrawConstraintReferenceFrame :: proc(system: ^PhysicsSystem, renderer: ^DebugRenderer) ---
@@ -1025,7 +1010,7 @@ foreign lib {
 	/* GroupFilter/GroupFilterTable */
 	GroupFilter_Destroy                 :: proc(groupFilter: ^GroupFilter) ---
 	GroupFilter_CanCollide              :: proc(groupFilter: ^GroupFilter, group1: ^CollisionGroup, group2: ^CollisionGroup) -> bool ---
-	GroupFilterTable_Create             :: proc(numSubGroups: u32) -> ^GroupFilterTable --- /* = 0*/
+	GroupFilterTable_Create             :: proc(numSubGroups: u32 /* = 0*/) -> ^GroupFilterTable ---
 	GroupFilterTable_DisableCollision   :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) ---
 	GroupFilterTable_EnableCollision    :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) ---
 	GroupFilterTable_IsCollisionEnabled :: proc(table: ^GroupFilterTable, subGroup1: CollisionSubGroupID, subGroup2: CollisionSubGroupID) -> bool ---
@@ -1058,9 +1043,9 @@ foreign lib {
 	Shape_MakeScaleValid             :: proc(shape: ^Shape, scale: ^Vec3, result: ^Vec3) ---
 	Shape_ScaleShape                 :: proc(shape: ^Shape, scale: ^Vec3) -> ^Shape ---
 	Shape_CastRay                    :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, hit: ^RayCastResult) -> bool ---
-	Shape_CastRay2                   :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, collectorType: CollisionCollectorType, callback: CastRayResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
+	Shape_CastRay2                   :: proc(shape: ^Shape, origin: ^Vec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, collectorType: CollisionCollectorType, callback: ^CastRayResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
 	Shape_CollidePoint               :: proc(shape: ^Shape, point: ^Vec3, shapeFilter: ^ShapeFilter) -> bool ---
-	Shape_CollidePoint2              :: proc(shape: ^Shape, point: ^Vec3, collectorType: CollisionCollectorType, callback: CollidePointResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
+	Shape_CollidePoint2              :: proc(shape: ^Shape, point: ^Vec3, collectorType: CollisionCollectorType, callback: ^CollidePointResultCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
 
 	/* JPH_ConvexShape */
 	ConvexShapeSettings_GetDensity :: proc(shape: ^ConvexShapeSettings) -> f32 ---
@@ -1114,7 +1099,7 @@ foreign lib {
 	CylinderShape_GetHalfHeight       :: proc(shape: ^CylinderShape) -> f32 ---
 
 	/* TaperedCylinderShape */
-	TaperedCylinderShapeSettings_Create      :: proc(halfHeightOfTaperedCylinder: f32, topRadius: f32, bottomRadius: f32, convexRadius: f32, material: ^PhysicsMaterial) -> ^TaperedCylinderShapeSettings --- /* = cDefaultConvexRadius*/
+	TaperedCylinderShapeSettings_Create      :: proc(halfHeightOfTaperedCylinder: f32, topRadius: f32, bottomRadius: f32, convexRadius: f32 /* = cDefaultConvexRadius*/, material: ^PhysicsMaterial /* = NULL*/) -> ^TaperedCylinderShapeSettings ---
 	TaperedCylinderShapeSettings_CreateShape :: proc(settings: ^TaperedCylinderShapeSettings) -> ^TaperedCylinderShape ---
 	TaperedCylinderShape_GetTopRadius        :: proc(shape: ^TaperedCylinderShape) -> f32 ---
 	TaperedCylinderShape_GetBottomRadius     :: proc(shape: ^TaperedCylinderShape) -> f32 ---
@@ -1196,7 +1181,7 @@ foreign lib {
 	/* MutableCompoundShape */
 	MutableCompoundShapeSettings_Create     :: proc() -> ^MutableCompoundShapeSettings ---
 	MutableCompoundShape_Create             :: proc(settings: ^MutableCompoundShapeSettings) -> ^MutableCompoundShape ---
-	MutableCompoundShape_AddShape           :: proc(shape: ^MutableCompoundShape, position: ^Vec3, rotation: ^Quat, child: ^Shape, userData: u32, index: u32) -> u32 --- /* = 0 */
+	MutableCompoundShape_AddShape           :: proc(shape: ^MutableCompoundShape, position: ^Vec3, rotation: ^Quat, child: ^Shape, userData: u32 /* = 0 */, index: u32 /* = UINT32_MAX */) -> u32 ---
 	MutableCompoundShape_RemoveShape        :: proc(shape: ^MutableCompoundShape, index: u32) ---
 	MutableCompoundShape_ModifyShape        :: proc(shape: ^MutableCompoundShape, index: u32, position: ^Vec3, rotation: ^Quat) ---
 	MutableCompoundShape_ModifyShape2       :: proc(shape: ^MutableCompoundShape, index: u32, position: ^Vec3, rotation: ^Quat, newShape: ^Shape) ---
@@ -1618,24 +1603,24 @@ foreign lib {
 	//--------------------------------------------------------------------------------------------------
 	// JPH_BroadPhaseQuery
 	//--------------------------------------------------------------------------------------------------
-	BroadPhaseQuery_CastRay       :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, callback: RayCastBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
-	BroadPhaseQuery_CastRay2      :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, collectorType: CollisionCollectorType, callback: RayCastBodyResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
-	BroadPhaseQuery_CollideAABox  :: proc(query: ^BroadPhaseQuery, box: ^AABox, callback: CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
-	BroadPhaseQuery_CollideSphere :: proc(query: ^BroadPhaseQuery, center: ^Vec3, radius: f32, callback: CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
-	BroadPhaseQuery_CollidePoint  :: proc(query: ^BroadPhaseQuery, point: ^Vec3, callback: CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
+	BroadPhaseQuery_CastRay       :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, callback: ^RayCastBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
+	BroadPhaseQuery_CastRay2      :: proc(query: ^BroadPhaseQuery, origin: ^Vec3, direction: ^Vec3, collectorType: CollisionCollectorType, callback: ^RayCastBodyResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
+	BroadPhaseQuery_CollideAABox  :: proc(query: ^BroadPhaseQuery, box: ^AABox, callback: ^CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
+	BroadPhaseQuery_CollideSphere :: proc(query: ^BroadPhaseQuery, center: ^Vec3, radius: f32, callback: ^CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
+	BroadPhaseQuery_CollidePoint  :: proc(query: ^BroadPhaseQuery, point: ^Vec3, callback: ^CollideShapeBodyCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter) -> bool ---
 
 	//--------------------------------------------------------------------------------------------------
 	// JPH_NarrowPhaseQuery
 	//--------------------------------------------------------------------------------------------------
 	NarrowPhaseQuery_CastRay       :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, hit: ^RayCastResult, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter) -> bool ---
-	NarrowPhaseQuery_CastRay2      :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, callback: CastRayCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CastRay3      :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, collectorType: CollisionCollectorType, callback: CastRayResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CollidePoint  :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, callback: CollidePointCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CollidePoint2 :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, collectorType: CollisionCollectorType, callback: CollidePointResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CollideShape  :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMat4, settings: ^CollideShapeSettings, baseOffset: ^RVec3, callback: CollideShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CollideShape2 :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMat4, settings: ^CollideShapeSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: CollideShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CastShape     :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMat4, direction: ^Vec3, settings: ^ShapeCastSettings, baseOffset: ^RVec3, callback: CastShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
-	NarrowPhaseQuery_CastShape2    :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMat4, direction: ^Vec3, settings: ^ShapeCastSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: CastShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CastRay2      :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, callback: ^CastRayCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CastRay3      :: proc(query: ^NarrowPhaseQuery, origin: ^RVec3, direction: ^Vec3, rayCastSettings: ^RayCastSettings, collectorType: CollisionCollectorType, callback: ^CastRayResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CollidePoint  :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, callback: ^CollidePointCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CollidePoint2 :: proc(query: ^NarrowPhaseQuery, point: ^RVec3, collectorType: CollisionCollectorType, callback: ^CollidePointResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CollideShape  :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMat4, settings: ^CollideShapeSettings, baseOffset: ^RVec3, callback: ^CollideShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CollideShape2 :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, scale: ^Vec3, centerOfMassTransform: ^RMat4, settings: ^CollideShapeSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: ^CollideShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CastShape     :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMat4, direction: ^Vec3, settings: ^ShapeCastSettings, baseOffset: ^RVec3, callback: ^CastShapeCollectorCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
+	NarrowPhaseQuery_CastShape2    :: proc(query: ^NarrowPhaseQuery, shape: ^Shape, worldTransform: ^RMat4, direction: ^Vec3, settings: ^ShapeCastSettings, baseOffset: ^RVec3, collectorType: CollisionCollectorType, callback: ^CastShapeResultCallback, userData: rawptr, broadPhaseLayerFilter: ^BroadPhaseLayerFilter, objectLayerFilter: ^ObjectLayerFilter, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
 
 	//--------------------------------------------------------------------------------------------------
 	// JPH_Body
@@ -1849,27 +1834,27 @@ foreign lib {
 
 	/* Character */
 	Character_Create                      :: proc(settings: ^CharacterSettings, position: ^RVec3, rotation: ^Quat, userData: u64, system: ^PhysicsSystem) -> ^Character ---
-	Character_AddToPhysicsSystem          :: proc(character: ^Character, activationMode: Activation, lockBodies: bool) --- /*= JPH_ActivationActivate */
-	Character_RemoveFromPhysicsSystem     :: proc(character: ^Character, lockBodies: bool) --- /* = true */
-	Character_Activate                    :: proc(character: ^Character, lockBodies: bool) --- /* = true */
-	Character_PostSimulation              :: proc(character: ^Character, maxSeparationDistance: f32, lockBodies: bool) --- /* = true */
-	Character_SetLinearAndAngularVelocity :: proc(character: ^Character, linearVelocity: ^Vec3, angularVelocity: ^Vec3, lockBodies: bool) --- /* = true */
+	Character_AddToPhysicsSystem          :: proc(character: ^Character, activationMode: Activation /*= JPH_ActivationActivate */, lockBodies: bool /* = true */) ---
+	Character_RemoveFromPhysicsSystem     :: proc(character: ^Character, lockBodies: bool /* = true */) ---
+	Character_Activate                    :: proc(character: ^Character, lockBodies: bool /* = true */) ---
+	Character_PostSimulation              :: proc(character: ^Character, maxSeparationDistance: f32, lockBodies: bool /* = true */) ---
+	Character_SetLinearAndAngularVelocity :: proc(character: ^Character, linearVelocity: ^Vec3, angularVelocity: ^Vec3, lockBodies: bool /* = true */) ---
 	Character_GetLinearVelocity           :: proc(character: ^Character, result: ^Vec3) ---
-	Character_SetLinearVelocity           :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) --- /* = true */
-	Character_AddLinearVelocity           :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) --- /* = true */
-	Character_AddImpulse                  :: proc(character: ^Character, value: ^Vec3, lockBodies: bool) --- /* = true */
+	Character_SetLinearVelocity           :: proc(character: ^Character, value: ^Vec3, lockBodies: bool /* = true */) ---
+	Character_AddLinearVelocity           :: proc(character: ^Character, value: ^Vec3, lockBodies: bool /* = true */) ---
+	Character_AddImpulse                  :: proc(character: ^Character, value: ^Vec3, lockBodies: bool /* = true */) ---
 	Character_GetBodyID                   :: proc(character: ^Character) -> BodyID ---
-	Character_GetPositionAndRotation      :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, lockBodies: bool) --- /* = true */
-	Character_SetPositionAndRotation      :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, activationMode: Activation, lockBodies: bool) --- /* = true */
-	Character_GetPosition                 :: proc(character: ^Character, position: ^RVec3, lockBodies: bool) --- /* = true */
-	Character_SetPosition                 :: proc(character: ^Character, position: ^RVec3, activationMode: Activation, lockBodies: bool) --- /* = true */
-	Character_GetRotation                 :: proc(character: ^Character, rotation: ^Quat, lockBodies: bool) --- /* = true */
-	Character_SetRotation                 :: proc(character: ^Character, rotation: ^Quat, activationMode: Activation, lockBodies: bool) --- /* = true */
-	Character_GetCenterOfMassPosition     :: proc(character: ^Character, result: ^RVec3, lockBodies: bool) --- /* = true */
-	Character_GetWorldTransform           :: proc(character: ^Character, result: ^RMat4, lockBodies: bool) --- /* = true */
+	Character_GetPositionAndRotation      :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, lockBodies: bool /* = true */) ---
+	Character_SetPositionAndRotation      :: proc(character: ^Character, position: ^RVec3, rotation: ^Quat, activationMode: Activation, lockBodies: bool /* = true */) ---
+	Character_GetPosition                 :: proc(character: ^Character, position: ^RVec3, lockBodies: bool /* = true */) ---
+	Character_SetPosition                 :: proc(character: ^Character, position: ^RVec3, activationMode: Activation, lockBodies: bool /* = true */) ---
+	Character_GetRotation                 :: proc(character: ^Character, rotation: ^Quat, lockBodies: bool /* = true */) ---
+	Character_SetRotation                 :: proc(character: ^Character, rotation: ^Quat, activationMode: Activation, lockBodies: bool /* = true */) ---
+	Character_GetCenterOfMassPosition     :: proc(character: ^Character, result: ^RVec3, lockBodies: bool /* = true */) ---
+	Character_GetWorldTransform           :: proc(character: ^Character, result: ^RMat4, lockBodies: bool /* = true */) ---
 	Character_GetLayer                    :: proc(character: ^Character) -> ObjectLayer ---
-	Character_SetLayer                    :: proc(character: ^Character, value: ObjectLayer, lockBodies: bool) --- /*= true*/
-	Character_SetShape                    :: proc(character: ^Character, shape: ^Shape, maxPenetrationDepth: f32, lockBodies: bool) --- /*= true*/
+	Character_SetLayer                    :: proc(character: ^Character, value: ObjectLayer, lockBodies: bool /*= true*/) ---
+	Character_SetShape                    :: proc(character: ^Character, shape: ^Shape, maxPenetrationDepth: f32, lockBodies: bool /*= true*/) ---
 
 	/* CharacterVirtualSettings */
 	CharacterVirtualSettings_Init :: proc(settings: ^CharacterVirtualSettings) ---
@@ -1963,9 +1948,9 @@ foreign lib {
 	CharacterVsCharacterCollision_Destroy               :: proc(listener: ^CharacterVsCharacterCollision) ---
 
 	/* CollisionDispatch */
-	CollisionDispatch_CollideShapeVsShape        :: proc(shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, scale2: ^Vec3, centerOfMassTransform1: ^Mat4, centerOfMassTransform2: ^Mat4, collideShapeSettings: ^CollideShapeSettings, callback: CollideShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
-	CollisionDispatch_CastShapeVsShapeLocalSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1InShape2LocalSpace: ^Vec3, scale2: ^Vec3, centerOfMassTransform1InShape2LocalSpace: ^Mat4, centerOfMassWorldTransform2: ^Mat4, shapeCastSettings: ^ShapeCastSettings, callback: CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
-	CollisionDispatch_CastShapeVsShapeWorldSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, inScale2: ^Vec3, centerOfMassWorldTransform1: ^Mat4, centerOfMassWorldTransform2: ^Mat4, shapeCastSettings: ^ShapeCastSettings, callback: CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
+	CollisionDispatch_CollideShapeVsShape        :: proc(shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, scale2: ^Vec3, centerOfMassTransform1: ^Mat4, centerOfMassTransform2: ^Mat4, collideShapeSettings: ^CollideShapeSettings, callback: ^CollideShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
+	CollisionDispatch_CastShapeVsShapeLocalSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1InShape2LocalSpace: ^Vec3, scale2: ^Vec3, centerOfMassTransform1InShape2LocalSpace: ^Mat4, centerOfMassWorldTransform2: ^Mat4, shapeCastSettings: ^ShapeCastSettings, callback: ^CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
+	CollisionDispatch_CastShapeVsShapeWorldSpace :: proc(direction: ^Vec3, shape1: ^Shape, shape2: ^Shape, scale1: ^Vec3, inScale2: ^Vec3, centerOfMassWorldTransform1: ^Mat4, centerOfMassWorldTransform2: ^Mat4, shapeCastSettings: ^ShapeCastSettings, callback: ^CastShapeCollectorCallback, userData: rawptr, shapeFilter: ^ShapeFilter) -> bool ---
 }
 
 /* DebugRenderer */
@@ -2073,7 +2058,7 @@ foreign lib {
 	RagdollSettings_GetSkeleton                           :: proc(character: ^RagdollSettings) -> ^Skeleton ---
 	RagdollSettings_SetSkeleton                           :: proc(character: ^RagdollSettings, skeleton: ^Skeleton) ---
 	RagdollSettings_Stabilize                             :: proc(settings: ^RagdollSettings) -> bool ---
-	RagdollSettings_DisableParentChildCollisions          :: proc(settings: ^RagdollSettings, jointMatrices: ^Mat4, minSeparationDistance: f32) --- /*=nullptr*/
+	RagdollSettings_DisableParentChildCollisions          :: proc(settings: ^RagdollSettings, jointMatrices: ^Mat4 /*=nullptr*/, minSeparationDistance: f32 /* = 0.0f*/) ---
 	RagdollSettings_CalculateBodyIndexToConstraintIndex   :: proc(settings: ^RagdollSettings) ---
 	RagdollSettings_GetConstraintIndexForBodyIndex        :: proc(settings: ^RagdollSettings, bodyIndex: i32) -> i32 ---
 	RagdollSettings_CalculateConstraintIndexToBodyIdxPair :: proc(settings: ^RagdollSettings) ---
@@ -2086,26 +2071,26 @@ foreign lib {
 	RagdollSettings_SetPartObjectLayer                    :: proc(settings: ^RagdollSettings, partIndex: i32, layer: ObjectLayer) ---
 	RagdollSettings_SetPartMassProperties                 :: proc(settings: ^RagdollSettings, partIndex: i32, mass: f32) ---
 	RagdollSettings_SetPartToParent                       :: proc(settings: ^RagdollSettings, partIndex: i32, constraintSettings: ^SwingTwistConstraintSettings) ---
-	RagdollSettings_CreateRagdoll                         :: proc(settings: ^RagdollSettings, system: ^PhysicsSystem, collisionGroup: CollisionGroupID, userData: u64) -> ^Ragdoll --- /*=0*/
+	RagdollSettings_CreateRagdoll                         :: proc(settings: ^RagdollSettings, system: ^PhysicsSystem, collisionGroup: CollisionGroupID /*=0*/, userData: u64 /* = 0*/) -> ^Ragdoll ---
 
 	/* Ragdoll */
 	Ragdoll_Destroy                    :: proc(ragdoll: ^Ragdoll) ---
-	Ragdoll_AddToPhysicsSystem         :: proc(ragdoll: ^Ragdoll, activationMode: Activation, lockBodies: bool) --- /*= JPH_ActivationActivate */
-	Ragdoll_RemoveFromPhysicsSystem    :: proc(ragdoll: ^Ragdoll, lockBodies: bool) --- /* = true */
-	Ragdoll_Activate                   :: proc(ragdoll: ^Ragdoll, lockBodies: bool) --- /* = true */
-	Ragdoll_IsActive                   :: proc(ragdoll: ^Ragdoll, lockBodies: bool) -> bool --- /* = true */
+	Ragdoll_AddToPhysicsSystem         :: proc(ragdoll: ^Ragdoll, activationMode: Activation /*= JPH_ActivationActivate */, lockBodies: bool /* = true */) ---
+	Ragdoll_RemoveFromPhysicsSystem    :: proc(ragdoll: ^Ragdoll, lockBodies: bool /* = true */) ---
+	Ragdoll_Activate                   :: proc(ragdoll: ^Ragdoll, lockBodies: bool /* = true */) ---
+	Ragdoll_IsActive                   :: proc(ragdoll: ^Ragdoll, lockBodies: bool /* = true */) -> bool ---
 	Ragdoll_ResetWarmStart             :: proc(ragdoll: ^Ragdoll) ---
-	Ragdoll_SetPose                    :: proc(ragdoll: ^Ragdoll, pose: ^SkeletonPose, lockBodies: bool) --- /* = true */
-	Ragdoll_SetPose2                   :: proc(ragdoll: ^Ragdoll, rootOffset: ^RVec3, jointMatrices: ^Mat4, lockBodies: bool) --- /* = true */
-	Ragdoll_GetPose                    :: proc(ragdoll: ^Ragdoll, outPose: ^SkeletonPose, lockBodies: bool) --- /* = true */
-	Ragdoll_GetPose2                   :: proc(ragdoll: ^Ragdoll, outRootOffset: ^RVec3, outJointMatrices: ^Mat4, lockBodies: bool) --- /* = true */
+	Ragdoll_SetPose                    :: proc(ragdoll: ^Ragdoll, pose: ^SkeletonPose, lockBodies: bool /* = true */) ---
+	Ragdoll_SetPose2                   :: proc(ragdoll: ^Ragdoll, rootOffset: ^RVec3, jointMatrices: ^Mat4, lockBodies: bool /* = true */) ---
+	Ragdoll_GetPose                    :: proc(ragdoll: ^Ragdoll, outPose: ^SkeletonPose, lockBodies: bool /* = true */) ---
+	Ragdoll_GetPose2                   :: proc(ragdoll: ^Ragdoll, outRootOffset: ^RVec3, outJointMatrices: ^Mat4, lockBodies: bool /* = true */) ---
 	Ragdoll_DriveToPoseUsingMotors     :: proc(ragdoll: ^Ragdoll, pose: ^SkeletonPose) ---
-	Ragdoll_DriveToPoseUsingKinematics :: proc(ragdoll: ^Ragdoll, pose: ^SkeletonPose, deltaTime: f32, lockBodies: bool) --- /* = true */
+	Ragdoll_DriveToPoseUsingKinematics :: proc(ragdoll: ^Ragdoll, pose: ^SkeletonPose, deltaTime: f32, lockBodies: bool /* = true */) ---
 	Ragdoll_GetBodyCount               :: proc(ragdoll: ^Ragdoll) -> i32 ---
 	Ragdoll_GetBodyID                  :: proc(ragdoll: ^Ragdoll, bodyIndex: i32) -> BodyID ---
 	Ragdoll_GetConstraintCount         :: proc(ragdoll: ^Ragdoll) -> i32 ---
 	Ragdoll_GetConstraint              :: proc(ragdoll: ^Ragdoll, constraintIndex: i32) -> ^TwoBodyConstraint ---
-	Ragdoll_GetRootTransform           :: proc(ragdoll: ^Ragdoll, outPosition: ^RVec3, outRotation: ^Quat, lockBodies: bool) --- /* = true */
+	Ragdoll_GetRootTransform           :: proc(ragdoll: ^Ragdoll, outPosition: ^RVec3, outRotation: ^Quat, lockBodies: bool /* = true */) ---
 	Ragdoll_GetRagdollSettings         :: proc(ragdoll: ^Ragdoll) -> ^RagdollSettings ---
 
 	/* JPH_EstimateCollisionResponse */
@@ -2366,15 +2351,7 @@ TrackSide :: enum u32 {
 	Right = 1,
 }
 
-VehicleTrackSettings :: struct {
-	drivenWheel:       u32,
-	wheels:            ^u32,
-	wheelsCount:       u32,
-	inertia:           f32,
-	angularDamping:    f32,
-	maxBrakeTorque:    f32,
-	differentialRatio: f32,
-}
+VehicleTrackSettings :: struct {}
 
 @(default_calling_convention="c", link_prefix="JPH_")
 foreign lib {

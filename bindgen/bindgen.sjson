@@ -1,7 +1,7 @@
 inputs = [
   "../joltc/include/joltc.h"
 ]
-output_folder = ".."
+output_folder = "../jolt"
 remove_type_prefix = "JPH_"
 remove_macro_prefix = "JPH_"
 remove_function_prefix = "JPH_"
@@ -22,5 +22,5 @@ remove = [
 ]
 clang_include_paths = [
   //https://github.com/karl-zylinski/odin-c-bindgen/issues/91
-  "/usr/lib/clang/21/include/"
+  "/usr/lib/clang/22/include/"
 ]

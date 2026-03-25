@@ -1,16 +1,18 @@
 bindgen_exe := if os() == "windows" { "bindgen.exe" } else { "bindgen.bin" }
+config := "Release"
 
 [working-directory("joltc")]
 build-joltc:
     @echo "Build joltc"
 
+    mkdir -p build
     cmake . -B build -DJPH_SAMPLES=OFF -DJPH_BUILD_SHARED=ON
-    cmake --build build --config Distribution
+    cmake --build build --config {{ config }}
 
-[working-directory("joltc/build")]
-install-joltc: build-joltc
-    make install
-    ldconfig
+    ## TODO: Windows
+    if [ "{{ os() }}" = "linux" ]; then \
+        cp build/lib/libjoltc.so ../jolt; \
+    fi \
 
 [working-directory("odin-c-bindgen")]
 build-bindgen:

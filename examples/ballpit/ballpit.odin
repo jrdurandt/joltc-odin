@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:math/rand"
 
 import phy ".."
-import jph "../.."
+import jph "../../jolt"
 import rl "vendor:raylib"
 
 WINDOW_WIDTH :: 1920

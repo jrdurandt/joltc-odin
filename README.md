@@ -11,40 +11,38 @@ This project provides Odin language bindings for the Jolt Physics engine, enabli
 ## Requirements
 
 - [Odin compiler](https://odin-lang.org)
-- Python 3
 - libclang (required for binding generation)
 
+Note: The build here use [just](https://github.com/casey/just) to run. It is not required and just a simple way to run script. Please see the `justfile` and execute the commands (for your os) if you prefer that.
+
 ## Quick Start
+
+Before executing any command, ensure the dependencies are downloaded:  
+`git submodule init`  
+`git submodule update --init --recursive`
 
 ### 1. Build JoltC Shared Library
 
 To build only the shared library (`.so` on Linux, `.dll` on Windows, `.dylib` on macOS):
 
 ```bash
-python build.py --build-joltc
+just build-joltc
 ```
 
-This downloads and compiles joltc automatically.
-
-**Window**
-Run the above inside the VS2022 Dev Console
-
-**Linux Installation:**
-```bash
-cd joltc/build
-sudo make install
-sudo ldconfig
-```
+**Windows**
+TODO
 
 ### 2. Generate Bindings (Optional)
 
 If you need fresh bindings from the latest JoltC changes:
 
 ```bash
-python build.py --build-bindgen --gen-bindings
+just build-bindgen
+just gen-bindings
 ```
 
 This will:
+
 - Download and compile odin-c-bindgen
 - Generate new Odin bindings from the C headers
 
@@ -52,7 +50,7 @@ This will:
 
 ### In Your Project
 
-1. Copy the `joltc-odin` directory to your project root
+1. Copy the `jolt` directory to your project root
 2. Include the appropriate shared library for your platform:
    - Linux: `libjoltc.so` (place in /usr/local/lib to make it available to the system)
    - Windows: `joltc.dll`
@@ -77,13 +75,12 @@ main :: proc() {
 ### Running Tests
 
 ```bash
-odin test .
+odin test jolt
 ```
 
 ## Examples
 
-For complete working examples, see the [jolt-odin-samples](https://github.com/jrdurandt/jolt-odin-samples) repository.
-Run examples with `odin run examples -debug`
+Run examples with `odin run examples/ballpit -debug`
 
 ## Project Structure
 
@@ -99,6 +96,7 @@ joltc-odin/
 ### Linking Issues
 
 Make sure the shared library is:
+
 - In the same directory as your executable, or
 - In your system's library path, or
 - Properly referenced in your build configuration
@@ -108,6 +106,7 @@ You may need to adjust library paths in the `joltc-odin` package if your setup d
 ### Build Issues
 
 Ensure all requirements are installed and accessible in your PATH:
+
 - Odin compiler
 - Python 3
 - libclang development headers

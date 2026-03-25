@@ -7,7 +7,7 @@ import "core:math"
 import "core:thread"
 import "core:time"
 
-import jph ".."
+import jph "../jolt"
 import rl "vendor:raylib"
 
 PHYSICS_UPDATED_PER_SECOND :: 1.0 / 60.0
