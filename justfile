@@ -2,17 +2,14 @@ bindgen_exe := if os() == "windows" { "bindgen.exe" } else { "bindgen.bin" }
 config := "Distribution"
 
 [working-directory("joltc")]
-build-joltc:
+build-joltc shared="OFF":
     @echo "Build joltc"
 
     git submodule init .
     git submodule update .
 
-    # If building for windows can also look at joltc/build for batch scripts,
-    # and then just copy the lib/joltc.lib to /jolt and bin/joltc.dll to root of project
-
     mkdir -p build
-    cmake . -B build -DJPH_SAMPLES=OFF -DJPH_TESTS=OFF -DJPH_BUILD_SHARED=OFF -DINTERPROCEDURAL_OPTIMIZATION=OFF
+    cmake . -B build -DJPH_SAMPLES=OFF -DJPH_TESTS=OFF -DJPH_INSTALL=OFF -DJPH_BUILD_SHARED={{ shared }} -DINTERPROCEDURAL_OPTIMIZATION=OFF
     cmake --build build --config {{ config }}
 
 [working-directory("odin-c-bindgen")]
