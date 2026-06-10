@@ -7,3 +7,7 @@
 *.so
 *.dll
 *.lib
+*.a
+
+/build
+/lib

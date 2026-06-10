@@ -1,16 +1,9 @@
+build-script := if os() == "windows" { "build_joltc_windows.bat" } else { "./build_joltc_linux.sh" }
 bindgen_exe := if os() == "windows" { "bindgen.exe" } else { "bindgen.bin" }
-config := "Distribution"
 
-[working-directory("joltc")]
-build-joltc shared="OFF":
+build-joltc:
     @echo "Build joltc"
-
-    git submodule init .
-    git submodule update .
-
-    mkdir -p build
-    cmake . -B build -DJPH_SAMPLES=OFF -DJPH_TESTS=OFF -DJPH_INSTALL=OFF -DJPH_BUILD_SHARED={{ shared }} -DINTERPROCEDURAL_OPTIMIZATION=OFF
-    cmake --build build --config {{ config }}
+    {{ build-script }}
 
 [working-directory("odin-c-bindgen")]
 build-bindgen:
