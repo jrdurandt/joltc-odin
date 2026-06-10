@@ -1,7 +1,7 @@
 inputs = [
   "../joltc/include/joltc.h"
 ]
-output_folder = "../jolt"
+output_folder = ".."
 remove_type_prefix = "JPH_"
 remove_macro_prefix = "JPH_"
 remove_function_prefix = "JPH_"
