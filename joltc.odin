@@ -2,21 +2,10 @@
 // Licensed under the MIT License (MIT). See LICENSE in the repository root for more information.
 package joltc
 
-JOLTC_SHARED :: #config(JOLTC_SHARED, false)
-
 when ODIN_OS == .Windows {
-	when JOLTC_SHARED {
-		foreign import lib "joltc.lib"
-	} else {
-		foreign import lib {"lib/joltc.lib", "lib/Jolt.lib"}
-	}
+	foreign import lib "lib/joltc.lib"
 } else when ODIN_OS == .Linux {
-	when JOLTC_SHARED {
-		foreign import lib "libjoltc.so"
-	} else {
-		@(extra_linker_flags = "-lstdc++")
-		foreign import lib {"lib/libjoltc.a", "lib/libJolt.a"}
-	}
+	foreign import lib "system:joltc"
 }
 
 
@@ -544,21 +533,19 @@ CollidePointCollectorCallback     :: proc "c" (_context: rawptr, result: ^Collid
 CollideShapeCollectorCallback     :: proc "c" (_context: rawptr, result: ^CollideShapeResult) -> f32
 CastShapeCollectorCallback        :: proc "c" (_context: rawptr, result: ^ShapeCastResult) -> f32
 
-CollisionEstimationResultImpulse :: struct {
-	contactImpulse:   f32,
-	frictionImpulse1: f32,
-	frictionImpulse2: f32,
-}
-
 CollisionEstimationResult :: struct {
-	linearVelocity1:  Vec3,
-	angularVelocity1: Vec3,
-	linearVelocity2:  Vec3,
-	angularVelocity2: Vec3,
-	tangent1:         Vec3,
-	tangent2:         Vec3,
-	impulseCount:     u32,
-	impulses:         ^CollisionEstimationResultImpulse,
+	linearVelocity1:        Vec3,
+	angularVelocity1:       Vec3,
+	linearVelocity2:        Vec3,
+	angularVelocity2:       Vec3,
+	frictionPoint:          Vec3,
+	tangent1:               Vec3,
+	tangent2:               Vec3,
+	frictionImpulse1:       f32,
+	frictionImpulse2:       f32,
+	angularFrictionImpulse: f32,
+	contactImpulseCount:    u32,
+	contactImpulses:        ^f32,
 }
 
 BodyActivationListener        :: struct {}
@@ -782,25 +769,26 @@ CharacterContactSettings :: struct {
 	canReceiveImpulses: bool,
 }
 
-CharacterVirtualContact :: struct {
-	hash:             u64,
-	bodyB:            BodyID,
-	characterIDB:     CharacterID,
-	subShapeIDB:      SubShapeID,
-	position:         RVec3,
-	linearVelocity:   Vec3,
-	contactNormal:    Vec3,
-	surfaceNormal:    Vec3,
-	distance:         f32,
-	fraction:         f32,
-	motionTypeB:      MotionType,
-	isSensorB:        bool,
-	characterB:       ^CharacterVirtual,
-	userData:         u64,
-	material:         ^PhysicsMaterial,
-	hadCollision:     bool,
-	wasDiscarded:     bool,
-	canPushCharacter: bool,
+CharacterContact :: struct {
+	hash:                u64,
+	bodyB:               BodyID,
+	characterIDB:        CharacterID,
+	subShapeIDB:         SubShapeID,
+	position:            RVec3,
+	linearVelocity:      Vec3,
+	contactNormal:       Vec3,
+	surfaceNormal:       Vec3,
+	distance:            f32,
+	fraction:            f32,
+	motionTypeB:         MotionType,
+	isSensorB:           bool,
+	characterB:          ^CharacterVirtual,
+	userData:            u64,
+	material:            ^PhysicsMaterial,
+	hadCollision:        bool,
+	wasDiscarded:        bool,
+	canPushCharacter:    bool,
+	isBackFacingContact: bool,
 }
 
 TraceFunc         :: proc "c" (message: cstring)
@@ -1997,7 +1985,7 @@ foreign lib {
 	CharacterVirtual_SetShape                         :: proc(character: ^CharacterVirtual, shape: ^Shape, maxPenetrationDepth: f32, layer: ObjectLayer, system: ^PhysicsSystem, bodyFilter: ^BodyFilter, shapeFilter: ^ShapeFilter) -> bool ---
 	CharacterVirtual_SetInnerBodyShape                :: proc(character: ^CharacterVirtual, shape: ^Shape) ---
 	CharacterVirtual_GetNumActiveContacts             :: proc(character: ^CharacterVirtual) -> u32 ---
-	CharacterVirtual_GetActiveContact                 :: proc(character: ^CharacterVirtual, index: u32, result: ^CharacterVirtualContact) ---
+	CharacterVirtual_GetActiveContact                 :: proc(character: ^CharacterVirtual, index: u32, result: ^CharacterContact) ---
 	CharacterVirtual_HasCollidedWithBody              :: proc(character: ^CharacterVirtual, body: BodyID) -> bool ---
 	CharacterVirtual_HasCollidedWith                  :: proc(character: ^CharacterVirtual, other: CharacterID) -> bool ---
 	CharacterVirtual_HasCollidedWithCharacter         :: proc(character: ^CharacterVirtual, other: ^CharacterVirtual) -> bool ---
@@ -2006,13 +1994,13 @@ foreign lib {
 /* CharacterContactListener */
 CharacterContactListener_Procs :: struct {
 	OnAdjustBodyVelocity:        proc "c" (userData: rawptr, character: ^CharacterVirtual, body2: ^Body, ioLinearVelocity: ^Vec3, ioAngularVelocity: ^Vec3),
-	OnContactValidate:           proc "c" (userData: rawptr, character: ^CharacterVirtual, bodyID2: BodyID, subShapeID2: SubShapeID) -> bool,
-	OnCharacterContactValidate:  proc "c" (userData: rawptr, character: ^CharacterVirtual, otherCharacter: ^CharacterVirtual, subShapeID2: SubShapeID) -> bool,
-	OnContactAdded:              proc "c" (userData: rawptr, character: ^CharacterVirtual, bodyID2: BodyID, subShapeID2: SubShapeID, contactPosition: ^RVec3, contactNormal: ^Vec3, ioSettings: ^CharacterContactSettings),
-	OnContactPersisted:          proc "c" (userData: rawptr, character: ^CharacterVirtual, bodyID2: BodyID, subShapeID2: SubShapeID, contactPosition: ^RVec3, contactNormal: ^Vec3, ioSettings: ^CharacterContactSettings),
+	OnContactValidate:           proc "c" (userData: rawptr, character: ^CharacterVirtual, contact: ^CharacterContact) -> bool,
+	OnCharacterContactValidate:  proc "c" (userData: rawptr, character: ^CharacterVirtual, contact: ^CharacterContact) -> bool,
+	OnContactAdded:              proc "c" (userData: rawptr, character: ^CharacterVirtual, contact: ^CharacterContact, ioSettings: ^CharacterContactSettings),
+	OnContactPersisted:          proc "c" (userData: rawptr, character: ^CharacterVirtual, contact: ^CharacterContact, ioSettings: ^CharacterContactSettings),
 	OnContactRemoved:            proc "c" (userData: rawptr, character: ^CharacterVirtual, bodyID2: BodyID, subShapeID2: SubShapeID),
-	OnCharacterContactAdded:     proc "c" (userData: rawptr, character: ^CharacterVirtual, otherCharacter: ^CharacterVirtual, subShapeID2: SubShapeID, contactPosition: ^RVec3, contactNormal: ^Vec3, ioSettings: ^CharacterContactSettings),
-	OnCharacterContactPersisted: proc "c" (userData: rawptr, character: ^CharacterVirtual, otherCharacter: ^CharacterVirtual, subShapeID2: SubShapeID, contactPosition: ^RVec3, contactNormal: ^Vec3, ioSettings: ^CharacterContactSettings),
+	OnCharacterContactAdded:     proc "c" (userData: rawptr, character: ^CharacterVirtual, contact: ^CharacterContact, ioSettings: ^CharacterContactSettings),
+	OnCharacterContactPersisted: proc "c" (userData: rawptr, character: ^CharacterVirtual, contact: ^CharacterContact, ioSettings: ^CharacterContactSettings),
 	OnCharacterContactRemoved:   proc "c" (userData: rawptr, character: ^CharacterVirtual, otherCharacterID: CharacterID, subShapeID2: SubShapeID),
 	OnContactSolve:              proc "c" (userData: rawptr, character: ^CharacterVirtual, bodyID2: BodyID, subShapeID2: SubShapeID, contactPosition: ^RVec3, contactNormal: ^Vec3, contactVelocity: ^Vec3, contactMaterial: ^PhysicsMaterial, characterVelocity: ^Vec3, newCharacterVelocity: ^Vec3),
 	OnCharacterContactSolve:     proc "c" (userData: rawptr, character: ^CharacterVirtual, otherCharacter: ^CharacterVirtual, subShapeID2: SubShapeID, contactPosition: ^RVec3, contactNormal: ^Vec3, contactVelocity: ^Vec3, contactMaterial: ^PhysicsMaterial, characterVelocity: ^Vec3, newCharacterVelocity: ^Vec3),
