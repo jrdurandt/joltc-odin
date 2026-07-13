@@ -2,7 +2,6 @@
 setlocal
 
 set "CONFIG=Distribution"
-set "SHARED=OFF"
 
 git submodule init joltc
 if errorlevel 1 exit /b %errorlevel%
@@ -16,8 +15,11 @@ cmake joltc -B build ^
     -DJPH_SAMPLES=OFF ^
     -DJPH_TESTS=OFF ^
     -DJPH_INSTALL=OFF ^
-    -DJPH_BUILD_SHARED=%SHARED% ^
-    -DINTERPROCEDURAL_OPTIMIZATION=OFF
+    -DJPH_BUILD_SHARED=ON ^
+    -DJPH_USE_DX12=OFF ^
+    -DJPH_USE_MTL=OFF ^
+    -DJPH_USE_VK=OFF ^
+    -DJPH_USE_CPU_COMPUTE=OFF
 if errorlevel 1 exit /b %errorlevel%
 
 cmake --build build --config %CONFIG%
